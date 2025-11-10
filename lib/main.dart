@@ -46,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
       return 'Por favor ingresa tu correo electrónico';
     }
     if (!value.contains('@')) {
-      return 'El correo debe contener @';
+      return 'Ingresa un correo válido';
     }
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
     if (!emailRegex.hasMatch(value)) {
@@ -80,6 +80,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _jugarComoInvitado() {
+    
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomePage()),
@@ -306,7 +307,7 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       icon: Image.network(
-                        'https://cdn.cdnlogo.com/logos/g/35/google-icon.svg',
+                        'https://www.svgrepo.com/show/303108/google-icon-logo.svg',
                         width: 24,
                         height: 24,
                       ),
@@ -411,7 +412,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return 'Por favor ingresa tu correo electrónico';
     }
     if (!value.contains('@')) {
-      return 'El correo debe contener @';
+      return 'Ingresa un correo válido';
     }
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
     if (!emailRegex.hasMatch(value)) {
