@@ -1,27 +1,33 @@
 import 'package:flutter/material.dart';
-import 'register_page.dart';
-import 'home_page.dart';
+import 'pantalla_registro.dart';
+import 'pantalla_principal.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+// Pantalla de inicio de sesión
+class PantallaLogin extends StatefulWidget {
+  const PantallaLogin({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<PantallaLogin> createState() => _PantallaLoginState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _PantallaLoginState extends State<PantallaLogin> {
+  // Guarda lo que escribe el usuario
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Para almacenar los mensajes de error del email y de la contraseña
   String? _emailError;
   String? _passwordError;
 
   @override
   void dispose() {
+    // Libera todos los recursos usados por el objeto, cuando sea llamado el objeto ya no será usable.
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  // Validar si el email es correcto
   String? _validarEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingresa tu correo electrónico';
@@ -29,13 +35,15 @@ class _LoginPageState extends State<LoginPage> {
     if (!value.contains('@')) {
       return 'Ingresa un correo válido';
     }
+    // Para validar e lformato
     final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
     if (!emailRegex.hasMatch(value)) {
       return 'Ingresa un correo válido';
     }
-    return null;
+    return null; // si devuelve null es que todo es correcto, si devuelve un string de error es que hay algo mal
   }
 
+  //Validar si la contraseña es correcta
   String? _validarPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingresa tu contraseña';
@@ -43,27 +51,31 @@ class _LoginPageState extends State<LoginPage> {
     if (value.length < 8) {
       return 'Mínimo 8 caracteres';
     }
-    return null;
+    return null; // Si devuelve null está todo correcto
   }
 
+  // Funcion para iniciar sesion
   void _iniciarSesion() {
     setState(() {
+      // Valida ambos campos
       _emailError = _validarEmail(_emailController.text);
       _passwordError = _validarPassword(_passwordController.text);
     });
 
+    // Si todo es correcto, los manda a la homepage.
     if (_emailError == null && _passwordError == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+        MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
       );
     }
   }
 
+  // Entrar como invitado
   void _jugarComoInvitado() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
+      MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
     );
   }
 
@@ -74,11 +86,12 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Cabecera con el icono del usuario
             Container(
               width: double.infinity,
               height: 250,
               decoration: const BoxDecoration(
-                color: Color(0xFF7B68B8),
+                color: Color(0xFF7B68B8), // Morado
               ),
               child: Center(
                 child: Container(
@@ -86,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                   height: 100,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    shape: BoxShape.circle,
+                    shape: BoxShape.circle, // Círculo
                     border: Border.all(color: const Color(0xFF5B4A8B), width: 3),
                   ),
                   child: const Icon(
@@ -97,11 +110,15 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
+
+            // Formulario de login
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
                   const SizedBox(height: 20),
+
+                  // Campo de email
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -110,12 +127,14 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           hintText: 'correoelectrónico@dominio.com',
                           hintStyle: TextStyle(color: Colors.grey[400]),
+                          // Borde cuando no está enfocado
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
                               color: _emailError == null ? Colors.grey[300]! : Colors.red,
                             ),
                           ),
+                          // Borde cuando está enfocado
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -127,6 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                             vertical: 16,
                           ),
                         ),
+                        // Revalidar mientras el usuario escribe
                         onChanged: (value) {
                           if (_emailError != null) {
                             setState(() {
@@ -135,6 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                           }
                         },
                       ),
+                      // Mostrar mensaje de error si existe
                       if (_emailError != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, left: 12),
@@ -148,13 +169,16 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                     ],
                   ),
+
                   const SizedBox(height: 16),
+
+                  // Campo de contraseña
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: true, // Ocultar texto con puntos
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
                           hintStyle: TextStyle(color: Colors.grey[400]),
@@ -175,6 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                             vertical: 16,
                           ),
                         ),
+                        // Revalidar mientras el usuario escribe
                         onChanged: (value) {
                           if (_passwordError != null) {
                             setState(() {
@@ -183,6 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                           }
                         },
                       ),
+                      // Mostrar mensaje de error si ya existe
                       if (_passwordError != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, left: 12),
@@ -196,11 +222,14 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
+
+                  // Botón de has olvidado la contraseña
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {}, // Lo que hará al pulsarlo
                       child: const Text(
                         '¿Has olvidado la contraseña?',
                         style: TextStyle(
@@ -210,7 +239,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // Botón Iniciar Sesión
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -232,16 +264,20 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
+
+                  // Botón Registrarse
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
+                        // Navegar a la página de registro
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
+                            builder: (context) => const PantallaRegistro(),
                           ),
                         );
                       },
@@ -261,7 +297,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // "o" para dividir
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[300])),
@@ -275,21 +314,25 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(child: Divider(color: Colors.grey[300])),
                     ],
                   ),
+
                   const SizedBox(height: 20),
+
+                  // Botón Continuar con Google
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: OutlinedButton.icon(
                       onPressed: () {
+                        // Ir directo a la página principal
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const HomePage()),
+                          MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
                         );
                       },
-                      icon: Image.network(
-                        'https://www.svgrepo.com/show/303108/google-icon-logo.svg',
-                        width: 24,
-                        height: 24,
+                      icon: const Icon(
+                        Icons.g_mobiledata,
+                        color: Colors.blue,
+                        size: 32,
                       ),
                       label: const Text(
                         'Continuar con Google',
@@ -306,7 +349,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
+
+                  // Botón Jugar como invitado
                   TextButton(
                     onPressed: _jugarComoInvitado,
                     child: const Text(
@@ -318,7 +364,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // Términos y condiciones
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
