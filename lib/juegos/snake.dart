@@ -63,6 +63,7 @@ class _SnakeGameState extends State<SnakeGame> {
         break;
     }
 
+    // Colisión con paredes o consigo mismo
     if (newHead.x < 0 ||
         newHead.y < 0 ||
         newHead.x >= columns ||
@@ -71,7 +72,7 @@ class _SnakeGameState extends State<SnakeGame> {
       timer?.cancel();
       showDialog(
         context: context,
-        barrierDismissible: false, // 👈 cannot click outside
+        barrierDismissible: false,
         builder: (_) => AlertDialog(
           title: const Text("Game Over"),
           content: Text("Score: $score"),
@@ -86,14 +87,13 @@ class _SnakeGameState extends State<SnakeGame> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.pop(context); // 👈 leave game
+                Navigator.pop(context);
               },
               child: const Text("Leave"),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                // 👇 open config menu (replace with your settings screen)
                 Navigator.pushNamed(context, '/config');
               },
               child: const Text("Config"),
@@ -135,57 +135,28 @@ class _SnakeGameState extends State<SnakeGame> {
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context), // 👈 exit game
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-            child: SizedBox(
-              width: columns * squareSize.toDouble(),
-              height: rows * squareSize.toDouble(),
-              child: CustomPaint(
-                painter: SnakePainter(snake, food),
-              ),
+      body: GestureDetector(
+        onVerticalDragUpdate: (details) {
+          if (details.delta.dy < 0) changeDirection(Direction.up);
+          if (details.delta.dy > 0) changeDirection(Direction.down);
+        },
+        onHorizontalDragUpdate: (details) {
+          if (details.delta.dx < 0) changeDirection(Direction.left);
+          if (details.delta.dx > 0) changeDirection(Direction.right);
+        },
+        child: Center(
+          child: SizedBox(
+            width: columns * squareSize.toDouble(),
+            height: rows * squareSize.toDouble(),
+            child: CustomPaint(
+              painter: SnakePainter(snake, food),
             ),
           ),
-          const SizedBox(height: 20),
-          // Direction buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_upward, color: Colors.white),
-                onPressed: () => changeDirection(Direction.up),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => changeDirection(Direction.left),
-              ),
-              const SizedBox(width: 40),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                onPressed: () => changeDirection(Direction.right),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_downward, color: Colors.white),
-                onPressed: () => changeDirection(Direction.down),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -199,29 +170,65 @@ class SnakePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paintSnake = Paint()..color = Colors.green;
-    final paintFood = Paint()..color = Colors.red;
+    final double cellSize = _SnakeGameState.squareSize.toDouble();
 
+    // 🎨 Fondo estilo tablero de ajedrez verde
+    final paintLight = Paint()..color = Colors.green[400]!;
+    final paintDark = Paint()..color = Colors.green[700]!;
+    for (int y = 0; y < _SnakeGameState.rows; y++) {
+      for (int x = 0; x < _SnakeGameState.columns; x++) {
+        final paint = (x + y) % 2 == 0 ? paintLight : paintDark;
+        canvas.drawRect(
+          Rect.fromLTWH(x * cellSize, y * cellSize, cellSize, cellSize),
+          paint,
+        );
+      }
+    }
+
+    // 🎨 Paredes visibles (borde alrededor)
+    final wallPaint = Paint()..color = Colors.brown;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      wallPaint..style = PaintingStyle.stroke..strokeWidth = 4,
+    );
+
+    // 🐍 Serpiente mejorada
+    final snakePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [Colors.greenAccent, Colors.green],
+      ).createShader(Rect.fromLTWH(0, 0, cellSize, cellSize));
     for (final point in snake) {
-      canvas.drawRect(
-        Rect.fromLTWH(
-          point.x * _SnakeGameState.squareSize.toDouble(),
-          point.y * _SnakeGameState.squareSize.toDouble(),
-          _SnakeGameState.squareSize.toDouble(),
-          _SnakeGameState.squareSize.toDouble(),
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            point.x * cellSize,
+            point.y * cellSize,
+            cellSize,
+            cellSize,
+          ),
+          const Radius.circular(6),
         ),
-        paintSnake,
+        snakePaint,
       );
     }
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        food.x * _SnakeGameState.squareSize.toDouble(),
-        food.y * _SnakeGameState.squareSize.toDouble(),
-        _SnakeGameState.squareSize.toDouble(),
-        _SnakeGameState.squareSize.toDouble(),
-      ),
-      paintFood,
+    // 🍎 Manzana mejorada (círculo rojo con borde)
+    final applePaint = Paint()..color = Colors.red;
+    final appleBorder = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawCircle(
+      Offset(food.x * cellSize + cellSize / 2,
+          food.y * cellSize + cellSize / 2),
+      cellSize / 2.2,
+      applePaint,
+    );
+    canvas.drawCircle(
+      Offset(food.x * cellSize + cellSize / 2,
+          food.y * cellSize + cellSize / 2),
+      cellSize / 2.2,
+      appleBorder,
     );
   }
 
