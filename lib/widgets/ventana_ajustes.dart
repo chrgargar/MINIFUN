@@ -158,7 +158,7 @@ class VentanaAjustes {
             onChanged: (value) {
               themeProvider.cambiarTema();
             },
-            activeColor: const Color(0xFF7B3FF2),
+            activeThumbColor: const Color(0xFF7B3FF2),
             activeTrackColor: const Color(0xFF7B3FF2).withValues(alpha: 0.5),
           ),
         ],

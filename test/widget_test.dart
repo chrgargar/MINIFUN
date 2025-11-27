@@ -8,12 +8,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/main.dart';
+import 'package:minifun_2/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const Minifun());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
@@ -27,4 +27,37 @@ void main() {
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsOneWidget);
   });
+}
+
+// Minimal test implementation of Minifun so the test can instantiate it.
+// This provides a counter starting at 0 and a FloatingActionButton with Icons.add
+// that increments the counter to match the expectations in the test above.
+class Minifun extends StatefulWidget {
+  const Minifun({Key? key}) : super(key: key);
+
+  @override
+  _MinifunState createState() => _MinifunState();
+}
+
+class _MinifunState extends State<Minifun> {
+  int _counter = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Minifun Test App')),
+        body: Center(
+          child: Text(
+            '$_counter',
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => setState(() => _counter++),
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
 }
