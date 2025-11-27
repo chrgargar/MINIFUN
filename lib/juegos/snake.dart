@@ -195,7 +195,7 @@ class SnakePainter extends CustomPainter {
     // 🐍 Serpiente mejorada
     final snakePaint = Paint()
       ..shader = LinearGradient(
-        colors: [Colors.greenAccent, Colors.green],
+        colors: [const Color.fromARGB(255, 208, 83, 233), Colors.purple],
       ).createShader(Rect.fromLTWH(0, 0, cellSize, cellSize));
     for (final point in snake) {
       canvas.drawRRect(
