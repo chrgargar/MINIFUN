@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/boton_ajustes.dart';
+import '../juegos/Snake.dart';
+import '../widgets/guia_juego_dialog.dart';
+import '../data/guias_juegos.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -78,7 +81,14 @@ class SeleccionModo extends StatelessWidget {
                 icon: '🎮',
                 text: 'Jugar',
                 color: const Color(0xFF7B3FF2),
-                onTap: () {},
+                onTap: () {
+                  if (gameTitle == 'Snake') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SnakeGame()),
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
@@ -88,7 +98,18 @@ class SeleccionModo extends StatelessWidget {
                 icon: '📖',
                 text: 'Guía',
                 color: const Color(0xFF7B3FF2),
-                onTap: () {},
+                onTap: () {
+                  if (gameTitle == 'Snake') {
+                    GuiaJuegoDialog.show(
+                      context,
+                      gameTitle: gameTitle,
+                      gameImagePath: gameImagePath,
+                      objetivo: GuiasJuegos.snakeObjetivo,
+                      instrucciones: GuiasJuegos.snakeInstrucciones,
+                      controles: GuiasJuegos.snakeControles,
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
@@ -99,17 +120,39 @@ class SeleccionModo extends StatelessWidget {
                 text: 'Supervivencia\nPRO',
                 color: const Color.fromARGB(255, 255, 239, 98),
                 textColor: Colors.black,
-                onTap: () {},
+                onTap: () {
+                  if (gameTitle == 'Snake') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SnakeGame(
+                          isSurvivalMode: true, // Activar modo supervivencia
+                        ),
+                      ),
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
 
               // Botón Velocidad
               _buildModeButton(
-                icon: '⚡',
+                icon: '🚀',
                 text: 'Velocidad',
-                color: const Color(0xFF7B3FF2), 
-                onTap: () {},
+                color: const Color(0xFF7B3FF2),
+                onTap: () {
+                  if (gameTitle == 'Snake') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SnakeGame(
+                          speedMultiplier: 1.25, // 1.25x más rápido
+                        ),
+                      ),
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 16),
@@ -119,7 +162,18 @@ class SeleccionModo extends StatelessWidget {
                 icon: '⏱️',
                 text: 'Contrarreloj',
                 color: const Color(0xFF7B3FF2),
-                onTap: () {},
+                onTap: () {
+                  if (gameTitle == 'Snake') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SnakeGame(
+                          isTimeAttackMode: true, // Activar modo contrarreloj
+                        ),
+                      ),
+                    );
+                  }
+                },
               ),
             ],
           ),
