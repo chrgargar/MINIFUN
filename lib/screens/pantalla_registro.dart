@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'pantalla_principal.dart';
 
 // Pantalla de registro de nuevos usuarios
@@ -15,6 +17,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // Variables para guardar mensajes de error
   String? _usernameError;
@@ -43,10 +48,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     return null; // Si es null es que no hay errores
   }
 
-  // Validar email
+  // Validar email (ahora es opcional)
   String? _validarEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Por favor ingresa tu correo electrónico';
+      return null; // Email es opcional
     }
     if (!value.contains('@')) {
       return 'Ingresa un correo válido';
@@ -59,27 +64,15 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     return null; // null = sin errores
   }
 
-  // Validar contraseña segura
+  // Validar contraseña (simplificado a 6 caracteres)
   String? _validarPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingresa una contraseña';
     }
-    if (value.length < 8) {
-      return 'La contraseña debe tener al menos 8 caracteres';
+    if (value.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres';
     }
-    if (!value.contains(RegExp(r'[A-Z]'))) {
-      return 'Debe contener al menos una mayúscula';
-    }
-    if (!value.contains(RegExp(r'[a-z]'))) {
-      return 'Debe contener al menos una minúscula';
-    }
-    if (!value.contains(RegExp(r'[0-9]'))) {
-      return 'Debe contener al menos un número';
-    }
-    if (!value.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) {
-      return 'Debe contener al menos un carácter especial (!@#\$%^&*)';
-    }
-    return null; 
+    return null;
   }
 
   // Validar que las contraseñas coincidan
@@ -94,7 +87,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   }
 
   // Función que se ejecuta al presionar Crear Cuenta
-  void _crearCuenta() {
+  Future<void> _crearCuenta() async {
     setState(() {
       // Validar campos
       _usernameError = _validarUsuario(_usernameController.text);
@@ -103,14 +96,38 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       _confirmPasswordError = _validarConfirmPassword(_confirmPasswordController.text);
     });
 
-    // Si no hay errores en ningún campo, redirecciona a la página principal
-    if (_usernameError == null &&
-        _emailError == null &&
-        _passwordError == null &&
-        _confirmPasswordError == null) {
+    // Si hay errores, no continuar
+    if (_usernameError != null ||
+        _emailError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null) {
+      return;
+    }
+
+    // Registrar usuario en la base de datos
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final success = await authProvider.register(
+      username: _usernameController.text.trim(),
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (success && mounted) {
+      // Registro exitoso, navegar a la pantalla principal
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+      );
+    } else if (mounted) {
+      // Mostrar error del provider
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Error al registrarse'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -278,10 +295,23 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                     children: [
                       TextField(
                         controller: _passwordController,
-                        obscureText: true, // Ocultar contraseña con puntos
+                        obscureText: _obscurePassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
                           hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -337,10 +367,23 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                     children: [
                       TextField(
                         controller: _confirmPasswordController,
-                        obscureText: true, // Ocultar contraseña con puntos
+                        obscureText: _obscureConfirmPassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
                           hintText: 'Confirmar contraseña',
                           hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(

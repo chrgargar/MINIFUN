@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'pantalla_registro.dart';
 import 'pantalla_principal.dart';
 
@@ -12,75 +14,150 @@ class PantallaLogin extends StatefulWidget {
 
 class _PantallaLoginState extends State<PantallaLogin> {
   // Guarda lo que escribe el usuario
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Para almacenar los mensajes de error del email y de la contraseña
-  String? _emailError;
+  bool _obscurePassword = true;
+  bool _isCheckingSession = true;
+
+  // Para almacenar los mensajes de error
+  String? _usernameError;
   String? _passwordError;
 
   @override
+  void initState() {
+    super.initState();
+    // Usar addPostFrameCallback para ejecutar después del primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkExistingSession();
+    });
+  }
+
+  // Verificar si hay una sesión existente
+  Future<void> _checkExistingSession() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      // Usar initSilent para no interferir con la UI
+      await authProvider.initSilent();
+
+      if (mounted) {
+        setState(() {
+          _isCheckingSession = false;
+        });
+
+        // Si ya está logueado, ir directo a la pantalla principal
+        if (authProvider.isLoggedIn) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+          );
+        }
+      }
+    } catch (e) {
+      // En caso de error, mostrar la pantalla de login
+      if (mounted) {
+        setState(() {
+          _isCheckingSession = false;
+        });
+        print('Error al verificar sesión: $e');
+      }
+    }
+  }
+
+  @override
   void dispose() {
-    // Libera todos los recursos usados por el objeto, cuando sea llamado el objeto ya no será usable.
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // Validar si el email es correcto
-  String? _validarEmail(String? value) {
+  // Validar usuario o email
+  String? _validarUsername(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Por favor ingresa tu correo electrónico';
+      return 'Por favor ingresa tu usuario o email';
     }
-    if (!value.contains('@')) {
-      return 'Ingresa un correo válido';
-    }
-    // Para validar e lformato
-    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Ingresa un correo válido';
-    }
-    return null; // si devuelve null es que todo es correcto, si devuelve un string de error es que hay algo mal
+    return null;
   }
 
-  //Validar si la contraseña es correcta
+  // Validar contraseña
   String? _validarPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Por favor ingresa tu contraseña';
     }
-    if (value.length < 8) {
-      return 'Mínimo 8 caracteres';
+    if (value.length < 6) {
+      return 'Mínimo 6 caracteres';
     }
-    return null; // Si devuelve null está todo correcto
+    return null;
   }
 
-  // Funcion para iniciar sesion
-  void _iniciarSesion() {
+  // Función para iniciar sesión
+  Future<void> _iniciarSesion() async {
     setState(() {
-      // Valida ambos campos
-      _emailError = _validarEmail(_emailController.text);
+      _usernameError = _validarUsername(_usernameController.text);
       _passwordError = _validarPassword(_passwordController.text);
     });
 
-    // Si todo es correcto, los manda a la homepage.
-    if (_emailError == null && _passwordError == null) {
+    if (_usernameError != null || _passwordError != null) {
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final success = await authProvider.login(
+      usernameOrEmail: _usernameController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (success && mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   // Entrar como invitado
-  void _jugarComoInvitado() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-    );
+  Future<void> _jugarComoInvitado() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final success = await authProvider.continueAsGuest();
+
+    if (success && mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Error al crear sesión de invitado'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Mostrar indicador de carga mientras se verifica la sesión
+    if (_isCheckingSession) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF7B68B8),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -118,27 +195,27 @@ class _PantallaLoginState extends State<PantallaLogin> {
                 children: [
                   const SizedBox(height: 20),
 
-                  // Campo de email
+                  // Campo de usuario o email
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextField(
-                        controller: _emailController,
+                        controller: _usernameController,
                         decoration: InputDecoration(
-                          hintText: 'correoelectrónico@dominio.com',
+                          hintText: 'Usuario o email',
                           hintStyle: TextStyle(color: Colors.grey[400]),
                           // Borde cuando no está enfocado
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _emailError == null ? Colors.grey[300]! : Colors.red,
+                              color: _usernameError == null ? Colors.grey[300]! : Colors.red,
                             ),
                           ),
                           // Borde cuando está enfocado
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _emailError == null ? const Color(0xFF7B68B8) : Colors.red,
+                              color: _usernameError == null ? const Color(0xFF7B68B8) : Colors.red,
                             ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -148,19 +225,19 @@ class _PantallaLoginState extends State<PantallaLogin> {
                         ),
                         // Revalidar mientras el usuario escribe
                         onChanged: (value) {
-                          if (_emailError != null) {
+                          if (_usernameError != null) {
                             setState(() {
-                              _emailError = _validarEmail(value);
+                              _usernameError = _validarUsername(value);
                             });
                           }
                         },
                       ),
                       // Mostrar mensaje de error si existe
-                      if (_emailError != null)
+                      if (_usernameError != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, left: 12),
                           child: Text(
-                            _emailError!,
+                            _usernameError!,
                             style: const TextStyle(
                               color: Colors.red,
                               fontSize: 12,
@@ -178,10 +255,23 @@ class _PantallaLoginState extends State<PantallaLogin> {
                     children: [
                       TextField(
                         controller: _passwordController,
-                        obscureText: true, // Ocultar texto con puntos
+                        obscureText: _obscurePassword, // Ocultar texto con puntos
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
                           hintStyle: TextStyle(color: Colors.grey[400]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
