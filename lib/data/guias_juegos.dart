@@ -42,8 +42,7 @@ class GuiasJuegos {
     ),
   ];
 
-  // Puedes agregar más guías para otros juegos aquí
-  // Por ejemplo:
+  // Base para crear más guías de juegos
   /*
   static const watersortObjetivo = '...';
   static const watersortInstrucciones = [...];

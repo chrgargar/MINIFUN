@@ -6,6 +6,72 @@ import 'package:provider/provider.dart';
 import '../widgets/virtual_joystick.dart';
 import '../tema/audio_settings.dart';
 
+// Servicio de Audio simple
+class AudioService {
+  static AudioPlayer? _loopPlayer;
+  static String? _loopSrc;
+
+  static Future<void> playLoop(String src, double volume) async {
+    _loopSrc = src;
+
+    // Si ya existe un reproductor, detenerlo
+    if (_loopPlayer != null) {
+      await _loopPlayer!.stop();
+      await _loopPlayer!.dispose();
+    }
+
+    // Crear nuevo reproductor para el loop
+    _loopPlayer = AudioPlayer();
+    await _loopPlayer!.setVolume(volume);
+
+    // Escuchar el estado del reproductor para reiniciar cuando termine
+    _loopPlayer!.onPlayerStateChanged.listen((PlayerState state) async {
+      if (state == PlayerState.completed) {
+        // Reiniciar inmediatamente cuando termina
+        if (_loopPlayer != null && _loopSrc != null) {
+          await _loopPlayer!.play(AssetSource(_loopSrc!));
+        }
+      }
+    });
+
+    // Iniciar reproducción
+    await _loopPlayer!.play(AssetSource(src));
+  }
+
+  static Future<void> stopLoop() async {
+    if (_loopPlayer != null) {
+      await _loopPlayer!.stop();
+      await _loopPlayer!.dispose();
+      _loopPlayer = null;
+      _loopSrc = null;
+    }
+  }
+
+  static Future<void> pauseLoop() async {
+    if (_loopPlayer != null) {
+      await _loopPlayer!.pause();
+    }
+  }
+
+  static Future<void> resumeLoop() async {
+    if (_loopPlayer != null) {
+      await _loopPlayer!.resume();
+    }
+  }
+
+  static void setLoopVolume(double volume) {
+    if (_loopPlayer != null) {
+      _loopPlayer!.setVolume(volume);
+    }
+  }
+
+  static Future<void> playSound(String src, double volume) async {
+    final player = AudioPlayer();
+    await player.setVolume(volume);
+    await player.play(AssetSource(src));
+  }
+}
+
 class SnakeGame extends StatefulWidget {
   final double speedMultiplier; // Multiplicador de velocidad (1.0 = normal, 1.5 = velocidad, etc.)
   final bool isTimeAttackMode; // Modo contrarreloj activado
@@ -40,10 +106,6 @@ class _SnakeGameState extends State<SnakeGame> {
   Timer? timer;
   int score = 0;
 
-  // Reproductores de audio
-  final AudioPlayer musicPlayer = AudioPlayer();
-  final AudioPlayer sfxPlayer = AudioPlayer();
-  final AudioPlayer movePlayer = AudioPlayer();
 
   // Variables para modo contrarreloj
   int timeLeft = 30; // Tiempo inicial en segundos
@@ -62,7 +124,6 @@ class _SnakeGameState extends State<SnakeGame> {
   @override
   void initState() {
     super.initState();
-    _initAudio();
     startGame();
 
     // Escuchar cambios en la configuración de audio
@@ -72,7 +133,6 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void _onAudioSettingsChanged() {
-    _updateMusicVolume();
     _updateSfxVolume();
   }
 
@@ -82,9 +142,6 @@ class _SnakeGameState extends State<SnakeGame> {
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     obstacleTimer?.cancel();
-    musicPlayer.dispose();
-    sfxPlayer.dispose();
-    movePlayer.dispose();
 
     // Remover listener de audio settings
     try {
@@ -96,32 +153,18 @@ class _SnakeGameState extends State<SnakeGame> {
     super.dispose();
   }
 
-  Future<void> _initAudio() async {
-    // Configurar música de fondo en loop
-    await musicPlayer.setReleaseMode(ReleaseMode.loop);
-    _updateMusicVolume();
-    await musicPlayer.play(AssetSource('Sonidos/music.mp3'));
-  }
-
-  void _updateMusicVolume() {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    musicPlayer.setVolume(audioSettings.musicVolume);
-  }
-
   void _updateSfxVolume() {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    sfxPlayer.setVolume(audioSettings.sfxVolume);
-    movePlayer.setVolume(audioSettings.sfxVolume);
+    // El volumen de SFX se actualiza directamente en _playSound
   }
 
   Future<void> _playSound(String sound) async {
-    _updateSfxVolume();
-    await sfxPlayer.play(AssetSource('Sonidos/$sound'));
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
   }
 
   Future<void> _playMoveSound() async {
-    _updateSfxVolume();
-    await movePlayer.play(AssetSource('Sonidos/move.mp3'));
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    await AudioService.playSound('Sonidos/move.mp3', audioSettings.sfxVolume);
   }
 
   void startGame() {
@@ -255,7 +298,6 @@ class _SnakeGameState extends State<SnakeGame> {
     timer?.cancel();
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
-    musicPlayer.stop();
     _playSound('gameover.mp3');
 
     showDialog(
@@ -268,7 +310,6 @@ class _SnakeGameState extends State<SnakeGame> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              musicPlayer.resume();
               startGame();
             },
             child: const Text("Reiniciar"),
@@ -350,7 +391,6 @@ class _SnakeGameState extends State<SnakeGame> {
       gameTimer?.cancel(); // Detener temporizador del modo contrarreloj
       foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
       obstacleTimer?.cancel(); // Detener temporizador de obstáculos
-      musicPlayer.stop(); // Detener música de fondo
 
       // Reproducir sonido específico según el tipo de colisión
       if (hitObstacle) {
@@ -369,7 +409,6 @@ class _SnakeGameState extends State<SnakeGame> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                musicPlayer.resume(); // Reanudar música
                 startGame();
               },
               child: const Text("Reiniciar"),
