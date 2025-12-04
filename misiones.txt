@@ -1,0 +1,153 @@
+Calendario Mensual de Misiones – Minifun
+
+Este calendario distribuye misiones diarias, semanales y combinadas para mantener a los jugadores motivados durante todo el mes.
+
+Semana 1
+
+Misiones Diarias
+
+Buscaminas: Descubre 5 minas sin perder.
+
+Sudoku: Completa un sudoku fácil en menos de 6 minutos.
+
+Water Sort: Resuelve 2 niveles sin reiniciar.
+
+Snake: Consigue 25 puntos en una partida.
+
+Ahorcado: Adivina 2 palabras sin perder más de 2 vidas.
+
+Sopa de Letras: Encuentra 8 palabras en menos de 3 minutos.
+
+Misiones Semanales
+
+Buscaminas: Completa 10 tableros.
+
+Sudoku: Termina 3 sudokus difíciles sin errores.
+
+Water Sort: Supera 15 niveles.
+
+Snake: Llega a 100 puntos en una sola partida.
+
+Ahorcado: Gana 10 partidas consecutivas.
+
+Sopa de Letras: Completa 5 sopas difíciles.
+
+Misiones Combinadas
+
+Juega una partida de cada juego en un mismo día.
+
+Completa un sudoku y luego consigue 50 puntos en Snake.
+
+Encuentra todas las palabras de una sopa y gana una partida de ahorcado sin fallar.
+
+ Semana 2
+
+Misiones Diarias
+
+Buscaminas: Completa un tablero en menos de 90 segundos.
+
+Sudoku: Resuelve un sudoku sin usar borrar.
+
+Water Sort: Termina un nivel con 1 tubo vacío.
+
+Snake: Atrapa 10 frutas seguidas sin chocar.
+
+Ahorcado: Gana una partida con menos de 6 intentos.
+
+Misiones Semanales
+
+Buscaminas: Gana 20 partidas.
+
+Sudoku: Completa 5 sudokus de nivel medio sin errores.
+
+Water Sort: Supera 25 niveles.
+
+Snake: Juega 15 partidas con al menos 50 puntos.
+
+Sopa de Letras: Encuentra 100 palabras en total.
+
+Misiones Combinadas
+
+Juega 2 partidas de Snake y luego completa un sudoku fácil.
+
+Gana una partida de Buscaminas y después encuentra todas las palabras de una sopa.
+
+Completa 3 niveles de Water Sort y luego adivina 3 palabras en Ahorcado.
+
+Semana 3
+
+Misiones Diarias
+
+Sudoku: Completa un sudoku medio en menos de 8 minutos.
+
+Snake: Consigue 40 puntos en una partida.
+
+Ahorcado: Gana 2 partidas seguidas sin perder vidas.
+
+Water Sort: Resuelve 3 niveles en menos de 30 movimientos.
+
+Sopa de Letras: Encuentra 12 palabras en menos de 4 minutos.
+
+Misiones Semanales
+
+Buscaminas: Descubre 50 minas en total.
+
+Sudoku: Completa 4 sudokus difíciles.
+
+Snake: Consigue 200 puntos acumulados en la semana.
+
+Ahorcado: Gana 15 partidas.
+
+Sopa de Letras: Completa 7 sopas difíciles.
+
+Misiones Combinadas
+
+Haz una partida perfecta de Ahorcado y consigue 40 puntos en Snake.
+
+Juega una partida de cada juego en un mismo día y gana al menos 3.
+
+Completa un sudoku y luego resuelve 2 niveles de Water Sort.
+
+Semana 4
+
+Misiones Diarias
+
+Buscaminas: Completa 2 tableros seguidos sin perder.
+
+Sudoku: Resuelve un sudoku difícil en menos de 12 minutos.
+
+Snake: Atrapa 15 frutas en una sola partida.
+
+Ahorcado: Adivina una palabra con solo 3 letras reveladas.
+
+Sopa de Letras: Encuentra todas las palabras de una sopa sin pistas.
+
+Misiones Semanales
+
+Buscaminas: Completa 30 tableros.
+
+Sudoku: Termina 6 sudokus en total.
+
+Water Sort: Supera 20 niveles sin reiniciar.
+
+Snake: Consigue 300 puntos acumulados.
+
+Ahorcado: Gana 20 partidas.
+
+Sopa de Letras: Encuentra 150 palabras en total.
+
+Misiones Combinadas
+
+Completa 2 niveles de Water Sort y luego consigue 30 puntos en Snake.
+
+Gana 5 partidas de Ahorcado y completa una sopa difícil.
+
+Juega 3 partidas de Buscaminas y luego resuelve un sudoku medio.
+
+Evento Especial del Mes
+
+Maratón Minifun: Juega 50 partidas en cualquier juego durante el mes.
+
+Desafío Relámpago: Completa 3 juegos distintos en menos de 15 minutos.
+
+Evento Temático (ej. Navidad): Misiones con skins y recompensas únicas.
