@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
-import '../database/database_helper.dartjiji';
+import '../database/database_helper.dart';
 
 /// Provider para gestionar el estado de autenticación
 class AuthProvider extends ChangeNotifier {
