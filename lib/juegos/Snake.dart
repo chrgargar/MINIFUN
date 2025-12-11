@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../widgets/virtual_joystick.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/snake_constants.dart';
 
@@ -240,26 +242,28 @@ class _SnakeGameState extends State<SnakeGame> {
     foodExpirationTimer?.cancel();
     _playSound('gameover.mp3');
 
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text("¡Tiempo Agotado!"),
-        content: Text("Puntuación final: $score"),
+        title: Text(AppStrings.get('time_up', currentLang)),
+        content: Text("${AppStrings.get('final_score', currentLang)}: $score"),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               startGame();
             },
-            child: const Text("Reiniciar"),
+            child: Text(AppStrings.get('restart', currentLang)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text("Salir"),
+            child: Text(AppStrings.get('exit', currentLang)),
           ),
         ],
       ),
@@ -339,26 +343,28 @@ class _SnakeGameState extends State<SnakeGame> {
         _playSound('gameover.mp3'); // Sonido de game over normal
       }
 
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => AlertDialog(
-          title: const Text("Game Over"),
-          content: Text("Puntuación: $score"),
+          title: Text(AppStrings.get('game_over', currentLang)),
+          content: Text("${AppStrings.get('score', currentLang)}: $score"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 startGame();
               },
-              child: const Text("Reiniciar"),
+              child: Text(AppStrings.get('restart', currentLang)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
-              child: const Text("Salir"),
+              child: Text(AppStrings.get('exit', currentLang)),
             ),
           ],
         ),

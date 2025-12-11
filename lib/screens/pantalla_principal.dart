@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/tarjetas_juegos.dart';
 import '../widgets/boton_ajustes.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 
 // Pantalla principal
 class PantallaPrincipal extends StatelessWidget {
@@ -9,6 +12,7 @@ class PantallaPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       extendBodyBehindAppBar: true, // Extender el body detrás del AppBar
@@ -91,7 +95,7 @@ class PantallaPrincipal extends StatelessWidget {
                             children: [
                               Flexible(
                                 child: Text(
-                                  'Adquiere MINIFUN PRO por',
+                                  AppStrings.get('get_pro', currentLang),
                                   style: TextStyle(
                                     fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
                                     fontWeight: FontWeight.w500,
@@ -165,7 +169,7 @@ class PantallaPrincipal extends StatelessWidget {
                               ),
                               child: Center(
                                 child: Text(
-                                  'MISIONES',
+                                  AppStrings.get('missions', currentLang),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: const Color(0xFF7B3FF2),

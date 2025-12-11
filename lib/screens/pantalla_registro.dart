@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../utils/validators.dart';
 import 'pantalla_principal.dart';
 
@@ -108,6 +110,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
   @override
   Widget build(BuildContext context) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       backgroundColor: ColoresApp.blanco,
       body: SingleChildScrollView(
@@ -147,7 +151,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
                   // Título del formulario
                   Text(
-                    'Añade tus datos para\ncrear una cuenta',
+                    AppStrings.get('add_your_data', currentLang),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,
@@ -165,7 +169,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                       TextField(
                         controller: _usernameController,
                         decoration: InputDecoration(
-                          hintText: 'Usuario',
+                          hintText: AppStrings.get('username', currentLang),
                           hintStyle: TextStyle(color: ColoresApp.gris400),
                           // Borde cuando no está enfocado
                           enabledBorder: OutlineInputBorder(
@@ -219,7 +223,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                       TextField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          hintText: 'correoelectrónico@dominio.com',
+                          hintText: AppStrings.get('email_placeholder', currentLang),
                           hintStyle: TextStyle(color: ColoresApp.gris400),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -271,7 +275,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         controller: _passwordController,
                         obscureText: _obscurePassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
-                          hintText: 'Contraseña',
+                          hintText: AppStrings.get('password', currentLang),
                           hintStyle: TextStyle(color: ColoresApp.gris400),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -343,7 +347,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         controller: _confirmPasswordController,
                         obscureText: _obscureConfirmPassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
-                          hintText: 'Confirmar contraseña',
+                          hintText: AppStrings.get('confirm_password', currentLang),
                           hintStyle: TextStyle(color: ColoresApp.gris400),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -414,7 +418,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         ),
                       ),
                       child: Text(
-                        'Crear Cuenta',
+                        AppStrings.get('create_account', currentLang),
                         style: TextStyle(
                           color: ColoresApp.blanco,
                           fontSize: 16,

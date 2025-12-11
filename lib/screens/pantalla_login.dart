@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../utils/validators.dart';
 import 'pantalla_registro.dart';
 import 'pantalla_principal.dart';
@@ -152,6 +154,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
       );
     }
 
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Scaffold(
       backgroundColor: ColoresApp.blanco,
       body: LayoutBuilder(
@@ -207,7 +211,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                           TextField(
                             controller: _usernameController,
                             decoration: InputDecoration(
-                              hintText: 'Usuario o email',
+                              hintText: AppStrings.get('username_or_email', currentLang),
                               hintStyle: TextStyle(color: ColoresApp.gris400),
                               // Borde cuando no está enfocado
                               enabledBorder: OutlineInputBorder(
@@ -262,7 +266,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             controller: _passwordController,
                             obscureText: _obscurePassword, // Ocultar texto con puntos
                             decoration: InputDecoration(
-                              hintText: 'Contraseña',
+                              hintText: AppStrings.get('password', currentLang),
                               hintStyle: TextStyle(color: ColoresApp.gris400),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -326,7 +330,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                         child: TextButton(
                           onPressed: () {}, // Lo que hará al pulsarlo
                           child: Text(
-                            '¿Has olvidado la contraseña?',
+                            AppStrings.get('forgot_password', currentLang),
                             style: TextStyle(
                               color: ColoresApp.azulInfo,
                               fontSize: 14,
@@ -350,7 +354,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           child: Text(
-                            'Iniciar Sesión',
+                            AppStrings.get('login', currentLang),
                             style: TextStyle(
                               color: ColoresApp.blanco,
                               fontSize: 16,
@@ -383,7 +387,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           child: Text(
-                            'Registrarse',
+                            AppStrings.get('register', currentLang),
                             style: TextStyle(
                               color: ColoresApp.blanco,
                               fontSize: 16,
@@ -402,7 +406,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
-                              'o',
+                              AppStrings.get('or', currentLang),
                               style: TextStyle(color: ColoresApp.gris600),
                             ),
                           ),
@@ -430,7 +434,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             size: 32,
                           ),
                           label: Text(
-                            'Continuar con Google',
+                            AppStrings.get('continue_with_google', currentLang),
                             style: TextStyle(
                               color: ColoresApp.negro,
                               fontSize: 16,
@@ -451,7 +455,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                       TextButton(
                         onPressed: _jugarComoInvitado,
                         child: Text(
-                          'Jugar como invitado',
+                          AppStrings.get('play_as_guest', currentLang),
                           style: TextStyle(
                             color: ColoresApp.negro,
                             fontSize: 14,
@@ -471,14 +475,14 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             fontSize: 12,
                           ),
                           children: [
-                            const TextSpan(text: 'Al hacer clic en continuar, aceptas nuestros '),
+                            TextSpan(text: AppStrings.get('terms_intro', currentLang)),
                             TextSpan(
-                              text: 'Términos de servicio',
+                              text: AppStrings.get('terms_of_service', currentLang),
                               style: TextStyle(color: ColoresApp.azulInfo),
                             ),
-                            const TextSpan(text: ' y '),
+                            TextSpan(text: AppStrings.get('and', currentLang)),
                             TextSpan(
-                              text: 'Política de privacidad',
+                              text: AppStrings.get('privacy_policy', currentLang),
                               style: TextStyle(color: ColoresApp.azulInfo),
                             ),
                           ],
