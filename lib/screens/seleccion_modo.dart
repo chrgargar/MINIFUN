@@ -27,7 +27,19 @@ class SeleccionModo extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Calcular número de botones según el juego
-            int buttonCount = 5; // Jugar, Guía + 3 modalidades
+            // Buscaminas tendrá: Jugar (Fácil), Medio, Difícil, Contrarreloj, Guía (5 botones)
+            // Sudoku: Jugar (Medio), Extremo PRO (Difícil), Contrarreloj, Perfecto, Guía (5 botones)
+            // Snake: Jugar, Supervivencia PRO, Velocidad, Contrarreloj, Guía (5 botones)
+            // WaterSort: Jugar (Fácil), Difícil PRO, Contrarreloj, Guía (4 botones)
+            
+            int buttonCount;
+            if (gameTitle == 'Buscaminas') {
+              buttonCount = 5; // Jugar (Fácil), Medio, Difícil, Contrarreloj, Guía
+            } else if (gameTitle == 'Snake' || gameTitle == 'Sudoku') {
+              buttonCount = 5; 
+            } else {
+              buttonCount = 4; // WaterSort tiene menos botones
+            }
 
             // Distribución porcentual de la altura
             double availableHeight = constraints.maxHeight;
@@ -112,7 +124,7 @@ class SeleccionModo extends StatelessWidget {
                     child: ListView(
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        // Botón Jugar
+                        // --- 1. Botón Jugar (Fácil por defecto) ---
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '🎮',
@@ -125,6 +137,7 @@ class SeleccionModo extends StatelessWidget {
                                 MaterialPageRoute(builder: (context) => const SnakeGame()),
                               );
                             } else if (gameTitle == 'Sudoku') {
+                              // Sudoku usa "medio" como default en su código, pero aquí se alinea al botón principal.
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const SudokuGame(difficulty: 'medio')),
@@ -135,6 +148,7 @@ class SeleccionModo extends StatelessWidget {
                                 MaterialPageRoute(builder: (context) => const WaterSortGame(difficulty: 'facil')),
                               );
                             } else if (gameTitle == 'Buscaminas') {
+                              // BUSCAMINAS: Jugar = Fácil (Valores por defecto)
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const BuscaminasGame()),
@@ -144,24 +158,11 @@ class SeleccionModo extends StatelessWidget {
                         ),
 
                         SizedBox(height: spacing),
-
-                        // Dificultades para Buscaminas
+                        
+                        // --- 2. Modos Específicos/Dificultades (Medio / Extremo PRO / Supervivencia PRO) ---
+                        
                         if (gameTitle == 'Buscaminas') ...[
-                          _buildModeButton(
-                            height: buttonHeight,
-                            icon: '🟩',
-                            text: 'Fácil',
-                            color: const Color(0xFF7B3FF2),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const BuscaminasGame(rows: 9, cols: 9, mineCount: 10)),
-                              );
-                            },
-                          ),
-
-                          SizedBox(height: spacing),
-
+                          // BUSCAMINAS: Botón Medio
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🟨',
@@ -170,116 +171,94 @@ class SeleccionModo extends StatelessWidget {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const BuscaminasGame(rows: 16, cols: 16, mineCount: 40)),
+                                MaterialPageRoute(
+                                  // 16x16 con 40 minas
+                                  builder: (context) => const BuscaminasGame(rows: 16, cols: 16, mineCount: 40),
+                                ),
                               );
                             },
                           ),
 
                           SizedBox(height: spacing),
 
+                          // BUSCAMINAS: Botón Difícil
                           _buildModeButton(
                             height: buttonHeight,
-                            icon: '🔥',
+                            icon: '🟥',
                             text: 'Difícil',
                             color: const Color(0xFF7B3FF2),
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const BuscaminasGame(rows: 16, cols: 30, mineCount: 99)),
+                                MaterialPageRoute(
+                                  // 24x24 (o 16x30) con 99 minas
+                                  // Usando 24x24 por ser más estándar en móvil para "Difícil"
+                                  builder: (context) => const BuscaminasGame(rows: 24, cols: 24, mineCount: 99),
+                                ),
                               );
                             },
                           ),
 
                           SizedBox(height: spacing),
-                        ],
 
-                        // Botón Guía
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: '📖',
-                          text: 'Guía',
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.snakeObjetivo,
-                                instrucciones: GuiasJuegos.snakeInstrucciones,
-                                controles: GuiasJuegos.snakeControles,
-                              );
-                            } else if (gameTitle == 'Sudoku') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.sudokuObjetivo,
-                                instrucciones: GuiasJuegos.sudokuInstrucciones,
-                                controles: GuiasJuegos.sudokuControles,
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.waterSortObjetivo,
-                                instrucciones: GuiasJuegos.waterSortInstrucciones,
-                                controles: GuiasJuegos.waterSortControles,
-                              );
-                            } else if (gameTitle == 'Buscaminas') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.buscaminasObjetivo,
-                                instrucciones: GuiasJuegos.buscaminasInstrucciones,
-                                controles: GuiasJuegos.buscaminasControles,
-                              );
-                            }
-                          },
-                        ),
-
-                        SizedBox(height: spacing),
-
-                        // Botón Supervivencia PRO (Snake) / Extremo PRO (Sudoku) / Difícil PRO (WaterSort)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'WaterSort' ? '🧪' : '🔥'),
-                          text: gameTitle == 'Snake' ? 'Supervivencia\nPRO' : (gameTitle == 'WaterSort' ? 'Difícil\nPRO' : 'Extremo\nPRO'),
-                          color: const Color.fromARGB(255, 255, 239, 98),
-                          textColor: Colors.black,
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
+                          // BUSCAMINAS: Botón Contrarreloj (Se mueve aquí para tener las dificultades agrupadas)
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: 'Contrarreloj',
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const SnakeGame(isSurvivalMode: true),
+                                  // Contrarreloj (Fácil base + modo contrarreloj activo)
+                                  builder: (context) => const BuscaminasGame(isContrareloj: true),
                                 ),
                               );
-                            } else if (gameTitle == 'Sudoku') {
+                            },
+                          ),
+                          
+                          SizedBox(height: spacing),
+                          
+                        ] else if (gameTitle == 'Sudoku') ...[
+                           // SUDOKU: Botón Extremo PRO
+                           _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🔥',
+                            text: 'Extremo\nPRO',
+                            color: const Color.fromARGB(255, 255, 239, 98),
+                            textColor: Colors.black,
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SudokuGame(difficulty: 'dificil'),
                                 ),
                               );
-                            } else if (gameTitle == 'WaterSort') {
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ] else if (gameTitle == 'Snake') ...[
+                           // SNAKE: Botón Supervivencia PRO
+                           _buildModeButton(
+                            height: buttonHeight,
+                            icon: '💀',
+                            text: 'Supervivencia\nPRO',
+                            color: const Color.fromARGB(255, 255, 239, 98),
+                            textColor: Colors.black,
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const WaterSortGame(difficulty: 'dificil'),
+                                  builder: (context) => const SnakeGame(isSurvivalMode: true),
                                 ),
                               );
-                            }
-                          },
-                        ),
+                            },
+                          ),
+                          SizedBox(height: spacing),
 
-                        SizedBox(height: spacing),
-
-                        // Botón Velocidad (solo Snake)
-                        if (gameTitle == 'Snake')
-                          _buildModeButton(
+                          // SNAKE: Botón Velocidad
+                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
                             text: 'Velocidad',
@@ -293,44 +272,65 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
-
-                        if (gameTitle == 'Snake') SizedBox(height: spacing),
-
-                        // Botón Contrarreloj
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: '⏱️',
-                          text: 'Contrarreloj',
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SnakeGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'Sudoku') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const WaterSortGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-
-                        // Botón Modo Perfecto (solo para Sudoku)
-                        if (gameTitle == 'Sudoku') ...[
                           SizedBox(height: spacing),
+                        ] else if (gameTitle == 'WaterSort') ...[
+                          // WATERSORT: Botón Difícil PRO
+                           _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🧪',
+                            text: 'Difícil\nPRO',
+                            color: const Color.fromARGB(255, 255, 239, 98),
+                            textColor: Colors.black,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const WaterSortGame(difficulty: 'dificil'),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+                        
+                        // --- 3. Botón Contrarreloj (Para Snake, Sudoku, WaterSort) ---
+                        if (gameTitle != 'Buscaminas') // Buscaminas ya lo tiene arriba
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: 'Contrarreloj',
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              if (gameTitle == 'Snake') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SnakeGame(isTimeAttackMode: true),
+                                  ),
+                                );
+                              } else if (gameTitle == 'Sudoku') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SudokuGame(isTimeAttackMode: true),
+                                  ),
+                                );
+                              } else if (gameTitle == 'WaterSort') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const WaterSortGame(isTimeAttackMode: true),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+
+                        if (gameTitle != 'Buscaminas') SizedBox(height: spacing),
+
+
+                        // --- 4. Botón Modo Perfecto (Solo para Sudoku) ---
+                        if (gameTitle == 'Sudoku') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '💎',
@@ -345,7 +345,102 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
+                          SizedBox(height: spacing),
                         ],
+                        
+                        // --- 5. Botón Guía ---
+                        // Botón Guía
+
+                        _buildModeButton(
+
+                          height: buttonHeight,
+
+                          icon: '📖',
+
+                          text: 'Guía',
+
+                          color: const Color(0xFF7B3FF2),
+
+                          onTap: () {
+
+                            if (gameTitle == 'Snake') {
+
+                              GuiaJuegoDialog.show(
+
+                                context,
+
+                                gameTitle: gameTitle,
+
+                                gameImagePath: gameImagePath,
+
+                                objetivo: GuiasJuegos.snakeObjetivo,
+
+                                instrucciones: GuiasJuegos.snakeInstrucciones,
+
+                                controles: GuiasJuegos.snakeControles,
+
+                              );
+
+                            } else if (gameTitle == 'Sudoku') {
+
+                              GuiaJuegoDialog.show(
+
+                                context,
+
+                                gameTitle: gameTitle,
+
+                                gameImagePath: gameImagePath,
+
+                                objetivo: GuiasJuegos.sudokuObjetivo,
+
+                                instrucciones: GuiasJuegos.sudokuInstrucciones,
+
+                                controles: GuiasJuegos.sudokuControles,
+
+                              );
+
+                            } else if (gameTitle == 'WaterSort') {
+
+                              GuiaJuegoDialog.show(
+
+                                context,
+
+                                gameTitle: gameTitle,
+
+                                gameImagePath: gameImagePath,
+
+                                objetivo: GuiasJuegos.waterSortObjetivo,
+
+                                instrucciones: GuiasJuegos.waterSortInstrucciones,
+
+                                controles: GuiasJuegos.waterSortControles,
+
+                              );
+
+                            } else if (gameTitle == 'Buscaminas') {
+
+                              GuiaJuegoDialog.show(
+
+                                context,
+
+                                gameTitle: gameTitle,
+
+                                gameImagePath: gameImagePath,
+
+                                objetivo: GuiasJuegos.buscaminasObjetivo,
+
+                                instrucciones: GuiasJuegos.buscaminasInstrucciones,
+
+                                controles: GuiasJuegos.buscaminasControles,
+
+                              );
+
+                            }
+
+                          },
+
+                        ),
+                        SizedBox(height: spacing), // Espacio final
                       ],
                     ),
                   ),
