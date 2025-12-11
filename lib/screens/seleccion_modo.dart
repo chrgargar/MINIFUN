@@ -179,11 +179,11 @@ class SeleccionModo extends StatelessWidget {
 
                         SizedBox(height: spacing),
 
-                        // Botón Supervivencia PRO (Snake) / Extremo PRO (Sudoku) / Difícil PRO (WaterSort)
+                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'WaterSort' ? '🧪' : '🔥'),
-                          text: gameTitle == 'Snake' ? 'Supervivencia\nPRO' : (gameTitle == 'WaterSort' ? 'Difícil\nPRO' : 'Extremo\nPRO'),
+                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'WaterSort' ? '🧪' : '💎'),
+                          text: gameTitle == 'Snake' ? 'Supervivencia\nPRO' : (gameTitle == 'WaterSort' ? 'Difícil\nPRO' : 'Perfecto\nPRO'),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
@@ -198,7 +198,7 @@ class SeleccionModo extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(difficulty: 'dificil'),
+                                  builder: (context) => const SudokuGame(isPerfectMode: true),
                                 ),
                               );
                             } else if (gameTitle == 'WaterSort') {
@@ -265,24 +265,6 @@ class SeleccionModo extends StatelessWidget {
                           },
                         ),
 
-                        // Botón Modo Perfecto (solo para Sudoku)
-                        if (gameTitle == 'Sudoku') ...[
-                          SizedBox(height: spacing),
-                          _buildModeButton(
-                            height: buttonHeight,
-                            icon: '💎',
-                            text: 'Perfecto',
-                            color: const Color(0xFF7B3FF2),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(isPerfectMode: true),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
                       ],
                     ),
                   ),
