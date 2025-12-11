@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
-import '../database/database_helper.dart';
+import '../services/database_service.dart';
 
 /// Provider para gestionar el estado de autenticación
 class AuthProvider extends ChangeNotifier {
+  // Estado del usuario actual
   UserModel? _currentUser;
+
+  // Estados de UI
   bool _isLoading = false;
   String? _errorMessage;
 
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  // Servicio de base de datos
+  final DatabaseService _dbHelper = DatabaseService.instance;
 
+  // Getters para acceder al estado
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;

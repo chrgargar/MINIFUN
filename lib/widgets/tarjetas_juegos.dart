@@ -37,19 +37,13 @@ class TarjetasJuegos extends StatelessWidget {
             highlightColor: Colors.transparent, // Sin efecto al mantener presionado
             // Si hay imagen, mostrarla. Si no, muestra el título
             child: imagePath != null
-                ? Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20), // Bordes redondeados
-                      color: Colors.white, // Fondo blanco para la imagen
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20), // Bordes redondeados para la imagen
-                      child: Image.asset(
-                        imagePath!, // Muestra la imagen desde assets
-                        fit: BoxFit.contain, // Ajustar la imagen completa sin recortar
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20), // Bordes redondeados
+                    child: Image.asset(
+                      imagePath!, // Muestra la imagen desde assets
+                      fit: BoxFit.cover, // Cubrir todo el espacio
+                      width: double.infinity,
+                      height: double.infinity,
                     ),
                   )
                 : Container(

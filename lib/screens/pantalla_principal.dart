@@ -47,7 +47,7 @@ class PantallaPrincipal extends StatelessWidget {
           // Imagen de fondo
           Positioned.fill(
             child: Opacity(
-              opacity: isDark ? 0.15 : 0.5, // Filtro medio en modo claro, filtro suave en modo oscuro
+              opacity: isDark ? 0.15 : 0.5,
               child: Image.asset(
                 'assets/imagenes/fondo.jpg',
                 fit: BoxFit.cover,
@@ -56,135 +56,171 @@ class PantallaPrincipal extends StatelessWidget {
           ),
           // Contenido sobre la imagen
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-          children: [
-            // Banner para adquirir minifun pro
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 239, 98),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Adquiere MINIFUN PRO por',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black, // Siempre negro
-                    ),
-                  ),
-                  //Botón con el precio
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7B3FF2), // Morado
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      '€4.99',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Distribución porcentual de la altura
+                double availableHeight = constraints.maxHeight;
+                double bannerHeight = availableHeight * 0.08; // 8% para banner PRO
+                double gridHeight = availableHeight * 0.70; // 70% para grid de juegos
+                double missionsHeight = availableHeight * 0.18; // 18% para misiones
+
+                // Calcular tamaño de cada celda del grid (2x3 = 6 juegos)
+                double gridPadding = constraints.maxWidth * 0.04;
+                double cellSpacing = gridHeight * 0.03;
+                double cellHeight = (gridHeight - (cellSpacing * 4)) / 3; // 3 filas
+
+                return Padding(
+                  padding: EdgeInsets.all(gridPadding),
+                  child: Column(
+                    children: [
+                      // Banner MINIFUN PRO
+                      SizedBox(
+                        height: bannerHeight,
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: constraints.maxWidth * 0.04,
+                            vertical: bannerHeight * 0.15,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 255, 239, 98),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Adquiere MINIFUN PRO por',
+                                  style: TextStyle(
+                                    fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: bannerHeight * 0.2,
+                                  vertical: bannerHeight * 0.1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7B3FF2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '€4.99',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 24), // Altura
+                      SizedBox(height: cellSpacing),
 
-            // Grid para la cuadricula de los juego
-            GridView.count(
-              shrinkWrap: true, // Se ajusta al contenido
-              physics: const NeverScrollableScrollPhysics(), // Sin scroll propio
-              crossAxisCount: 2, // 2 columnas
-              mainAxisSpacing: 20, // Espacio vertical entre tarjetas
-              crossAxisSpacing: 20, // Espacio horizontal entre tarjetas
-              children: [
-                TarjetasJuegos(title: 'Snake', imagePath: 'assets/imagenes/sssnake.png'),
-                TarjetasJuegos(title: 'WaterSort', imagePath: 'assets/imagenes/watersort.png'),
-                TarjetasJuegos(title: 'Sopa de Letras', imagePath: 'assets/imagenes/sopadeletras.png'),
-                TarjetasJuegos(title: 'Ahorcado', imagePath: 'assets/imagenes/ahorcado.png'),
-                TarjetasJuegos(title: 'Buscaminas', imagePath: 'assets/imagenes/buscaminas.png'),
-                TarjetasJuegos(title: 'Sudoku', imagePath: 'assets/imagenes/sudoku.png'),
-              ],
-            ),
-
-            const SizedBox(height: 30), // Espacio vertical
-
-            // Sección de misiones - Título
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2D1B3D)
-                    : const Color(0xFFF3E5F5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'MISIONES',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF7B3FF2),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16), // Espacio vertical
-
-            // Barra de progreso de misiones (3 de 4 completadas)
-            Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                  width: 2,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  // Relleno de la barra (75% = 3/4)
-                  FractionallySizedBox(
-                    widthFactor: 0.75, // 75% del ancho
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7B3FF2), // Morado
-                        borderRadius: BorderRadius.circular(23),
+                      // Grid de juegos
+                      SizedBox(
+                        height: gridHeight,
+                        child: GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: cellSpacing,
+                          crossAxisSpacing: cellSpacing,
+                          childAspectRatio: (constraints.maxWidth / 2 - gridPadding) / cellHeight,
+                          children: const [
+                            TarjetasJuegos(title: 'Snake', imagePath: 'assets/imagenes/sssnake.png'),
+                            TarjetasJuegos(title: 'WaterSort', imagePath: 'assets/imagenes/watersort.png'),
+                            TarjetasJuegos(title: 'Sopa de Letras', imagePath: 'assets/imagenes/sopadeletras.png'),
+                            TarjetasJuegos(title: 'Ahorcado', imagePath: 'assets/imagenes/ahorcado.png'),
+                            TarjetasJuegos(title: 'Buscaminas', imagePath: 'assets/imagenes/buscaminas.png'),
+                            TarjetasJuegos(title: 'Sudoku', imagePath: 'assets/imagenes/sudoku.png'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  // Texto centrado sobre la barra
-                  Center(
-                    child: Text(
-                      '3/4',
-                      style: TextStyle(
-                        color: const Color(0xFF7B3FF2),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 30), // Espacio final
-          ],
-        ),
+                      SizedBox(height: cellSpacing),
+
+                      // Sección de misiones
+                      SizedBox(
+                        height: missionsHeight,
+                        child: Column(
+                          children: [
+                            // Título MISIONES
+                            Container(
+                              width: double.infinity,
+                              height: missionsHeight * 0.4,
+                              padding: EdgeInsets.all(missionsHeight * 0.08),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF2D1B3D)
+                                    : const Color(0xFFF3E5F5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'MISIONES',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: const Color(0xFF7B3FF2),
+                                    fontSize: (missionsHeight * 0.15).clamp(14.0, 18.0),
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            SizedBox(height: missionsHeight * 0.12),
+
+                            // Barra de progreso
+                            Container(
+                              width: double.infinity,
+                              height: missionsHeight * 0.35,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(25),
+                                border: Border.all(
+                                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Stack(
+                                children: [
+                                  FractionallySizedBox(
+                                    widthFactor: 0.75,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF7B3FF2),
+                                        borderRadius: BorderRadius.circular(23),
+                                      ),
+                                    ),
+                                  ),
+                                  Center(
+                                    child: Text(
+                                      '3/4',
+                                      style: TextStyle(
+                                        color: const Color(0xFF7B3FF2),
+                                        fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

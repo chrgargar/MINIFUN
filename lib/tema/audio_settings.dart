@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 
 /// Provider para gestionar la configuración de audio de la aplicación
 class AudioSettings extends ChangeNotifier {
-  double _musicVolume = 0.5; // Volumen de música de fondo (0.0 - 1.0)
-  double _sfxVolume = 0.7; // Volumen de efectos de sonido (0.0 - 1.0)
-  bool _isMuted = false; // Si el audio está silenciado completamente
+  // Configuración de volumen (0.0 - 1.0)
+  double _musicVolume = 0.5; // Volumen de música de fondo
+  double _sfxVolume = 0.7; // Volumen de efectos de sonido
+  bool _isMuted = false; // Estado de silenciado global
 
+  // Getters que consideran el estado de mute
   double get musicVolume => _isMuted ? 0.0 : _musicVolume;
   double get sfxVolume => _isMuted ? 0.0 : _sfxVolume;
   bool get isMuted => _isMuted;
 
-  // Obtener valores reales sin considerar el mute (para los sliders)
+  // Getters de valores reales sin considerar el mute (para los sliders de UI)
   double get rawMusicVolume => _musicVolume;
   double get rawSfxVolume => _sfxVolume;
 

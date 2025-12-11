@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../tema/app_colors.dart';
+import '../utils/validators.dart';
 import 'pantalla_principal.dart';
 
 // Pantalla de registro de nuevos usuarios
@@ -12,16 +14,17 @@ class PantallaRegistro extends StatefulWidget {
 }
 
 class _PantallaRegistroState extends State<PantallaRegistro> {
-  // Para guardar lo que escribe el usuario
+  // Controladores de texto para los campos de entrada
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Estados de UI para ocultar/mostrar contraseñas
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // Variables para guardar mensajes de error
+  // Mensajes de error de validación
   String? _usernameError;
   String? _emailError;
   String? _passwordError;
@@ -39,51 +42,22 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
   // Validar el nombre de usuario
   String? _validarUsuario(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor ingresa un usuario';
-    }
-    if (value.length < 3) {
-      return 'El usuario debe tener al menos 3 caracteres';
-    }
-    return null; // Si es null es que no hay errores
+    return Validators.validateUsername(value);
   }
 
   // Validar email (ahora es opcional)
   String? _validarEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return null; // Email es opcional
-    }
-    if (!value.contains('@')) {
-      return 'Ingresa un correo válido';
-    }
-    // Validar formato
-    final emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
-    if (!emailRegex.hasMatch(value)) {
-      return 'Ingresa un correo válido (ejemplo@dominio.com)';
-    }
-    return null; // null = sin errores
+    return Validators.validateOptionalEmail(value);
   }
 
-  // Validar contraseña (simplificado a 6 caracteres)
+  // Validar contraseña
   String? _validarPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor ingresa una contraseña';
-    }
-    if (value.length < 6) {
-      return 'La contraseña debe tener al menos 6 caracteres';
-    }
-    return null;
+    return Validators.validatePassword(value);
   }
 
   // Validar que las contraseñas coincidan
   String? _validarConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor confirma tu contraseña';
-    }
-    if (value != _passwordController.text) {
-      return 'Las contraseñas no coinciden';
-    }
-    return null; // null = sin errores
+    return Validators.validatePasswordMatch(_passwordController.text, value);
   }
 
   // Función que se ejecuta al presionar Crear Cuenta
@@ -126,7 +100,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Error al registrarse'),
-          backgroundColor: Colors.red,
+          backgroundColor: ColoresApp.rojoError,
         ),
       );
     }
@@ -135,7 +109,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColoresApp.blanco,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -143,22 +117,22 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
             Container(
               width: double.infinity,
               height: 250,
-              decoration: const BoxDecoration(
-                color: Color(0xFF7B68B8), // Morado
+              decoration: BoxDecoration(
+                color: ColoresApp.moradoLogin,
               ),
               child: Center(
                 child: Container(
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ColoresApp.blanco,
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF5B4A8B), width: 3),
+                    border: Border.all(color: ColoresApp.moradoLoginOscuro, width: 3),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.person_outline,
                     size: 60,
-                    color: Color(0xFF7B68B8),
+                    color: ColoresApp.moradoLogin,
                   ),
                 ),
               ),
@@ -172,13 +146,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                   const SizedBox(height: 20),
 
                   // Título del formulario
-                  const Text(
+                  Text(
                     'Añade tus datos para\ncrear una cuenta',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: ColoresApp.negro,
                     ),
                   ),
 
@@ -192,19 +166,19 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         controller: _usernameController,
                         decoration: InputDecoration(
                           hintText: 'Usuario',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: ColoresApp.gris400),
                           // Borde cuando no está enfocado
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _usernameError == null ? Colors.grey[300]! : Colors.red,
+                              color: _usernameError == null ? ColoresApp.gris300 : ColoresApp.rojoError,
                             ),
                           ),
                           // Borde cuando está enfocado
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _usernameError == null ? const Color(0xFF7B68B8) : Colors.red,
+                              color: _usernameError == null ? ColoresApp.moradoLogin : ColoresApp.rojoError,
                             ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -227,8 +201,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           padding: const EdgeInsets.only(top: 8, left: 12),
                           child: Text(
                             _usernameError!,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: ColoresApp.rojoError,
                               fontSize: 12,
                             ),
                           ),
@@ -246,17 +220,17 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         controller: _emailController,
                         decoration: InputDecoration(
                           hintText: 'correoelectrónico@dominio.com',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: ColoresApp.gris400),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _emailError == null ? Colors.grey[300]! : Colors.red,
+                              color: _emailError == null ? ColoresApp.gris300 : ColoresApp.rojoError,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _emailError == null ? const Color(0xFF7B68B8) : Colors.red,
+                              color: _emailError == null ? ColoresApp.moradoLogin : ColoresApp.rojoError,
                             ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -279,8 +253,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           padding: const EdgeInsets.only(top: 8, left: 12),
                           child: Text(
                             _emailError!,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: ColoresApp.rojoError,
                               fontSize: 12,
                             ),
                           ),
@@ -298,13 +272,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         obscureText: _obscurePassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
                           hintText: 'Contraseña',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: ColoresApp.gris400),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.grey,
+                              color: ColoresApp.gris600,
                             ),
                             onPressed: () {
                               setState(() {
@@ -315,13 +289,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _passwordError == null ? Colors.grey[300]! : Colors.red,
+                              color: _passwordError == null ? ColoresApp.gris300 : ColoresApp.rojoError,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _passwordError == null ? const Color(0xFF7B68B8) : Colors.red,
+                              color: _passwordError == null ? ColoresApp.moradoLogin : ColoresApp.rojoError,
                             ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -350,8 +324,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           padding: const EdgeInsets.only(top: 8, left: 12),
                           child: Text(
                             _passwordError!,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: ColoresApp.rojoError,
                               fontSize: 12,
                             ),
                           ),
@@ -370,13 +344,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         obscureText: _obscureConfirmPassword, // Ocultar contraseña con puntos
                         decoration: InputDecoration(
                           hintText: 'Confirmar contraseña',
-                          hintStyle: TextStyle(color: Colors.grey[400]),
+                          hintStyle: TextStyle(color: ColoresApp.gris400),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirmPassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.grey,
+                              color: ColoresApp.gris600,
                             ),
                             onPressed: () {
                               setState(() {
@@ -387,13 +361,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _confirmPasswordError == null ? Colors.grey[300]! : Colors.red,
+                              color: _confirmPasswordError == null ? ColoresApp.gris300 : ColoresApp.rojoError,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: _confirmPasswordError == null ? const Color(0xFF7B68B8) : Colors.red,
+                              color: _confirmPasswordError == null ? ColoresApp.moradoLogin : ColoresApp.rojoError,
                             ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -416,8 +390,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           padding: const EdgeInsets.only(top: 8, left: 12),
                           child: Text(
                             _confirmPasswordError!,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: ColoresApp.rojoError,
                               fontSize: 12,
                             ),
                           ),
@@ -434,15 +408,15 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                     child: ElevatedButton(
                       onPressed: _crearCuenta,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                        backgroundColor: ColoresApp.negro,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Crear Cuenta',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ColoresApp.blanco,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),

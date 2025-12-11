@@ -1,76 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:provider/provider.dart';
 import '../widgets/virtual_joystick.dart';
 import '../tema/audio_settings.dart';
-
-// Servicio de Audio simple
-class AudioService {
-  static AudioPlayer? _loopPlayer;
-  static String? _loopSrc;
-
-  static Future<void> playLoop(String src, double volume) async {
-    _loopSrc = src;
-
-    // Si ya existe un reproductor, detenerlo
-    if (_loopPlayer != null) {
-      await _loopPlayer!.stop();
-      await _loopPlayer!.dispose();
-    }
-
-    // Crear nuevo reproductor para el loop
-    _loopPlayer = AudioPlayer();
-    await _loopPlayer!.setVolume(volume);
-
-    // Escuchar el estado del reproductor para reiniciar cuando termine
-    _loopPlayer!.onPlayerStateChanged.listen((PlayerState state) async {
-      if (state == PlayerState.completed) {
-        // Reiniciar inmediatamente cuando termina
-        if (_loopPlayer != null && _loopSrc != null) {
-          await _loopPlayer!.play(AssetSource(_loopSrc!));
-        }
-      }
-    });
-
-    // Iniciar reproducción
-    await _loopPlayer!.play(AssetSource(src));
-  }
-
-  static Future<void> stopLoop() async {
-    if (_loopPlayer != null) {
-      await _loopPlayer!.stop();
-      await _loopPlayer!.dispose();
-      _loopPlayer = null;
-      _loopSrc = null;
-    }
-  }
-
-  static Future<void> pauseLoop() async {
-    if (_loopPlayer != null) {
-      await _loopPlayer!.pause();
-    }
-  }
-
-  static Future<void> resumeLoop() async {
-    if (_loopPlayer != null) {
-      await _loopPlayer!.resume();
-    }
-  }
-
-  static void setLoopVolume(double volume) {
-    if (_loopPlayer != null) {
-      _loopPlayer!.setVolume(volume);
-    }
-  }
-
-  static Future<void> playSound(String src, double volume) async {
-    final player = AudioPlayer();
-    await player.setVolume(volume);
-    await player.play(AssetSource(src));
-  }
-}
+import '../tema/app_colors.dart';
+import '../services/audio_service.dart';
+import '../constants/snake_constants.dart';
 
 class SnakeGame extends StatefulWidget {
   final double speedMultiplier; // Multiplicador de velocidad (1.0 = normal, 1.5 = velocidad, etc.)
@@ -97,29 +33,32 @@ enum FoodType {
 }
 
 class _SnakeGameState extends State<SnakeGame> {
-  static const int rows = 20;
-  static const int columns = 20;
+  // Constantes del tablero
+  static const int rows = ConstantesSnake.filas;
+  static const int columns = ConstantesSnake.columnas;
 
+  // Variables principales del juego
   List<Point<int>> snake = [const Point(10, 10)];
   Point<int> food = const Point(5, 5);
   Direction direction = Direction.right;
-  Timer? timer;
   int score = 0;
 
+  // Timers
+  Timer? timer; // Timer principal del movimiento de la serpiente
+  Timer? gameTimer; // Timer del tiempo de juego (modo contrarreloj)
+  Timer? foodExpirationTimer; // Timer para expiración de frutas
+  Timer? obstacleTimer; // Timer para generar obstáculos (modo supervivencia)
 
   // Variables para modo contrarreloj
-  int timeLeft = 30; // Tiempo inicial en segundos
-  Timer? gameTimer; // Timer del tiempo de juego
-  Timer? foodExpirationTimer; // Timer para expiración de frutas
+  int timeLeft = ConstantesSnake.tiempoInicialRestante;
   bool isGoldenFood = false; // Si la fruta actual es dorada
-  int foodTimeLeft = 10; // Tiempo restante de la fruta actual
+  int foodTimeLeft = ConstantesSnake.limiteTiempoComida;
 
   // Variables para modo supervivencia PRO
   List<Point<int>> obstacles = []; // Lista de bloques/obstáculos
-  Timer? obstacleTimer; // Timer para generar obstáculos
   FoodType currentFoodType = FoodType.apple; // Tipo de comida actual
   int applesEaten = 0; // Contador de manzanas comidas
-  double currentSpeed = 200; // Velocidad actual del juego
+  double currentSpeed = ConstantesSnake.velocidadBase.toDouble();
 
   @override
   void initState() {
@@ -142,6 +81,9 @@ class _SnakeGameState extends State<SnakeGame> {
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     obstacleTimer?.cancel();
+
+    // Detener música de fondo
+    AudioService.stopLoop();
 
     // Remover listener de audio settings
     try {
@@ -178,7 +120,7 @@ class _SnakeGameState extends State<SnakeGame> {
 
     // Inicializar variables del modo contrarreloj
     if (widget.isTimeAttackMode) {
-      timeLeft = 30;
+      timeLeft = ConstantesSnake.tiempoInicialRestante;
       _startGameTimer();
     }
 
@@ -186,16 +128,14 @@ class _SnakeGameState extends State<SnakeGame> {
     if (widget.isSurvivalMode) {
       obstacles = [];
       applesEaten = 0;
-      currentSpeed = 200;
+      currentSpeed = ConstantesSnake.velocidadBase.toDouble();
       _startObstacleTimer();
     }
 
     spawnFood();
 
     // Calcular velocidad basada en el multiplicador
-    // Velocidad base: 200ms, con multiplicador 1.5 será 133ms (más rápido)
-    final baseSpeed = 200;
-    final adjustedSpeed = (baseSpeed / widget.speedMultiplier).round();
+    final adjustedSpeed = (ConstantesSnake.velocidadBase / widget.speedMultiplier).round();
 
     timer = Timer.periodic(Duration(milliseconds: adjustedSpeed), (timer) {
       setState(moveSnake);
@@ -216,7 +156,7 @@ class _SnakeGameState extends State<SnakeGame> {
 
   void _startFoodExpirationTimer() {
     foodExpirationTimer?.cancel();
-    foodTimeLeft = isGoldenFood ? 5 : 10;
+    foodTimeLeft = isGoldenFood ? 5 : ConstantesSnake.limiteTiempoComida;
 
     foodExpirationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -276,8 +216,8 @@ class _SnakeGameState extends State<SnakeGame> {
       newObstacle = Point(random.nextInt(columns), random.nextInt(rows));
       attempts++;
 
-      // Si no encuentra posición después de 50 intentos, no generar obstáculo
-      if (attempts > 50) return;
+      // Si no encuentra posición después de maxObstacleAttempts intentos, no generar obstáculo
+      if (attempts > ConstantesSnake.maxIntentosObstaculo) return;
 
       // Verificar que el obstáculo no esté:
       // 1. En la serpiente
@@ -339,18 +279,18 @@ class _SnakeGameState extends State<SnakeGame> {
 
     food = newFood;
 
-    // En modo contrarreloj, determinar si es fruta dorada (15% de probabilidad)
+    // En modo contrarreloj, determinar si es fruta dorada
     if (widget.isTimeAttackMode) {
-      isGoldenFood = random.nextDouble() < 0.15; // 15% de probabilidad
+      isGoldenFood = random.nextDouble() < ConstantesSnake.probabilidadComidaDorada;
       _startFoodExpirationTimer();
     }
 
     // En modo supervivencia, determinar el tipo de comida
     if (widget.isSurvivalMode) {
       final double rand = random.nextDouble();
-      if (rand < 0.70) {
+      if (rand < ConstantesSnake.probabilidadManzana) {
         currentFoodType = FoodType.apple; // 70% manzana
-      } else if (rand < 0.85) {
+      } else if (rand < ConstantesSnake.probabilidadManzana + ConstantesSnake.probabilidadFresa) {
         currentFoodType = FoodType.strawberry; // 15% fresa
       } else {
         currentFoodType = FoodType.coin; // 15% moneda
@@ -437,9 +377,9 @@ class _SnakeGameState extends State<SnakeGame> {
         score++;
         snake = [newHead, ...snake]; // Crecer normalmente
         if (isGoldenFood) {
-          timeLeft += 7; // Fruta dorada suma 7 segundos
+          timeLeft += ConstantesSnake.bonusComidaDorada;
         } else {
-          timeLeft += 3; // Fruta normal suma 3 segundos
+          timeLeft += ConstantesSnake.bonusComidaRegular;
         }
       }
 
@@ -447,18 +387,18 @@ class _SnakeGameState extends State<SnakeGame> {
       else if (widget.isSurvivalMode) {
         switch (currentFoodType) {
           case FoodType.apple:
-            // Manzana: +1 tamaño, +1 punto
-            score++;
+            // Manzana: +1 tamaño, +ConstantesSnake.puntosManzana puntos
+            score += ConstantesSnake.puntosManzana;
             applesEaten++;
             snake = [newHead, ...snake]; // Crecer 1 segmento
-            // Aumentar velocidad cada 10 manzanas
-            if (applesEaten % 10 == 0) {
+            // Aumentar velocidad cada ConstantesSnake.intervaloAumentoVelocidad manzanas
+            if (applesEaten % ConstantesSnake.intervaloAumentoVelocidad == 0) {
               _increaseSpeed();
             }
             break;
           case FoodType.strawberry:
-            // Fresa: +3 tamaño, +3 puntos
-            score += 3;
+            // Fresa: +3 tamaño, +ConstantesSnake.puntosFresa puntos
+            score += ConstantesSnake.puntosFresa;
             // Agregar 3 segmentos de golpe
             snake = [newHead, newHead, newHead, ...snake];
             break;
@@ -531,7 +471,7 @@ class _SnakeGameState extends State<SnakeGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: ColoresApp.negro,
       body: SafeArea(
         child: Stack(
           children: [
@@ -614,11 +554,11 @@ class _SnakeGameState extends State<SnakeGame> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7B3FF2).withOpacity(0.9),
+                      color: ColoresApp.moradoPrincipal.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7B3FF2).withOpacity(0.5),
+                          color: ColoresApp.moradoPrincipal.withOpacity(0.5),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -626,8 +566,8 @@ class _SnakeGameState extends State<SnakeGame> {
                     ),
                     child: Text(
                       'Score: $score',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: ColoresApp.blanco,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -639,13 +579,13 @@ class _SnakeGameState extends State<SnakeGame> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: timeLeft <= 10
-                            ? Colors.red.withOpacity(0.9)
-                            : Colors.orange.withOpacity(0.9),
+                        color: timeLeft <= ConstantesSnake.limiteTiempoComida
+                            ? ColoresApp.rojoError.withOpacity(0.9)
+                            : ColoresApp.naranjaAdvertencia.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: (timeLeft <= 10 ? Colors.red : Colors.orange)
+                            color: (timeLeft <= ConstantesSnake.limiteTiempoComida ? ColoresApp.rojoError : ColoresApp.naranjaAdvertencia)
                                 .withOpacity(0.5),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
@@ -655,12 +595,12 @@ class _SnakeGameState extends State<SnakeGame> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.timer, color: Colors.white, size: 20),
+                          Icon(Icons.timer, color: ColoresApp.blanco, size: 20),
                           const SizedBox(width: 6),
                           Text(
                             '${timeLeft}s',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: ColoresApp.blanco,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -678,11 +618,11 @@ class _SnakeGameState extends State<SnakeGame> {
               right: 16,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.9),
+                  color: ColoresApp.rojoError.withOpacity(0.9),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.5),
+                      color: ColoresApp.rojoError.withOpacity(0.5),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -690,7 +630,7 @@ class _SnakeGameState extends State<SnakeGame> {
                 ),
                 child: IconButton(
                   icon: const Icon(Icons.close),
-                  color: Colors.white,
+                  color: ColoresApp.blanco,
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -705,8 +645,8 @@ class _SnakeGameState extends State<SnakeGame> {
                 onDownPressed: () => changeDirection(Direction.down),
                 onLeftPressed: () => changeDirection(Direction.left),
                 onRightPressed: () => changeDirection(Direction.right),
-                buttonColor: const Color(0xFF7B3FF2),
-                backgroundColor: Colors.black,
+                buttonColor: ColoresApp.moradoPrincipal,
+                backgroundColor: ColoresApp.negro,
               ),
             ),
           ],
@@ -727,8 +667,8 @@ class SnakePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
 
     // 🎨 Fondo estilo tablero de ajedrez verde
-    final paintLight = Paint()..color = Colors.green[400]!;
-    final paintDark = Paint()..color = Colors.green[700]!;
+    final paintLight = Paint()..color = ColoresApp.colorCuerpoSerpiente;
+    final paintDark = Paint()..color = ColoresApp.colorCabezaSerpiente;
     for (int y = 0; y < _SnakeGameState.rows; y++) {
       for (int x = 0; x < _SnakeGameState.columns; x++) {
         final paint = (x + y) % 2 == 0 ? paintLight : paintDark;
@@ -740,7 +680,7 @@ class SnakePainter extends CustomPainter {
     }
 
     // 🎨 Paredes visibles (borde alrededor)
-    final wallPaint = Paint()..color = Colors.brown;
+    final wallPaint = Paint()..color = ColoresApp.colorObstaculo;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       wallPaint..style = PaintingStyle.stroke..strokeWidth = 4,
