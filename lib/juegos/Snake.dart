@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/virtual_joystick.dart';
+import '../widgets/game_control_buttons.dart';
+import '../widgets/pause_overlay.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -61,6 +63,9 @@ class _SnakeGameState extends State<SnakeGame> {
   FoodType currentFoodType = FoodType.apple; // Tipo de comida actual
   int applesEaten = 0; // Contador de manzanas comidas
   double currentSpeed = ConstantesSnake.velocidadBase.toDouble();
+
+  // Estado de pausa
+  bool isPaused = false;
 
   @override
   void initState() {
@@ -441,6 +446,7 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void changeDirection(Direction newDirection) {
+    if (isPaused) return; // No cambiar dirección si está pausado
     if ((direction == Direction.up && newDirection == Direction.down) ||
         (direction == Direction.down && newDirection == Direction.up) ||
         (direction == Direction.left && newDirection == Direction.right) ||
@@ -448,6 +454,33 @@ class _SnakeGameState extends State<SnakeGame> {
       return;
     }
     direction = newDirection;
+  }
+
+  void togglePause() {
+    setState(() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        timer?.cancel();
+        gameTimer?.cancel();
+        foodExpirationTimer?.cancel();
+        obstacleTimer?.cancel();
+      } else {
+        // Reanudar timers
+        final adjustedSpeed = widget.isSurvivalMode
+            ? currentSpeed.round()
+            : (ConstantesSnake.velocidadBase / widget.speedMultiplier).round();
+        timer = Timer.periodic(Duration(milliseconds: adjustedSpeed), (timer) {
+          setState(moveSnake);
+        });
+        if (widget.isTimeAttackMode) {
+          _startGameTimer();
+          _startFoodExpirationTimer();
+        }
+        if (widget.isSurvivalMode) {
+          _startObstacleTimer();
+        }
+      }
+    });
   }
 
   String _getFoodImage() {
@@ -618,43 +651,77 @@ class _SnakeGameState extends State<SnakeGame> {
                 ],
               ),
             ),
-            // Botón de cerrar en la parte superior derecha
+            // Botones de control en la parte superior derecha
             Positioned(
               top: 16,
               right: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ColoresApp.rojoError.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: ColoresApp.rojoError.withOpacity(0.5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              child: Row(
+                children: [
+                  GamePauseButton(
+                    isPaused: isPaused,
+                    onPressed: togglePause,
+                    size: 45,
+                  ),
+                  const SizedBox(width: 12),
+                  GameRestartButton(
+                    onPressed: () {
+                      if (isPaused) {
+                        isPaused = false;
+                      }
+                      startGame();
+                    },
+                    size: 45,
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: ColoresApp.rojoError.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: ColoresApp.rojoError.withOpacity(0.5),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  color: ColoresApp.blanco,
-                  onPressed: () => Navigator.pop(context),
-                ),
+                    child: IconButton(
+                      icon: const Icon(Icons.close),
+                      color: ColoresApp.blanco,
+                      iconSize: 24,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Joystick virtual en la esquina inferior derecha
+            // Joystick virtual centrado en la parte inferior
             Positioned(
-              bottom: 20,
-              right: 20,
-              child: VirtualDPad(
-                size: 160,
-                onUpPressed: () => changeDirection(Direction.up),
-                onDownPressed: () => changeDirection(Direction.down),
-                onLeftPressed: () => changeDirection(Direction.left),
-                onRightPressed: () => changeDirection(Direction.right),
-                buttonColor: ColoresApp.moradoPrincipal,
-                backgroundColor: ColoresApp.negro,
+              bottom: 15,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: VirtualJoystick(
+                  size: 150,
+                  onUpPressed: () => changeDirection(Direction.up),
+                  onDownPressed: () => changeDirection(Direction.down),
+                  onLeftPressed: () => changeDirection(Direction.left),
+                  onRightPressed: () => changeDirection(Direction.right),
+                  buttonColor: ColoresApp.moradoPrincipal,
+                  backgroundColor: ColoresApp.negro,
+                ),
               ),
             ),
+            // Overlay de pausa
+            if (isPaused)
+              PauseOverlay(
+                onResume: togglePause,
+                onRestart: () {
+                  isPaused = false;
+                  startGame();
+                },
+                onExit: () => Navigator.pop(context),
+              ),
           ],
         ),
       ),
