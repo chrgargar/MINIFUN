@@ -3,20 +3,51 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
+import '../tema/app_colors.dart'; 
 import '../services/audio_service.dart';
 
+// --- Clase Cell (Celda) ---
+class Cell {
+  final int row;
+  final int col;
+  bool isMine;
+  bool isRevealed;
+  bool isFlagged;
+  int adjacentMines;
+
+  Cell({
+    required this.row,
+    required this.col,
+    this.isMine = false,
+    this.isRevealed = false,
+    this.isFlagged = false,
+    this.adjacentMines = 0,
+  });
+}
+
+// --- Clase BuscaminasGame (Juego) ---
 class BuscaminasGame extends StatefulWidget {
   final int rows;
   final int cols;
   final int mineCount;
+  final bool isContrareloj; 
 
   const BuscaminasGame({
     super.key,
-    this.rows = 10,
-    this.cols = 10,
-    this.mineCount = 15,
+    this.rows = 10,       // Por defecto: Fácil
+    this.cols = 10,       // Por defecto: Fácil
+    this.mineCount = 15,  // Por defecto: Fácil
+    this.isContrareloj = false,
   });
+
+  // Configuraciones de Dificultad Estáticas
+  static const BuscaminasGame facil = BuscaminasGame(rows: 10, cols: 10, mineCount: 15);
+  static const BuscaminasGame medio = BuscaminasGame(rows: 16, cols: 16, mineCount: 40);
+  static const BuscaminasGame dificil = BuscaminasGame(rows: 24, cols: 24, mineCount: 99);
+  
+  static const BuscaminasGame contrareloj = BuscaminasGame(
+    rows: 10, cols: 10, mineCount: 15, isContrareloj: true,
+  );
 
   @override
   State<BuscaminasGame> createState() => _BuscaminasGameState();
@@ -26,6 +57,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   late int rows;
   late int cols;
   late int mineCount;
+  late bool isContrareloj; 
 
   late List<List<Cell>> board;
   bool gameOver = false;
@@ -34,17 +66,19 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   int cellsRevealed = 0;
   int timeElapsed = 0;
   Timer? gameTimer;
+  
+  bool isFlaggingMode = false;
 
   @override
   void initState() {
     super.initState();
-    // initialize instance fields from widget so difficulties work
     rows = widget.rows;
     cols = widget.cols;
     mineCount = widget.mineCount;
+    isContrareloj = widget.isContrareloj;
+    
     _initializeGame();
 
-    // Escuchar cambios en la configuración de audio
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
     });
@@ -57,17 +91,12 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   @override
   void dispose() {
     gameTimer?.cancel();
-
-    // Detener música de fondo
     AudioService.stopLoop();
-
-    // Remover listener de audio settings
     try {
       Provider.of<AudioSettings>(context, listen: false).removeListener(_onAudioSettingsChanged);
     } catch (e) {
       // Ignorar si el context ya no es válido
     }
-
     super.dispose();
   }
 
@@ -89,6 +118,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     cellsRevealed = 0;
     timeElapsed = 0;
     _startTimer();
+    isFlaggingMode = false; 
   }
 
   void _startTimer() {
@@ -139,7 +169,16 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
   void _revealCell(int row, int col) {
     if (gameOver || won) return;
-    if (board[row][col].isRevealed || board[row][col].isFlagged) return;
+    
+    // Quitar bandera si se intenta revelar
+    if (board[row][col].isFlagged) {
+        setState(() {
+            board[row][col].isFlagged = false;
+            flagsPlaced--;
+        });
+    }
+
+    if (board[row][col].isRevealed) return;
 
     setState(() {
       board[row][col].isRevealed = true;
@@ -183,10 +222,31 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     if (board[row][col].isRevealed) return;
 
     setState(() {
-      board[row][col].isFlagged = !board[row][col].isFlagged;
-      flagsPlaced += board[row][col].isFlagged ? 1 : -1;
-      _playSound('food.mp3');
+      if (board[row][col].isFlagged) {
+          // Quitar bandera
+          board[row][col].isFlagged = false;
+          flagsPlaced--;
+          _playSound('food.mp3');
+      } else {
+          // Poner bandera solo si no se ha alcanzado el límite
+          if (flagsPlaced < mineCount) {
+              board[row][col].isFlagged = true;
+              flagsPlaced++;
+              _playSound('food.mp3');
+          } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('¡Límite máximo de minas alcanzado!')),
+              );
+          }
+      }
       _checkWin();
+    });
+  }
+
+  void _toggleFlaggingMode() {
+    setState(() {
+      isFlaggingMode = !isFlaggingMode;
+      _playSound(isFlaggingMode ? 'powerup.mp3' : 'move.mp3'); 
     });
   }
 
@@ -210,19 +270,20 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     }
   }
 
+  // --- Diálogos y _getNumberColor se mantienen sin cambios ---
   void _showGameOverDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.gris100,
+        backgroundColor: ColoresApp.blanco, 
         title: Text(
           "💣 Game Over",
-          style: TextStyle(color: ColoresApp.blanco, fontWeight: FontWeight.bold),
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold), 
         ),
         content: Text(
           "Tiempo: ${timeElapsed}s\n¡Tocaste una mina!",
-          style: TextStyle(color: ColoresApp.blanco),
+          style: TextStyle(color: ColoresApp.negro), 
         ),
         actions: [
           TextButton(
@@ -251,14 +312,14 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.gris100,
+        backgroundColor: ColoresApp.blanco, 
         title: Text(
           "🎉 ¡Victoria!",
-          style: TextStyle(color: ColoresApp.blanco, fontWeight: FontWeight.bold),
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold), 
         ),
         content: Text(
-          "Tiempo: ${timeElapsed}s\n¡Encontraste todas las minas!",
-          style: TextStyle(color: ColoresApp.blanco),
+          "Tiempo: ${timeElapsed}s\nDificultad: ${rows}x${cols}\n${isContrareloj ? '¡Modo Contrarreloj completado!' : '¡Encontraste todas las minas!'}",
+          style: TextStyle(color: ColoresApp.negro), 
         ),
         actions: [
           TextButton(
@@ -312,7 +373,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Área principal del juego
+            // Área principal del juego (Grid) - Sin cambios
             Center(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -320,7 +381,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                   final screenHeight = constraints.maxHeight;
                   final cellSize = min(
                     (screenWidth - 32) / cols,
-                    (screenHeight - 200) / rows,
+                    (screenHeight - 150) / rows, 
                   );
                   final boardWidth = cols * cellSize;
                   final boardHeight = rows * cellSize;
@@ -337,6 +398,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: cols,
+                          mainAxisSpacing: 0,
+                          crossAxisSpacing: 0,
                         ),
                         itemCount: rows * cols,
                         itemBuilder: (context, index) {
@@ -345,14 +408,19 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                           Cell cell = board[row][col];
 
                           return GestureDetector(
-                            onTap: () => _revealCell(row, col),
-                            onLongPress: () => _toggleFlag(row, col),
+                            onTap: () {
+                              if (isFlaggingMode) {
+                                _toggleFlag(row, col);
+                              } else {
+                                _revealCell(row, col);
+                              }
+                            },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: cell.isRevealed
                                     ? (cell.isMine 
-                                        ? ColoresApp.rojoError 
-                                        : ColoresApp.gris100)
+                                          ? ColoresApp.rojoError 
+                                          : ColoresApp.gris100)
                                     : ColoresApp.gris800,
                                 border: Border.all(
                                   color: ColoresApp.negro,
@@ -362,27 +430,27 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                               child: Center(
                                 child: cell.isFlagged
                                     ? Icon(
-                                        Icons.flag,
-                                        color: ColoresApp.rojoError,
-                                        size: cellSize * 0.6,
+                                          Icons.flag,
+                                          color: ColoresApp.moradoPrincipal, 
+                                          size: cellSize * 0.6,
                                       )
                                     : cell.isRevealed
                                         ? (cell.isMine
-                                            ? Icon(
-                                                Icons.close,
-                                                color: ColoresApp.blanco,
-                                                size: cellSize * 0.6,
-                                              )
-                                            : (cell.adjacentMines > 0
-                                                ? Text(
-                                                    '${cell.adjacentMines}',
-                                                    style: TextStyle(
-                                                      fontSize: cellSize * 0.5,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: _getNumberColor(cell.adjacentMines),
-                                                    ),
-                                                  )
-                                                : null))
+                                              ? Icon(
+                                                    Icons.close,
+                                                    color: ColoresApp.blanco,
+                                                    size: cellSize * 0.6,
+                                                )
+                                              : (cell.adjacentMines > 0
+                                                    ? Text(
+                                                          '${cell.adjacentMines}',
+                                                          style: TextStyle(
+                                                            fontSize: cellSize * 0.5,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: _getNumberColor(cell.adjacentMines),
+                                                          ),
+                                                      )
+                                                    : null))
                                         : null,
                               ),
                             ),
@@ -394,44 +462,118 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                 },
               ),
             ),
-            // Panel superior con información
+            
+            // --- ORGANIZACIÓN SUPERIOR CORREGIDA ---
+            
+            // 1. Contador de Banderas y Botón de Modo (Superior Izquierda)
             Positioned(
               top: 16,
               left: 16,
-              right: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Banderas colocadas
+                  Row(
+                    children: [
+                      // Contador de Banderas
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: ColoresApp.moradoPrincipal.withOpacity(0.9), 
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: ColoresApp.moradoPrincipal.withOpacity(0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.flag, color: ColoresApp.blanco, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$flagsPlaced/$mineCount',
+                              style: TextStyle(
+                                color: ColoresApp.blanco,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+                      
+                      // 🚩 Botón de Modo Bandera Superior (El que pediste)
+                      FloatingActionButton(
+                        heroTag: 'banderaBtnSup',
+                        mini: true,
+                        onPressed: _toggleFlaggingMode,
+                        tooltip: isFlaggingMode ? 'Modo: Revelar' : 'Modo: Bandera',
+                        backgroundColor: isFlaggingMode 
+                            ? ColoresApp.moradoPrincipal.withOpacity(0.9)
+                            : ColoresApp.gris100.withOpacity(0.9),
+                        elevation: 8,
+                        child: Icon(
+                          isFlaggingMode ? Icons.clear : Icons.flag,
+                          color: isFlaggingMode ? ColoresApp.blanco : ColoresApp.moradoPrincipal,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 8),
+
+                  // Texto de Instrucción (Debajo del contador de Banderas)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: ColoresApp.moradoPrincipal.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: ColoresApp.moradoPrincipal.withOpacity(0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: ColoresApp.gris100.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.flag, color: ColoresApp.blanco, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$flagsPlaced/$mineCount',
-                          style: TextStyle(
-                            color: ColoresApp.blanco,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      isFlaggingMode ? 'Modo: ¡Bandera!' : 'Modo: ¡Revelar!',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ColoresApp.blanco,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+            
+            // 2. Dificultad y Tiempo (Superior Derecha, Lejos del borde para la X)
+            Positioned(
+              top: 16,
+              right: 60, // Deja espacio para el botón 'X'
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Indicador de Modo/Dificultad
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isContrareloj ? ColoresApp.rojoError.withOpacity(0.9) : ColoresApp.gris100.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      isContrareloj ? 'CONTRARRELOJ' : '$rows x $cols',
+                      style: TextStyle(
+                        color: ColoresApp.blanco,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 12),
+                  
                   // Tiempo transcurrido
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -465,74 +607,35 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                 ],
               ),
             ),
-            // Botón de cerrar
+            
+            // 3. Botón de cerrar (X) - Esquina superior derecha extrema
             Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ColoresApp.rojoError.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: ColoresApp.rojoError.withOpacity(0.5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  color: ColoresApp.blanco,
-                  onPressed: () => Navigator.pop(context),
-                ),
+              top: 8, 
+              right: 8, 
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                color: ColoresApp.blanco,
+                iconSize: 30,
+                onPressed: () => Navigator.pop(context),
               ),
             ),
-            // Botón de reinicio
+            
+            // ❌ ELIMINADO: BOTÓN DE BANDERA INFERIOR (Se movió arriba)
+            
+            // 4. Botón de reinicio (Abajo a la derecha)
             Positioned(
               bottom: 20,
               right: 20,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ColoresApp.moradoPrincipal.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: ColoresApp.moradoPrincipal.withOpacity(0.5),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.refresh),
-                  color: ColoresApp.blanco,
-                  iconSize: 32,
-                  onPressed: () {
-                    setState(() {
-                      _initializeGame();
-                    });
-                  },
-                ),
-              ),
-            ),
-            // Instrucciones en la parte inferior
-            Positioned(
-              bottom: 20,
-              left: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: ColoresApp.gris100.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Text(
-                  'Toca para revelar • Mantén para bandera',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: ColoresApp.blanco,
-                  ),
-                ),
+              child: FloatingActionButton(
+                heroTag: 'reiniciarBtn',
+                onPressed: () {
+                  setState(() {
+                    _initializeGame();
+                  });
+                },
+                backgroundColor: ColoresApp.moradoPrincipal.withOpacity(0.9),
+                elevation: 8,
+                child: const Icon(Icons.refresh, color: Colors.white, size: 32),
               ),
             ),
           ],
@@ -540,22 +643,4 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       ),
     );
   }
-}
-
-class Cell {
-  final int row;
-  final int col;
-  bool isMine;
-  bool isRevealed;
-  bool isFlagged;
-  int adjacentMines;
-
-  Cell({
-    required this.row,
-    required this.col,
-    this.isMine = false,
-    this.isRevealed = false,
-    this.isFlagged = false,
-    this.adjacentMines = 0,
-  });
 }
