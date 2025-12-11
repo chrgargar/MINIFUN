@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'screens/pantalla_login.dart';
 import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
+import 'tema/language_provider.dart';
 import 'providers/auth_provider.dart';
 
 // Función principal que se ejecuta al iniciar la app
@@ -20,6 +21,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => SelectorTema()),
         ChangeNotifierProvider(create: (context) => AudioSettings()),
+        ChangeNotifierProvider(create: (context) => LanguageProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
       child: const MyApp(),
