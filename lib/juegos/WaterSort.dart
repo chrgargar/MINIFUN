@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/water_sort_constants.dart';
 
@@ -258,6 +260,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showWinDialog() {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -266,27 +270,27 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
             ? const Color(0xFF2D1B3D)
             : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '🎉 ¡Felicidades!',
+        title: Text(
+          '🎉 ${AppStrings.get('congratulations', currentLang)}',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '¡Has completado el nivel!',
+              AppStrings.get('level_completed', currentLang),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 16),
             Text(
-              'Movimientos: $moves',
+              '${AppStrings.get('moves', currentLang)}: $moves',
               style: TextStyle(fontSize: 16, color: ColoresApp.moradoPrincipal),
             ),
             if (widget.isTimeAttackMode)
               Text(
-                'Tiempo restante: ${_formatTime(timeLeft)}',
+                '${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}',
                 style: TextStyle(fontSize: 16, color: ColoresApp.verdeExito),
               ),
           ],
@@ -300,14 +304,14 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
                 _initGame();
               });
             },
-            child: const Text('Siguiente Nivel'),
+            child: Text(AppStrings.get('next_level', currentLang)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Salir'),
+            child: Text(AppStrings.get('exit', currentLang)),
           ),
         ],
       ),
@@ -315,6 +319,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showGameOverDialog() {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -323,22 +329,22 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
             ? const Color(0xFF2D1B3D)
             : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          '⏱️ ¡Tiempo Agotado!',
+        title: Text(
+          '⏱️ ${AppStrings.get('time_up', currentLang)}',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No lograste completar el nivel a tiempo.',
+              AppStrings.get('level_failed', currentLang),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
             Text(
-              'Movimientos realizados: $moves',
+              '${AppStrings.get('moves_made', currentLang)}: $moves',
               style: TextStyle(fontSize: 16, color: ColoresApp.moradoPrincipal),
             ),
           ],
@@ -351,14 +357,14 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
                 _initGame();
               });
             },
-            child: const Text('Reintentar'),
+            child: Text(AppStrings.get('retry', currentLang)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Salir'),
+            child: Text(AppStrings.get('exit', currentLang)),
           ),
         ],
       ),
@@ -636,6 +642,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   Widget _buildControls(bool isDark) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -644,7 +652,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           // Botón Deshacer
           _buildControlButton(
             icon: Icons.undo,
-            label: 'Deshacer',
+            label: AppStrings.get('undo', currentLang),
             onTap: history.isNotEmpty ? _undo : null,
             isDark: isDark,
           ),
@@ -652,7 +660,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           // Botón Reiniciar
           _buildControlButton(
             icon: Icons.refresh,
-            label: 'Reiniciar',
+            label: AppStrings.get('restart', currentLang),
             onTap: _restart,
             isDark: isDark,
           ),

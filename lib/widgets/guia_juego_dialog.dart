@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 
 /// Widget reutilizable para mostrar la guía de un juego
 /// Muestra un diálogo con instrucciones, objetivos y controles del juego
@@ -21,6 +24,7 @@ class GuiaJuegoDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Dialog(
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
@@ -57,7 +61,7 @@ class GuiaJuegoDialog extends StatelessWidget {
                     const SizedBox(width: 12),
                     // Título
                     Text(
-                      'Guía de $gameTitle',
+                      '${AppStrings.get('guide_of', currentLang)} $gameTitle',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -87,7 +91,7 @@ class GuiaJuegoDialog extends StatelessWidget {
                   children: [
                     // Sección: Objetivo
                     _buildSection(
-                      title: '🎯 Objetivo',
+                      title: '🎯 ${AppStrings.get('objective', currentLang)}',
                       content: objetivo,
                       isDark: isDark,
                     ),
@@ -96,7 +100,7 @@ class GuiaJuegoDialog extends StatelessWidget {
 
                     // Sección: Instrucciones
                     _buildListSection(
-                      title: '📋 Instrucciones',
+                      title: '📋 ${AppStrings.get('instructions', currentLang)}',
                       items: instrucciones,
                       isDark: isDark,
                     ),
@@ -105,7 +109,7 @@ class GuiaJuegoDialog extends StatelessWidget {
 
                     // Sección: Controles
                     _buildControlsSection(
-                      title: '🎮 Controles',
+                      title: '🎮 ${AppStrings.get('controls', currentLang)}',
                       controls: controles,
                       isDark: isDark,
                     ),
@@ -128,9 +132,9 @@ class GuiaJuegoDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Entendido',
-                  style: TextStyle(
+                child: Text(
+                  AppStrings.get('understood', currentLang),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

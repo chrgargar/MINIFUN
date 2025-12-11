@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/sudoku_constants.dart';
 
@@ -280,14 +282,18 @@ class _SudokuGameState extends State<SudokuGame> {
   }
 
   void _gameOver(bool won) {
-    String title = won ? '¡Felicidades!' : 'Game Over';
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    String title = won
+        ? AppStrings.get('congratulations', currentLang)
+        : AppStrings.get('game_over', currentLang);
     String message = won
-        ? 'Has completado el Sudoku en ${_formatTime(elapsedSeconds)}'
+        ? '${AppStrings.get('completed_in', currentLang)} ${_formatTime(elapsedSeconds)}'
         : widget.isPerfectMode
-            ? 'Cometiste un error. ¡Inténtalo de nuevo!'
+            ? AppStrings.get('made_error', currentLang)
             : widget.isTimeAttackMode
-                ? '¡Se acabó el tiempo!'
-                : 'Inténtalo de nuevo';
+                ? AppStrings.get('time_up', currentLang)
+                : AppStrings.get('try_again', currentLang);
 
     showDialog(
       context: context,
@@ -329,7 +335,7 @@ class _SudokuGameState extends State<SudokuGame> {
             if (won) ...[
               const SizedBox(height: 16),
               Text(
-                '¿Qué deseas hacer?',
+                AppStrings.get('what_to_do', currentLang),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],
@@ -347,7 +353,7 @@ class _SudokuGameState extends State<SudokuGame> {
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey[700],
             ),
-            child: const Text('Salir al menú'),
+            child: Text(AppStrings.get('exit_menu', currentLang)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -370,7 +376,9 @@ class _SudokuGameState extends State<SudokuGame> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text(won ? 'Jugar de nuevo' : 'Reintentar'),
+            child: Text(won
+                ? AppStrings.get('play_again', currentLang)
+                : AppStrings.get('retry', currentLang)),
           ),
         ],
       ),
@@ -417,6 +425,7 @@ class _SudokuGameState extends State<SudokuGame> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       backgroundColor: isDark ? ColoresApp.gris800 : ColoresApp.gris100,
@@ -628,7 +637,7 @@ class _SudokuGameState extends State<SudokuGame> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Lápiz',
+                                AppStrings.get('pencil', currentLang),
                                 style: TextStyle(
                                   color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
                                   fontSize: 16,
@@ -672,7 +681,7 @@ class _SudokuGameState extends State<SudokuGame> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Notas',
+                                AppStrings.get('notes', currentLang),
                                 style: TextStyle(
                                   color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
                                   fontSize: 16,
@@ -731,7 +740,7 @@ class _SudokuGameState extends State<SudokuGame> {
                       ElevatedButton.icon(
                         onPressed: _clearCell,
                         icon: const Icon(Icons.backspace, size: 18),
-                        label: const Text('Borrar'),
+                        label: Text(AppStrings.get('erase', currentLang)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
@@ -744,7 +753,7 @@ class _SudokuGameState extends State<SudokuGame> {
                         ElevatedButton.icon(
                           onPressed: _showHint,
                           icon: const Icon(Icons.lightbulb, size: 18),
-                          label: const Text('Pista'),
+                          label: Text(AppStrings.get('hint', currentLang)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,

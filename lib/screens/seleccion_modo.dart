@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/boton_ajustes.dart';
 import '../juegos/Snake.dart';
 import '../juegos/sudoku.dart';
 import '../juegos/WaterSort.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -20,6 +23,7 @@ class SeleccionModo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       body: SafeArea(
@@ -71,7 +75,7 @@ class SeleccionModo extends StatelessWidget {
                     height: titleHeight,
                     child: Center(
                       child: Text(
-                        'Selecciona\nModalidad',
+                        AppStrings.get('select_mode', currentLang),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: (titleHeight * 0.35).clamp(18.0, 26.0),
@@ -115,7 +119,7 @@ class SeleccionModo extends StatelessWidget {
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '🎮',
-                          text: 'Jugar',
+                          text: AppStrings.get('play', currentLang),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
                             if (gameTitle == 'Snake') {
@@ -143,7 +147,7 @@ class SeleccionModo extends StatelessWidget {
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '📖',
-                          text: 'Guía',
+                          text: AppStrings.get('guide', currentLang),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
                             if (gameTitle == 'Snake') {
@@ -151,27 +155,51 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 gameTitle: gameTitle,
                                 gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.snakeObjetivo,
-                                instrucciones: GuiasJuegos.snakeInstrucciones,
-                                controles: GuiasJuegos.snakeControles,
+                                objetivo: AppStrings.get('snake_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('snake_inst_1', currentLang),
+                                  AppStrings.get('snake_inst_2', currentLang),
+                                  AppStrings.get('snake_inst_3', currentLang),
+                                  AppStrings.get('snake_inst_4', currentLang),
+                                  AppStrings.get('snake_inst_5', currentLang),
+                                ],
+                                controles: GuiasJuegos.getSnakeControles(currentLang),
                               );
                             } else if (gameTitle == 'Sudoku') {
                               GuiaJuegoDialog.show(
                                 context,
                                 gameTitle: gameTitle,
                                 gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.sudokuObjetivo,
-                                instrucciones: GuiasJuegos.sudokuInstrucciones,
-                                controles: GuiasJuegos.sudokuControles,
+                                objetivo: AppStrings.get('sudoku_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('sudoku_inst_1', currentLang),
+                                  AppStrings.get('sudoku_inst_2', currentLang),
+                                  AppStrings.get('sudoku_inst_3', currentLang),
+                                  AppStrings.get('sudoku_inst_4', currentLang),
+                                  AppStrings.get('sudoku_inst_5', currentLang),
+                                  AppStrings.get('sudoku_inst_6', currentLang),
+                                  AppStrings.get('sudoku_inst_7', currentLang),
+                                  AppStrings.get('sudoku_inst_8', currentLang),
+                                  AppStrings.get('sudoku_inst_9', currentLang),
+                                ],
+                                controles: GuiasJuegos.getSudokuControles(currentLang),
                               );
                             } else if (gameTitle == 'WaterSort') {
                               GuiaJuegoDialog.show(
                                 context,
                                 gameTitle: gameTitle,
                                 gameImagePath: gameImagePath,
-                                objetivo: GuiasJuegos.waterSortObjetivo,
-                                instrucciones: GuiasJuegos.waterSortInstrucciones,
-                                controles: GuiasJuegos.waterSortControles,
+                                objetivo: AppStrings.get('watersort_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('watersort_inst_1', currentLang),
+                                  AppStrings.get('watersort_inst_2', currentLang),
+                                  AppStrings.get('watersort_inst_3', currentLang),
+                                  AppStrings.get('watersort_inst_4', currentLang),
+                                  AppStrings.get('watersort_inst_5', currentLang),
+                                  AppStrings.get('watersort_inst_6', currentLang),
+                                  AppStrings.get('watersort_inst_7', currentLang),
+                                ],
+                                controles: GuiasJuegos.getWaterSortControles(currentLang),
                               );
                             }
                           },
@@ -183,7 +211,11 @@ class SeleccionModo extends StatelessWidget {
                         _buildModeButton(
                           height: buttonHeight,
                           icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'WaterSort' ? '🧪' : '💎'),
-                          text: gameTitle == 'Snake' ? 'Supervivencia\nPRO' : (gameTitle == 'WaterSort' ? 'Difícil\nPRO' : 'Perfecto\nPRO'),
+                          text: gameTitle == 'Snake'
+                              ? AppStrings.get('survival_pro', currentLang)
+                              : (gameTitle == 'WaterSort'
+                                  ? AppStrings.get('hard_pro', currentLang)
+                                  : AppStrings.get('perfect_pro', currentLang)),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
@@ -219,7 +251,7 @@ class SeleccionModo extends StatelessWidget {
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
-                            text: 'Velocidad',
+                            text: AppStrings.get('speed', currentLang),
                             color: const Color(0xFF7B3FF2),
                             onTap: () {
                               Navigator.push(
@@ -237,7 +269,7 @@ class SeleccionModo extends StatelessWidget {
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '⏱️',
-                          text: 'Contrarreloj',
+                          text: AppStrings.get('time_attack', currentLang),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
                             if (gameTitle == 'Snake') {
