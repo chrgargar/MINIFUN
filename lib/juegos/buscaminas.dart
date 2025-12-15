@@ -3,34 +3,17 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart'; 
+import '../tema/app_colors.dart';
 import '../services/audio_service.dart';
-
-// --- Clase Cell (Celda) ---
-class Cell {
-  final int row;
-  final int col;
-  bool isMine;
-  bool isRevealed;
-  bool isFlagged;
-  int adjacentMines;
-
-  Cell({
-    required this.row,
-    required this.col,
-    this.isMine = false,
-    this.isRevealed = false,
-    this.isFlagged = false,
-    this.adjacentMines = 0,
-  });
-}
+import 'buscaminas_con.dart';
 
 // --- Clase BuscaminasGame (Juego) ---
 class BuscaminasGame extends StatefulWidget {
   final int rows;
   final int cols;
   final int mineCount;
-  final bool isContrareloj; 
+  final bool isContrareloj;
+  final bool isSinBanderas;
 
   const BuscaminasGame({
     super.key,
@@ -38,6 +21,7 @@ class BuscaminasGame extends StatefulWidget {
     this.cols = 10,       // Por defecto: Fácil
     this.mineCount = 15,  // Por defecto: Fácil
     this.isContrareloj = false,
+    this.isSinBanderas = false,
   });
 
   // Configuraciones de Dificultad Estáticas
@@ -57,17 +41,33 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   late int rows;
   late int cols;
   late int mineCount;
-  late bool isContrareloj; 
-
-  late List<List<Cell>> board;
+  late bool isContrareloj;
+  late bool isSinBanderas; 
+  late BuscaminasController controller;
   bool gameOver = false;
   bool won = false;
   int flagsPlaced = 0;
   int cellsRevealed = 0;
   int timeElapsed = 0;
+  int timeLeft = 0; // used in contrarreloj mode
   Timer? gameTimer;
   
   bool isFlaggingMode = false;
+  final Set<String> _pressedTiles = {}; // tracks briefly-pressed tiles for animation
+
+  void _animateTile(int row, int col) {
+    final key = '\$row,\$col';
+    setState(() {
+      _pressedTiles.add(key);
+    });
+    Future.delayed(const Duration(milliseconds: 140), () {
+      if (mounted) {
+        setState(() {
+          _pressedTiles.remove(key);
+        });
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -76,6 +76,10 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     cols = widget.cols;
     mineCount = widget.mineCount;
     isContrareloj = widget.isContrareloj;
+    isSinBanderas = widget.isSinBanderas;
+
+    controller = BuscaminasController(rows: rows, cols: cols, mineCount: mineCount);
+    controller.createBoard();
     
     _initializeGame();
 
@@ -106,141 +110,122 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   }
 
   void _initializeGame() {
-    board = List.generate(
-      rows,
-      (i) => List.generate(cols, (j) => Cell(row: i, col: j)),
-    );
-    _placeMines();
-    _calculateNumbers();
+    controller = BuscaminasController(rows: rows, cols: cols, mineCount: mineCount);
+    controller.createBoard();
     gameOver = false;
     won = false;
     flagsPlaced = 0;
     cellsRevealed = 0;
     timeElapsed = 0;
+    // setup timer: Contrareloj counts down (timeLeft), Sin_banderas counts up (timeElapsed)
+    if (isContrareloj) {
+      final computed = (rows * cols) ~/ 2;
+      timeLeft = (computed + 60).clamp(30, 300);
+    } else {
+      timeLeft = 0;
+    }
     _startTimer();
     isFlaggingMode = false; 
   }
 
   void _startTimer() {
     gameTimer?.cancel();
-    gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!gameOver && !won) {
-        setState(() {
-          timeElapsed++;
-        });
-      }
-    });
+    if (isContrareloj) {
+      gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!gameOver && !won) {
+          setState(() {
+            timeLeft--;
+            if (timeLeft <= 0) {
+              timer.cancel();
+              gameOver = true;
+              controller.revealAllMines();
+              _playSound('gameover.mp3');
+              _showGameOverDialog();
+            }
+          });
+        }
+      });
+    } else if (isSinBanderas) {
+      gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!gameOver && !won) {
+          setState(() {
+            timeElapsed++;
+          });
+        }
+      });
+    } else {
+      gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!gameOver && !won) {
+          setState(() {
+            timeElapsed++;
+          });
+        }
+      });
+    }
   }
 
   void _placeMines() {
-    Random random = Random();
-    int minesPlaced = 0;
-
-    while (minesPlaced < mineCount) {
-      int row = random.nextInt(rows);
-      int col = random.nextInt(cols);
-
-      if (!board[row][col].isMine) {
-        board[row][col].isMine = true;
-        minesPlaced++;
-      }
-    }
+    // moved to controller
   }
 
   void _calculateNumbers() {
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < cols; j++) {
-        if (!board[i][j].isMine) {
-          int count = 0;
-          for (int di = -1; di <= 1; di++) {
-            for (int dj = -1; dj <= 1; dj++) {
-              int ni = i + di;
-              int nj = j + dj;
-              if (ni >= 0 && ni < rows && nj >= 0 && nj < cols) {
-                if (board[ni][nj].isMine) count++;
-              }
-            }
-          }
-          board[i][j].adjacentMines = count;
-        }
-      }
-    }
+    // moved to controller
   }
 
   void _revealCell(int row, int col) {
     if (gameOver || won) return;
-    
-    // Quitar bandera si se intenta revelar
-    if (board[row][col].isFlagged) {
-        setState(() {
-            board[row][col].isFlagged = false;
-            flagsPlaced--;
-        });
+    // Ensure mines are placed after the first click, never on the first clicked cell
+    if (!controller.minesPlaced) {
+      controller.placeMines(safeRow: row, safeCol: col);
+      controller.calculateNumbers();
     }
 
-    if (board[row][col].isRevealed) return;
-
+    // Use controller to update board logic; UI handles sounds/dialogs
+    bool hitMine = controller.revealCell(row, col);
     setState(() {
-      board[row][col].isRevealed = true;
-      cellsRevealed++;
-
-      if (board[row][col].isMine) {
-        gameOver = true;
-        _revealAllMines();
-        _playSound('gameover.mp3');
-        _showGameOverDialog();
-      } else {
-        _playSound('move.mp3');
-        if (board[row][col].adjacentMines == 0) {
-          _revealAdjacentCells(row, col);
-        }
-        _checkWin();
-      }
+      flagsPlaced = controller.countFlags();
+      cellsRevealed = controller.countRevealed();
     });
+
+    if (hitMine) {
+      setState(() => gameOver = true);
+      controller.revealAllMines();
+      _playSound('gameover.mp3');
+      _showGameOverDialog();
+      return;
+    }
+
+    _playSound('move.mp3');
+    _checkWin();
   }
 
   void _revealAdjacentCells(int row, int col) {
-    for (int di = -1; di <= 1; di++) {
-      for (int dj = -1; dj <= 1; dj++) {
-        int ni = row + di;
-        int nj = col + dj;
-        if (ni >= 0 && ni < rows && nj >= 0 && nj < cols) {
-          if (!board[ni][nj].isRevealed && !board[ni][nj].isFlagged) {
-            board[ni][nj].isRevealed = true;
-            cellsRevealed++;
-            if (board[ni][nj].adjacentMines == 0) {
-              _revealAdjacentCells(ni, nj);
-            }
-          }
-        }
-      }
-    }
+    // moved to controller
   }
 
   void _toggleFlag(int row, int col) {
     if (gameOver || won) return;
-    if (board[row][col].isRevealed) return;
+    if (controller.board[row][col].isRevealed) return;
 
     setState(() {
-      if (board[row][col].isFlagged) {
-          // Quitar bandera
-          board[row][col].isFlagged = false;
-          flagsPlaced--;
-          _playSound('food.mp3');
+      // Respect the mine count limit when placing flags
+      if (controller.board[row][col].isFlagged) {
+        controller.toggleFlag(row, col); // remove
+        flagsPlaced = controller.countFlags();
+        _playSound('food.mp3');
       } else {
-          // Poner bandera solo si no se ha alcanzado el límite
-          if (flagsPlaced < mineCount) {
-              board[row][col].isFlagged = true;
-              flagsPlaced++;
-              _playSound('food.mp3');
-          } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('¡Límite máximo de minas alcanzado!')),
-              );
-          }
+        if (controller.countFlags() < mineCount) {
+          controller.toggleFlag(row, col); // add
+          flagsPlaced = controller.countFlags();
+          _playSound('food.mp3');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('¡Límite máximo de minas alcanzado!')),
+          );
+        }
       }
-      _checkWin();
     });
+    _checkWin();
   }
 
   void _toggleFlaggingMode() {
@@ -251,17 +236,12 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   }
 
   void _revealAllMines() {
-    for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < cols; j++) {
-        if (board[i][j].isMine) {
-          board[i][j].isRevealed = true;
-        }
-      }
-    }
+    controller.revealAllMines();
   }
 
   void _checkWin() {
-    int totalSafeCells = rows * cols - mineCount;
+    final totalSafeCells = controller.totalSafeCells();
+    cellsRevealed = controller.countRevealed();
     if (cellsRevealed == totalSafeCells) {
       won = true;
       gameTimer?.cancel();
@@ -326,6 +306,11 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
             onPressed: () {
               Navigator.pop(context);
               setState(() {
+                if (isContrareloj || isSinBanderas) {
+                  mineCount = (mineCount * 1.2).toInt().clamp(1, rows * cols - 1);
+                  rows = (rows * 1.15).toInt().clamp(rows, 30);
+                  cols = (cols * 1.15).toInt().clamp(cols, 30);
+                }
                 _initializeGame();
               });
             },
@@ -352,17 +337,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       case 3:
         return Colors.red;
       case 4:
-        return Colors.purple;
-      case 5:
-        return Colors.orange;
-      case 6:
-        return Colors.cyan;
-      case 7:
-        return Colors.black;
-      case 8:
-        return Colors.grey;
+        return Colors.deepPurple;
       default:
-        return Colors.black;
+        return Colors.black87;
     }
   }
 
@@ -371,87 +348,121 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     return Scaffold(
       backgroundColor: ColoresApp.negro,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            // Área principal del juego (Grid) - Sin cambios
-            Center(
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // LEFT: Time and tile count
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      isContrareloj
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: ColoresApp.rojoError.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text('${timeLeft}s', style: TextStyle(color: ColoresApp.blanco, fontSize: 22, fontWeight: FontWeight.bold)),
+                            )
+                          : Text('${timeElapsed}s', style: TextStyle(color: ColoresApp.blanco, fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      Text('$rows x $cols', style: TextStyle(color: ColoresApp.blanco, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  // RIGHT: Flags counter, flag button, and close button
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          if (!isSinBanderas)
+                            Row(
+                              children: [
+                                Text('${controller.countFlags()}/$mineCount', style: TextStyle(color: ColoresApp.blanco, fontSize: 20, fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 8),
+                                Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: 24),
+                              ],
+                            ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            color: ColoresApp.blanco,
+                            iconSize: 28,
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                      if (!isSinBanderas)
+                        FloatingActionButton(
+                          heroTag: 'flagMode',
+                          onPressed: _toggleFlaggingMode,
+                          backgroundColor: isFlaggingMode ? ColoresApp.moradoPrincipal : ColoresApp.gris100,
+                          child: Icon(isFlaggingMode ? Icons.clear : Icons.flag, color: isFlaggingMode ? ColoresApp.blanco : ColoresApp.moradoPrincipal, size: 28),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final screenWidth = constraints.maxWidth;
-                  final screenHeight = constraints.maxHeight;
-                  final cellSize = min(
-                    (screenWidth - 32) / cols,
-                    (screenHeight - 150) / rows, 
-                  );
-                  final boardWidth = cols * cellSize;
-                  final boardHeight = rows * cellSize;
-
-                  return SizedBox(
-                    width: boardWidth,
-                    height: boardHeight,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: ColoresApp.moradoPrincipal, width: 3),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                  final boardSize = min(constraints.maxWidth, constraints.maxHeight - 100);
+                  final cellSize = boardSize / cols;
+                  return Center(
+                    child: SizedBox(
+                      width: cellSize * cols,
+                      height: cellSize * rows,
                       child: GridView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: cols,
-                          mainAxisSpacing: 0,
-                          crossAxisSpacing: 0,
+                          childAspectRatio: 1,
                         ),
                         itemCount: rows * cols,
                         itemBuilder: (context, index) {
-                          int row = index ~/ cols;
-                          int col = index % cols;
-                          Cell cell = board[row][col];
+                          final r = index ~/ cols;
+                          final c = index % cols;
+                          final cell = controller.board[r][c];
+                          final key = '\$r,\$c';
+                          final pressed = _pressedTiles.contains(key);
 
                           return GestureDetector(
                             onTap: () {
+                              _animateTile(r, c);
                               if (isFlaggingMode) {
-                                _toggleFlag(row, col);
+                                _toggleFlag(r, c);
                               } else {
-                                _revealCell(row, col);
+                                _revealCell(r, c);
                               }
                             },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: cell.isRevealed
-                                    ? (cell.isMine 
-                                          ? ColoresApp.rojoError 
-                                          : ColoresApp.gris100)
-                                    : ColoresApp.gris800,
-                                border: Border.all(
-                                  color: ColoresApp.negro,
-                                  width: 1,
+                            onLongPress: () => _toggleFlag(r, c),
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 1.0, end: pressed ? 0.92 : 1.0),
+                              duration: const Duration(milliseconds: 120),
+                              builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 160),
+                                decoration: BoxDecoration(
+                                  color: cell.isRevealed ? (cell.isMine ? ColoresApp.rojoError : ColoresApp.gris100) : ColoresApp.gris800,
+                                  border: Border.all(color: ColoresApp.moradoPrincipal, width: 1),
                                 ),
-                              ),
-                              child: Center(
-                                child: cell.isFlagged
-                                    ? Icon(
-                                          Icons.flag,
-                                          color: ColoresApp.moradoPrincipal, 
-                                          size: cellSize * 0.6,
-                                      )
-                                    : cell.isRevealed
-                                        ? (cell.isMine
-                                              ? Icon(
-                                                    Icons.close,
-                                                    color: ColoresApp.blanco,
-                                                    size: cellSize * 0.6,
-                                                )
+                                child: Center(
+                                  child: cell.isFlagged
+                                      ? Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: cellSize * 0.6)
+                                      : cell.isRevealed
+                                          ? (cell.isMine
+                                              ? Icon(Icons.close, color: ColoresApp.blanco, size: cellSize * 0.6)
                                               : (cell.adjacentMines > 0
-                                                    ? Text(
-                                                          '${cell.adjacentMines}',
-                                                          style: TextStyle(
-                                                            fontSize: cellSize * 0.5,
-                                                            fontWeight: FontWeight.bold,
-                                                            color: _getNumberColor(cell.adjacentMines),
-                                                          ),
-                                                      )
-                                                    : null))
-                                        : null,
+                                                  ? Text('${cell.adjacentMines}', style: TextStyle(fontSize: cellSize * 0.5, fontWeight: FontWeight.bold, color: _getNumberColor(cell.adjacentMines)))
+                                                  : null))
+                                          : null,
+                                ),
                               ),
                             ),
                           );
@@ -462,180 +473,15 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                 },
               ),
             ),
-            
-            // --- ORGANIZACIÓN SUPERIOR CORREGIDA ---
-            
-            // 1. Contador de Banderas y Botón de Modo (Superior Izquierda)
-            Positioned(
-              top: 16,
-              left: 16,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      // Contador de Banderas
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: ColoresApp.moradoPrincipal.withOpacity(0.9), 
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: ColoresApp.moradoPrincipal.withOpacity(0.5),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.flag, color: ColoresApp.blanco, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              '$flagsPlaced/$mineCount',
-                              style: TextStyle(
-                                color: ColoresApp.blanco,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 12),
-                      
-                      // 🚩 Botón de Modo Bandera Superior (El que pediste)
-                      FloatingActionButton(
-                        heroTag: 'banderaBtnSup',
-                        mini: true,
-                        onPressed: _toggleFlaggingMode,
-                        tooltip: isFlaggingMode ? 'Modo: Revelar' : 'Modo: Bandera',
-                        backgroundColor: isFlaggingMode 
-                            ? ColoresApp.moradoPrincipal.withOpacity(0.9)
-                            : ColoresApp.gris100.withOpacity(0.9),
-                        elevation: 8,
-                        child: Icon(
-                          isFlaggingMode ? Icons.clear : Icons.flag,
-                          color: isFlaggingMode ? ColoresApp.blanco : ColoresApp.moradoPrincipal,
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 8),
-
-                  // Texto de Instrucción (Debajo del contador de Banderas)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.gris100.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Text(
-                      isFlaggingMode ? 'Modo: ¡Bandera!' : 'Modo: ¡Revelar!',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: ColoresApp.blanco,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // 2. Dificultad y Tiempo (Superior Derecha, Lejos del borde para la X)
-            Positioned(
-              top: 16,
-              right: 60, // Deja espacio para el botón 'X'
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Indicador de Modo/Dificultad
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isContrareloj ? ColoresApp.rojoError.withOpacity(0.9) : ColoresApp.gris100.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      isContrareloj ? 'CONTRARRELOJ' : '$rows x $cols',
-                      style: TextStyle(
-                        color: ColoresApp.blanco,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(width: 12),
-                  
-                  // Tiempo transcurrido
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.naranjaAdvertencia.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: ColoresApp.naranjaAdvertencia.withOpacity(0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.timer, color: ColoresApp.blanco, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${timeElapsed}s',
-                          style: TextStyle(
-                            color: ColoresApp.blanco,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // 3. Botón de cerrar (X) - Esquina superior derecha extrema
-            Positioned(
-              top: 8, 
-              right: 8, 
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                color: ColoresApp.blanco,
-                iconSize: 30,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-            
-            // ❌ ELIMINADO: BOTÓN DE BANDERA INFERIOR (Se movió arriba)
-            
-            // 4. Botón de reinicio (Abajo a la derecha)
-            Positioned(
-              bottom: 20,
-              right: 20,
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
               child: FloatingActionButton(
                 heroTag: 'reiniciarBtn',
-                onPressed: () {
-                  setState(() {
-                    _initializeGame();
-                  });
-                },
-                backgroundColor: ColoresApp.moradoPrincipal.withOpacity(0.9),
-                elevation: 8,
-                child: const Icon(Icons.refresh, color: Colors.white, size: 32),
+                mini: true,
+                onPressed: _initializeGame,
+                backgroundColor: ColoresApp.moradoPrincipal,
+                child: const Icon(Icons.refresh, color: Colors.white),
               ),
             ),
           ],

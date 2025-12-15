@@ -219,6 +219,26 @@ class SeleccionModo extends StatelessWidget {
                           ),
                           
                           SizedBox(height: spacing),
+
+                          // BUSCAMINAS: Botón Sin Banderas
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🚫',
+                            text: 'Sin Banderas',
+                            color: const Color.fromARGB(255, 255, 193, 7),
+                            textColor: Colors.black,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  // Sin Banderas (Fácil base + modo sin banderas activo)
+                                  builder: (context) => const BuscaminasGame(rows: 12, cols: 12, mineCount: 25, isSinBanderas: true),
+                                ),
+                              );
+                            },
+                          ),
+                          
+                          SizedBox(height: spacing),
                           
                         ] else if (gameTitle == 'Sudoku') ...[
                            // SUDOKU: Botón Extremo PRO
