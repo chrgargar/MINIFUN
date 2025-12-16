@@ -4,6 +4,7 @@ import '../widgets/boton_ajustes.dart';
 import '../juegos/Snake.dart';
 import '../juegos/sudoku.dart';
 import '../juegos/WaterSort.dart';
+import '../juegos/buscaminas.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../tema/language_provider.dart';
@@ -137,6 +138,11 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(builder: (context) => const WaterSortGame(difficulty: 'facil')),
                               );
+                            } else if (gameTitle == 'Buscaminas') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => BuscaminasGame.facil),
+                              );
                             }
                           },
                         ),
@@ -207,15 +213,17 @@ class SeleccionModo extends StatelessWidget {
 
                         SizedBox(height: spacing),
 
-                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort)
+                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Experto (Buscaminas)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'WaterSort' ? '🧪' : '💎'),
+                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : '💎')),
                           text: gameTitle == 'Snake'
                               ? AppStrings.get('survival_pro', currentLang)
-                              : (gameTitle == 'WaterSort'
-                                  ? AppStrings.get('hard_pro', currentLang)
-                                  : AppStrings.get('perfect_pro', currentLang)),
+                              : (gameTitle == 'Buscaminas'
+                                  ? 'Experto'
+                                  : (gameTitle == 'WaterSort'
+                                      ? AppStrings.get('hard_pro', currentLang)
+                                      : AppStrings.get('perfect_pro', currentLang))),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
@@ -238,6 +246,13 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const WaterSortGame(difficulty: 'dificil'),
+                                ),
+                              );
+                            } else if (gameTitle == 'Buscaminas') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BuscaminasGame.dificil,
                                 ),
                               );
                             }
@@ -265,11 +280,11 @@ class SeleccionModo extends StatelessWidget {
 
                         if (gameTitle == 'Snake') SizedBox(height: spacing),
 
-                        // Botón Contrarreloj
+                        // Botón Contrarreloj (Snake, Sudoku, WaterSort, Buscaminas)
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '⏱️',
-                          text: AppStrings.get('time_attack', currentLang),
+                          text: gameTitle == 'Buscaminas' ? 'Contrarreloj' : AppStrings.get('time_attack', currentLang),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
                             if (gameTitle == 'Snake') {
@@ -293,9 +308,34 @@ class SeleccionModo extends StatelessWidget {
                                   builder: (context) => const WaterSortGame(isTimeAttackMode: true),
                                 ),
                               );
+                            } else if (gameTitle == 'Buscaminas') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BuscaminasGame.contrareloj,
+                                ),
+                              );
                             }
                           },
                         ),
+
+                        // Botón Sin Banderas (solo Buscaminas)
+                        if (gameTitle == 'Buscaminas')
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🏳️',
+                            text: 'Sin Banderas',
+                            color: const Color.fromARGB(255, 255, 239, 98),
+                            textColor: Colors.black,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const BuscaminasGame(isSinBanderas: true),
+                                ),
+                              );
+                            },
+                          ),
 
                       ],
                     ),
