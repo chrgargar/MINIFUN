@@ -159,6 +159,18 @@ class AppStrings {
       'control_undo_desc': 'Deshace el último movimiento realizado',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivel desde el principio',
+
+      // Guías Sopa de Letras
+      'sopadeletras_objective': 'Encuentra todas las palabras ocultas en la cuadrícula de letras.',
+      'sopadeletras_inst_1': 'Las palabras pueden estar en horizontal, vertical o diagonal',
+      'sopadeletras_inst_2': 'Toca la primera letra de una palabra y arrastra hasta la última letra',
+      'sopadeletras_inst_3': 'Las palabras encontradas se marcarán en la cuadrícula',
+      'sopadeletras_inst_4': 'Encuentra todas las palabras de la lista para ganar',
+      'sopadeletras_inst_5': 'Puedes usar pistas si te quedas atascado',
+      'control_select_word': 'Seleccionar',
+      'control_select_word_desc': 'Toca y arrastra para seleccionar palabras',
+      'control_found_words': 'Encontradas',
+      'control_found_words_desc': 'Palabras que ya has encontrado',
     },
 
     // ENGLISH
@@ -328,6 +340,18 @@ class AppStrings {
       'control_undo_desc': 'Undoes the last move made',
       'control_restart': 'Restart',
       'control_restart_desc': 'Restarts the level from the beginning',
+
+      // Word Search Guides
+      'sopadeletras_objective': 'Find all hidden words in the letter grid.',
+      'sopadeletras_inst_1': 'Words can be horizontal, vertical, or diagonal',
+      'sopadeletras_inst_2': 'Tap the first letter of a word and drag to the last letter',
+      'sopadeletras_inst_3': 'Found words will be highlighted in the grid',
+      'sopadeletras_inst_4': 'Find all words in the list to win',
+      'sopadeletras_inst_5': 'Use hints if you get stuck',
+      'control_select_word': 'Select',
+      'control_select_word_desc': 'Tap and drag to select words',
+      'control_found_words': 'Found',
+      'control_found_words_desc': 'Words you have already found',
     },
 
     // FRANÇAIS
@@ -497,6 +521,18 @@ class AppStrings {
       'control_undo_desc': 'Annule le dernier mouvement effectué',
       'control_restart': 'Redémarrer',
       'control_restart_desc': 'Redémarre le niveau depuis le début',
+
+      // Guides Mots Croisés
+      'sopadeletras_objective': 'Trouvez tous les mots cachés dans la grille de lettres.',
+      'sopadeletras_inst_1': 'Les mots peuvent être horizontaux, verticaux ou diagonaux',
+      'sopadeletras_inst_2': 'Touchez la première lettre d\'un mot et faites glisser jusqu\'à la dernière lettre',
+      'sopadeletras_inst_3': 'Les mots trouvés seront surlignés dans la grille',
+      'sopadeletras_inst_4': 'Trouvez tous les mots de la liste pour gagner',
+      'sopadeletras_inst_5': 'Utilisez des indices si vous êtes bloqué',
+      'control_select_word': 'Sélectionner',
+      'control_select_word_desc': 'Touchez et faites glisser pour sélectionner des mots',
+      'control_found_words': 'Trouvés',
+      'control_found_words_desc': 'Mots que vous avez déjà trouvés',
     },
 
     // PORTUGUÊS
@@ -666,6 +702,18 @@ class AppStrings {
       'control_undo_desc': 'Desfaz o último movimento realizado',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia o nível desde o início',
+
+      // Guias Caça-Palavras
+      'sopadeletras_objective': 'Encontre todas as palavras ocultas na grade de letras.',
+      'sopadeletras_inst_1': 'As palavras podem estar na horizontal, vertical ou diagonal',
+      'sopadeletras_inst_2': 'Toque na primeira letra de uma palavra e arraste até a última letra',
+      'sopadeletras_inst_3': 'As palavras encontradas serão destacadas na grade',
+      'sopadeletras_inst_4': 'Encontre todas as palavras da lista para vencer',
+      'sopadeletras_inst_5': 'Use dicas se ficar preso',
+      'control_select_word': 'Selecionar',
+      'control_select_word_desc': 'Toque e arraste para selecionar palavras',
+      'control_found_words': 'Encontradas',
+      'control_found_words_desc': 'Palavras que você já encontrou',
     },
   };
 }
