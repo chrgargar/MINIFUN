@@ -95,4 +95,25 @@ class GuiasJuegos {
       ),
     ];
   }
+
+  // Controles de Sopa de Letras traducidos
+  static List<ControlItem> getSopaDeLetrasControles(String lang) {
+    return [
+      ControlItem(
+        icon: '👆',
+        name: AppStrings.get('control_select_word', lang),
+        description: AppStrings.get('control_select_word_desc', lang),
+      ),
+      ControlItem(
+        icon: '✅',
+        name: AppStrings.get('control_found_words', lang),
+        description: AppStrings.get('control_found_words_desc', lang),
+      ),
+      ControlItem(
+        icon: '💡',
+        name: AppStrings.get('control_hint', lang),
+        description: AppStrings.get('control_hint_desc', lang),
+      ),
+    ];
+  }
 }

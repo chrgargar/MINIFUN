@@ -4,6 +4,7 @@ import '../widgets/boton_ajustes.dart';
 import '../juegos/Snake.dart';
 import '../juegos/sudoku.dart';
 import '../juegos/WaterSort.dart';
+import '../juegos/SopaDeLetras.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../tema/language_provider.dart';
@@ -137,6 +138,11 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(builder: (context) => const WaterSortGame(difficulty: 'facil')),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SopaDeLetrasGame(difficulty: 'facil')),
+                              );
                             }
                           },
                         ),
@@ -200,6 +206,21 @@ class SeleccionModo extends StatelessWidget {
                                   AppStrings.get('watersort_inst_7', currentLang),
                                 ],
                                 controles: GuiasJuegos.getWaterSortControles(currentLang),
+                              );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              GuiaJuegoDialog.show(
+                                context,
+                                gameTitle: gameTitle,
+                                gameImagePath: gameImagePath,
+                                objetivo: AppStrings.get('sopadeletras_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('sopadeletras_inst_1', currentLang),
+                                  AppStrings.get('sopadeletras_inst_2', currentLang),
+                                  AppStrings.get('sopadeletras_inst_3', currentLang),
+                                  AppStrings.get('sopadeletras_inst_4', currentLang),
+                                  AppStrings.get('sopadeletras_inst_5', currentLang),
+                                ],
+                                controles: GuiasJuegos.getSopaDeLetrasControles(currentLang),
                               );
                             }
                           },
@@ -291,6 +312,13 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const WaterSortGame(isTimeAttackMode: true),
+                                ),
+                              );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SopaDeLetrasGame(isTimeAttackMode: true),
                                 ),
                               );
                             }
