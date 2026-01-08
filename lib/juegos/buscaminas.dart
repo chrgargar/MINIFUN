@@ -298,7 +298,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold), 
         ),
         content: Text(
-          "Tiempo: ${timeElapsed}s\nDificultad: ${rows}x${cols}\n${isContrareloj ? '¡Modo Contrarreloj completado!' : '¡Encontraste todas las minas!'}",
+          "Tiempo: ${timeElapsed}s\nDificultad: ${rows}x$cols\n${isContrareloj ? '¡Modo Contrarreloj completado!' : '¡Encontraste todas las minas!'}",
           style: TextStyle(color: ColoresApp.negro), 
         ),
         actions: [
