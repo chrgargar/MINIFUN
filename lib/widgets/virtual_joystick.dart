@@ -21,70 +21,74 @@ class VirtualJoystick extends StatelessWidget {
     this.backgroundColor = const Color(0xFF1E1E1E),
     this.buttonColor = const Color(0xFF7B3FF2),
     this.iconColor = Colors.white,
-    this.size = 200,
+    this.size = 280, // Aumentado de 200 a 280
   });
 
   @override
   Widget build(BuildContext context) {
-    final buttonSize = size * 0.3;
+    // Botones (32% del tamaño total)
+    final buttonSize = size * 0.32;
     final centerSpace = size * 0.15;
+    // Mayor espaciado entre botones (botones más separados del borde)
+    final buttonOffset = size * 0.02;
 
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(size / 2),
-        border: Border.all(
-          color: buttonColor.withOpacity(0.3),
-          width: 2,
+    return Center(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: backgroundColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(size / 2),
+          border: Border.all(
+            color: buttonColor.withOpacity(0.3),
+            width: 2,
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          // Botón ARRIBA
-          Positioned(
-            top: 0,
-            left: (size - buttonSize) / 2,
-            child: _buildDirectionButton(
-              icon: Icons.arrow_drop_up,
-              onPressed: onUpPressed,
-              size: buttonSize,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Botón ARRIBA
+            Positioned(
+              top: buttonOffset,
+              left: (size - buttonSize) / 2,
+              child: _buildDirectionButton(
+                icon: Icons.arrow_drop_up,
+                onPressed: onUpPressed,
+                size: buttonSize,
+              ),
             ),
-          ),
-          // Botón ABAJO
-          Positioned(
-            bottom: 0,
-            left: (size - buttonSize) / 2,
-            child: _buildDirectionButton(
-              icon: Icons.arrow_drop_down,
-              onPressed: onDownPressed,
-              size: buttonSize,
+            // Botón ABAJO
+            Positioned(
+              bottom: buttonOffset,
+              left: (size - buttonSize) / 2,
+              child: _buildDirectionButton(
+                icon: Icons.arrow_drop_down,
+                onPressed: onDownPressed,
+                size: buttonSize,
+              ),
             ),
-          ),
-          // Botón IZQUIERDA
-          Positioned(
-            left: 0,
-            top: (size - buttonSize) / 2,
-            child: _buildDirectionButton(
-              icon: Icons.arrow_left,
-              onPressed: onLeftPressed,
-              size: buttonSize,
+            // Botón IZQUIERDA
+            Positioned(
+              left: buttonOffset,
+              top: (size - buttonSize) / 2,
+              child: _buildDirectionButton(
+                icon: Icons.arrow_left,
+                onPressed: onLeftPressed,
+                size: buttonSize,
+              ),
             ),
-          ),
-          // Botón DERECHA
-          Positioned(
-            right: 0,
-            top: (size - buttonSize) / 2,
-            child: _buildDirectionButton(
-              icon: Icons.arrow_right,
-              onPressed: onRightPressed,
-              size: buttonSize,
+            // Botón DERECHA
+            Positioned(
+              right: buttonOffset,
+              top: (size - buttonSize) / 2,
+              child: _buildDirectionButton(
+                icon: Icons.arrow_right,
+                onPressed: onRightPressed,
+                size: buttonSize,
+              ),
             ),
-          ),
-          // Centro decorativo
-          Center(
-            child: Container(
+            // Centro decorativo
+            Container(
               width: centerSpace,
               height: centerSpace,
               decoration: BoxDecoration(
@@ -96,8 +100,8 @@ class VirtualJoystick extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -126,7 +130,7 @@ class VirtualJoystick extends StatelessWidget {
         child: Icon(
           icon,
           color: iconColor,
-          size: size * 0.6,
+          size: size * 0.65, // Iconos un poco más grandes
         ),
       ),
     );
