@@ -240,7 +240,7 @@ class GuiaJuegoDialog extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
@@ -316,7 +316,7 @@ class GuiaJuegoDialog extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
