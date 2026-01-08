@@ -11,8 +11,7 @@ class LanguageProvider extends ChangeNotifier {
   static const Map<String, String> availableLanguages = {
     'es': 'Español',
     'en': 'English',
-    'fr': 'Français',
-    'pt': 'Português',
+    'ca': 'Català',
   };
 
   LanguageProvider() {

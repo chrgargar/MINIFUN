@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/game_control_buttons.dart';
+import '../widgets/pause_overlay.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -54,6 +56,9 @@ class _SudokuGameState extends State<SudokuGame> {
 
   // Notas de borrador para cada celda (modo notas)
   List<List<List<int>>> pencilNotes = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.generate(ConstantesSudoku.tamanoSudoku, (_) => []));
+
+  // Estado de pausa
+  bool isPaused = false;
 
   @override
   void initState() {
@@ -391,6 +396,33 @@ class _SudokuGameState extends State<SudokuGame> {
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
+  void _togglePause() {
+    setState(() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        gameTimer?.cancel();
+      } else {
+        _startTimer();
+      }
+    });
+  }
+
+  void _restartGame() {
+    gameTimer?.cancel();
+    setState(() {
+      isPaused = false;
+      _generateSudoku();
+      cellsFilled = 0;
+      errorsCount = 0;
+      elapsedSeconds = 0;
+      timeLeft = ConstantesSudoku.duracionContrarreloj;
+      selectedRow = null;
+      selectedCol = null;
+      pencilNotes = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.generate(ConstantesSudoku.tamanoSudoku, (_) => []));
+    });
+    _startTimer();
+  }
+
   Widget _buildPencilNotes(List<int> notes) {
     // Mostrar las notas en una cuadrícula 3x3 pequeña
     return Padding(
@@ -429,344 +461,381 @@ class _SudokuGameState extends State<SudokuGame> {
 
     return Scaffold(
       backgroundColor: isDark ? ColoresApp.gris800 : ColoresApp.gris100,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header con información
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Botón de cerrar
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 28),
-                    color: isDark ? ColoresApp.blanco : ColoresApp.negro,
-                    onPressed: () => Navigator.pop(context),
-                  ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Header con información
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Botones de control (pausa, reiniciar, cerrar)
+                      Row(
+                        children: [
+                          GamePauseButton(
+                            isPaused: isPaused,
+                            onPressed: _togglePause,
+                            size: 40,
+                          ),
+                          const SizedBox(width: 8),
+                          GameRestartButton(
+                            onPressed: _restartGame,
+                            size: 40,
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: ColoresApp.rojoError,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close,
+                                color: ColoresApp.blanco,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
 
-                  // Tiempo
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: widget.isTimeAttackMode && timeLeft <= 30
-                          ? ColoresApp.rojoError
-                          : ColoresApp.moradoPrincipal,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
-                          color: ColoresApp.blanco,
-                          size: 20,
+                      // Tiempo
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: widget.isTimeAttackMode && timeLeft <= 30
+                              ? ColoresApp.rojoError
+                              : ColoresApp.moradoPrincipal,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          widget.isTimeAttackMode
-                              ? _formatTime(timeLeft)
-                              : _formatTime(elapsedSeconds),
-                          style: TextStyle(
-                            color: ColoresApp.blanco,
+                        child: Row(
+                          children: [
+                            Icon(
+                              widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
+                              color: ColoresApp.blanco,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              widget.isTimeAttackMode
+                                  ? _formatTime(timeLeft)
+                                  : _formatTime(elapsedSeconds),
+                              style: TextStyle(
+                                color: ColoresApp.blanco,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Progreso
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7B3FF2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$cellsFilled/$totalEmptyCells',
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  // Progreso
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7B3FF2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$cellsFilled/$totalEmptyCells',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            // Tablero de Sudoku
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Container(
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                // Tablero de Sudoku
+                Expanded(
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: ConstantesSudoku.tamanoSudoku,
-                      ),
-                      itemCount: ConstantesSudoku.tamanoSudoku * ConstantesSudoku.tamanoSudoku,
-                      itemBuilder: (context, index) {
-                        int row = index ~/ ConstantesSudoku.tamanoSudoku;
-                        int col = index % ConstantesSudoku.tamanoSudoku;
+                        child: GridView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: ConstantesSudoku.tamanoSudoku,
+                          ),
+                          itemCount: ConstantesSudoku.tamanoSudoku * ConstantesSudoku.tamanoSudoku,
+                          itemBuilder: (context, index) {
+                            int row = index ~/ ConstantesSudoku.tamanoSudoku;
+                            int col = index % ConstantesSudoku.tamanoSudoku;
 
-                        bool isSelected = selectedRow == row && selectedCol == col;
-                        bool isSameRow = selectedRow == row;
-                        bool isSameCol = selectedCol == col;
-                        bool isSameBox = selectedRow != null &&
-                            selectedCol != null &&
-                            (selectedRow! ~/ ConstantesSudoku.tamanoCaja) == (row ~/ ConstantesSudoku.tamanoCaja) &&
-                            (selectedCol! ~/ ConstantesSudoku.tamanoCaja) == (col ~/ ConstantesSudoku.tamanoCaja);
+                            bool isSelected = selectedRow == row && selectedCol == col;
+                            bool isSameRow = selectedRow == row;
+                            bool isSameCol = selectedCol == col;
+                            bool isSameBox = selectedRow != null &&
+                                selectedCol != null &&
+                                (selectedRow! ~/ ConstantesSudoku.tamanoCaja) == (row ~/ ConstantesSudoku.tamanoCaja) &&
+                                (selectedCol! ~/ ConstantesSudoku.tamanoCaja) == (col ~/ ConstantesSudoku.tamanoCaja);
 
-                        Color backgroundColor = ColoresApp.blanco;
-                        if (isError[row][col]) {
-                          backgroundColor = ColoresApp.colorCeldaError;
-                        } else if (isSelected) {
-                          backgroundColor = ColoresApp.colorCeldaSeleccionada;
-                        } else if (isSameRow || isSameCol || isSameBox) {
-                          backgroundColor = ColoresApp.colorCeldaRelacionada;
-                        }
+                            Color backgroundColor = ColoresApp.blanco;
+                            if (isError[row][col]) {
+                              backgroundColor = ColoresApp.colorCeldaError;
+                            } else if (isSelected) {
+                              backgroundColor = ColoresApp.colorCeldaSeleccionada;
+                            } else if (isSameRow || isSameCol || isSameBox) {
+                              backgroundColor = ColoresApp.colorCeldaRelacionada;
+                            }
 
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedRow = row;
-                              selectedCol = col;
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: backgroundColor,
-                              border: Border(
-                                top: BorderSide(
-                                  color: row % 3 == 0 ? Colors.black : Colors.grey[400]!,
-                                  width: row % 3 == 0 ? 2 : 0.5,
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedRow = row;
+                                  selectedCol = col;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: backgroundColor,
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: row % 3 == 0 ? Colors.black : Colors.grey[400]!,
+                                      width: row % 3 == 0 ? 2 : 0.5,
+                                    ),
+                                    left: BorderSide(
+                                      color: col % 3 == 0 ? Colors.black : Colors.grey[400]!,
+                                      width: col % 3 == 0 ? 2 : 0.5,
+                                    ),
+                                    right: BorderSide(
+                                      color: col == 8 ? Colors.black : Colors.transparent,
+                                      width: col == 8 ? 2 : 0,
+                                    ),
+                                    bottom: BorderSide(
+                                      color: row == 8 ? Colors.black : Colors.transparent,
+                                      width: row == 8 ? 2 : 0,
+                                    ),
+                                  ),
                                 ),
-                                left: BorderSide(
-                                  color: col % 3 == 0 ? Colors.black : Colors.grey[400]!,
-                                  width: col % 3 == 0 ? 2 : 0.5,
-                                ),
-                                right: BorderSide(
-                                  color: col == 8 ? Colors.black : Colors.transparent,
-                                  width: col == 8 ? 2 : 0,
-                                ),
-                                bottom: BorderSide(
-                                  color: row == 8 ? Colors.black : Colors.transparent,
-                                  width: row == 8 ? 2 : 0,
+                                child: Center(
+                                  child: board[row][col] == 0
+                                      ? (pencilNotes[row][col].isEmpty
+                                          ? const SizedBox()
+                                          : _buildPencilNotes(pencilNotes[row][col]))
+                                      : Text(
+                                          '${board[row][col]}',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: isFixed[row][col]
+                                                ? Colors.black
+                                                : const Color(0xFF7B3FF2),
+                                          ),
+                                        ),
                                 ),
                               ),
-                            ),
-                            child: Center(
-                              child: board[row][col] == 0
-                                  ? (pencilNotes[row][col].isEmpty
-                                      ? const SizedBox()
-                                      : _buildPencilNotes(pencilNotes[row][col]))
-                                  : Text(
-                                      '${board[row][col]}',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: isFixed[row][col]
-                                            ? Colors.black
-                                            : const Color(0xFF7B3FF2),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-            // Controles de números
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              child: Column(
-                children: [
-                  // Botones Lápiz y Borrador
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // Controles de números
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  child: Column(
                     children: [
-                      // Botón Lápiz
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isPencilMode = true;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isPencilMode
-                                ? ColoresApp.moradoPrincipal
-                                : ColoresApp.gris300,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(12),
-                              bottomLeft: Radius.circular(12),
-                            ),
-                            border: Border.all(
-                              color: isPencilMode
-                                  ? ColoresApp.moradoPrincipal
-                                  : ColoresApp.gris400,
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.edit,
-                                color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppStrings.get('pencil', currentLang),
-                                style: TextStyle(
-                                  color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      // Botones Lápiz y Borrador
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Botón Lápiz
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isPencilMode = true;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isPencilMode
+                                    ? ColoresApp.moradoPrincipal
+                                    : ColoresApp.gris300,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  bottomLeft: Radius.circular(12),
+                                ),
+                                border: Border.all(
+                                  color: isPencilMode
+                                      ? ColoresApp.moradoPrincipal
+                                      : ColoresApp.gris400,
+                                  width: 2,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Botón Borrador
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            isPencilMode = false;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: !isPencilMode
-                                ? ColoresApp.moradoPrincipal
-                                : ColoresApp.gris300,
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(12),
-                              bottomRight: Radius.circular(12),
-                            ),
-                            border: Border.all(
-                              color: !isPencilMode
-                                  ? ColoresApp.moradoPrincipal
-                                  : ColoresApp.gris400,
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.border_color,
-                                color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                size: 20,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    AppStrings.get('pencil', currentLang),
+                                    style: TextStyle(
+                                      color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppStrings.get('notes', currentLang),
-                                style: TextStyle(
-                                  color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          // Botón Borrador
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isPencilMode = false;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: !isPencilMode
+                                    ? ColoresApp.moradoPrincipal
+                                    : ColoresApp.gris300,
+                                borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(12),
+                                  bottomRight: Radius.circular(12),
+                                ),
+                                border: Border.all(
+                                  color: !isPencilMode
+                                      ? ColoresApp.moradoPrincipal
+                                      : ColoresApp.gris400,
+                                  width: 2,
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.border_color,
+                                    color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    AppStrings.get('notes', currentLang),
+                                    style: TextStyle(
+                                      color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                  // Números 1-9
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(ConstantesSudoku.tamanoSudoku, (index) {
-                      int number = index + ConstantesSudoku.valorMinimoCelda;
-                      return GestureDetector(
-                        onTap: () => _placeNumber(number),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: selectedNumber == number
-                                ? ColoresApp.moradoPrincipal
-                                : ColoresApp.gris300,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$number',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                      // Números 1-9
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: List.generate(ConstantesSudoku.tamanoSudoku, (index) {
+                          int number = index + ConstantesSudoku.valorMinimoCelda;
+                          return GestureDetector(
+                            onTap: () => _placeNumber(number),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
                                 color: selectedNumber == number
-                                    ? ColoresApp.blanco
-                                    : ColoresApp.negro,
+                                    ? ColoresApp.moradoPrincipal
+                                    : ColoresApp.gris300,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$number',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: selectedNumber == number
+                                        ? ColoresApp.blanco
+                                        : ColoresApp.negro,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Botones de acción
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Botón Borrar
-                      ElevatedButton.icon(
-                        onPressed: _clearCell,
-                        icon: const Icon(Icons.backspace, size: 18),
-                        label: Text(AppStrings.get('erase', currentLang)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        ),
+                          );
+                        }),
                       ),
 
-                      // Botón Pista (no disponible en modo perfecto)
-                      if (!widget.isPerfectMode)
-                        ElevatedButton.icon(
-                          onPressed: _showHint,
-                          icon: const Icon(Icons.lightbulb, size: 18),
-                          label: Text(AppStrings.get('hint', currentLang)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      const SizedBox(height: 16),
+
+                      // Botones de acción
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Botón Borrar
+                          ElevatedButton.icon(
+                            onPressed: _clearCell,
+                            icon: const Icon(Icons.backspace, size: 18),
+                            label: Text(AppStrings.get('erase', currentLang)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            ),
                           ),
-                        ),
+
+                          // Botón Pista (no disponible en modo perfecto)
+                          if (!widget.isPerfectMode)
+                            ElevatedButton.icon(
+                              onPressed: _showHint,
+                              icon: const Icon(Icons.lightbulb, size: 18),
+                              label: Text(AppStrings.get('hint', currentLang)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Overlay de pausa
+          if (isPaused)
+            PauseOverlay(
+              onResume: _togglePause,
+              onRestart: _restartGame,
+              onExit: () => Navigator.pop(context),
+            ),
+        ],
       ),
     );
   }

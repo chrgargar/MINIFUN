@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/game_control_buttons.dart';
+import '../widgets/pause_overlay.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -43,6 +45,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   // Historial para deshacer
   List<List<List<Color>>> history = [];
+
+  // Estado de pausa
+  bool isPaused = false;
 
   @override
   void initState() {
@@ -104,7 +109,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   void _startTimer() {
     Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && widget.isTimeAttackMode && !gameWon && !gameOver) {
+      if (mounted && widget.isTimeAttackMode && !gameWon && !gameOver && !isPaused) {
         setState(() {
           timeLeft--;
           if (timeLeft <= 0) {
@@ -115,7 +120,16 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         if (!gameOver && !gameWon) {
           _startTimer();
         }
+      } else if (mounted && widget.isTimeAttackMode && isPaused && !gameWon && !gameOver) {
+        // Si está pausado, seguir esperando
+        _startTimer();
       }
+    });
+  }
+
+  void _togglePause() {
+    setState(() {
+      isPaused = !isPaused;
     });
   }
 
@@ -173,7 +187,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _onTubeTap(int index) {
-    if (gameWon || gameOver || isPouring) return;
+    if (gameWon || gameOver || isPouring || isPaused) return;
 
     setState(() {
       if (selectedTube == null) {
@@ -407,26 +421,54 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               ],
             ),
 
-            // Botón cerrar
+            // Botones de control (pausa, reiniciar, cerrar)
             Positioned(
               top: 16,
               right: 16,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ColoresApp.rojoError.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  color: ColoresApp.blanco,
-                  onPressed: () => Navigator.pop(context),
-                ),
+              child: Row(
+                children: [
+                  GamePauseButton(
+                    isPaused: isPaused,
+                    onPressed: _togglePause,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  GameRestartButton(
+                    onPressed: _restart,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: ColoresApp.rojoError,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: ColoresApp.blanco,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
             // Overlay de Game Over
             if (gameOver && !gameWon)
               _buildGameOverOverlay(isDark),
+
+            // Overlay de pausa
+            if (isPaused)
+              PauseOverlay(
+                onResume: _togglePause,
+                onRestart: _restart,
+                onExit: () => Navigator.pop(context),
+              ),
           ],
         ),
       ),
