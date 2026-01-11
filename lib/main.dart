@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/pantalla_login.dart';
 import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
 import 'tema/language_provider.dart';
 import 'providers/auth_provider.dart';
 
-// Función principal que se ejecuta al iniciar la app
+// Función principal que se ejecuta al iniciar la appflut
 void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar sqflite para desktop
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
 
   // Inicializar sqflite
   await databaseFactory.setDatabasesPath(await getDatabasesPath());
