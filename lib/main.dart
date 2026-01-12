@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/pantalla_login.dart';
 import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
@@ -12,8 +13,11 @@ void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar sqflite
-  await databaseFactory.setDatabasesPath(await getDatabasesPath());
+  // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
 
   runApp(
     // MultiProvider permite compartir múltiples estados en toda la app

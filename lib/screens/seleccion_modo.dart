@@ -5,10 +5,12 @@ import '../juegos/Snake.dart';
 import '../juegos/sudoku.dart';
 import '../juegos/WaterSort.dart';
 import '../juegos/buscaminas.dart';
+import '../juegos/SopadeLetras.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
+import '../constants/sopa_de_letras_constants.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -143,6 +145,8 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(builder: (context) => BuscaminasGame.facil),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              _showThemeSelectionDialog(context, 'facil');
                             }
                           },
                         ),
@@ -207,6 +211,21 @@ class SeleccionModo extends StatelessWidget {
                                 ],
                                 controles: GuiasJuegos.getWaterSortControles(currentLang),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              GuiaJuegoDialog.show(
+                                context,
+                                gameTitle: gameTitle,
+                                gameImagePath: gameImagePath,
+                                objetivo: AppStrings.get('wordsearch_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('wordsearch_inst_1', currentLang),
+                                  AppStrings.get('wordsearch_inst_2', currentLang),
+                                  AppStrings.get('wordsearch_inst_3', currentLang),
+                                  AppStrings.get('wordsearch_inst_4', currentLang),
+                                  AppStrings.get('wordsearch_inst_5', currentLang),
+                                ],
+                                controles: GuiasJuegos.getWordSearchControles(currentLang),
+                              );
                             }
                           },
                         ),
@@ -255,6 +274,8 @@ class SeleccionModo extends StatelessWidget {
                                   builder: (context) => BuscaminasGame.dificil,
                                 ),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              _showThemeSelectionDialog(context, 'dificil');
                             }
                           },
                         ),
@@ -315,6 +336,8 @@ class SeleccionModo extends StatelessWidget {
                                   builder: (context) => BuscaminasGame.contrareloj,
                                 ),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              _showThemeSelectionDialog(context, 'medio', isTimeAttackMode: true);
                             }
                           },
                         ),
@@ -394,5 +417,44 @@ class SeleccionModo extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showThemeSelectionDialog(BuildContext context, String difficulty, {bool isTimeAttackMode = false, bool isPerfectMode = false}) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    
+    showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppStrings.get('select_theme', currentLang)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ConstantesSopaLetras.tematicas.map((theme) {
+              String themeName = AppStrings.get('theme_$theme', currentLang);
+              return ListTile(
+                title: Text(themeName),
+                onTap: () {
+                  Navigator.of(context).pop(theme);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    ).then((selectedTheme) {
+      if (selectedTheme != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WordSearchGame(
+              difficulty: difficulty,
+              theme: selectedTheme,
+              isTimeAttackMode: isTimeAttackMode,
+              isPerfectMode: isPerfectMode,
+            ),
+          ),
+        );
+      }
+    });
   }
 }

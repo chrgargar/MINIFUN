@@ -149,6 +149,25 @@ class AppStrings {
       'control_hint': 'Pista',
       'control_hint_desc': 'Revela el número correcto de una celda vacía (no disponible en modo perfecto)',
 
+      // Sopa de Letras
+      'wordsearch_objective': 'Encuentra todas las palabras ocultas en la cuadrícula',
+      'wordsearch_inst_1': 'Toca la primera letra de una palabra',
+      'wordsearch_inst_2': 'Arrastra el dedo hasta la última letra de la palabra',
+      'wordsearch_inst_3': 'Las palabras pueden estar en horizontal, vertical o diagonal',
+      'wordsearch_inst_4': 'Las palabras pueden estar al derecho o al revés',
+      'wordsearch_inst_5': 'Las palabras encontradas se tacharán de la lista',
+      'control_select_start': 'Seleccionar inicio',
+      'control_select_start_desc': 'Toca la primera letra de la palabra',
+      'control_drag': 'Arrastrar',
+      'control_drag_desc': 'Arrastra hasta la última letra',
+      'control_clear': 'Limpiar selección',
+      'control_clear_desc': 'Limpia la selección actual',
+      'select_theme': 'Seleccionar temática',
+      'theme_general': 'General',
+      'theme_peliculas': 'Películas',
+      'theme_musica': 'Música',
+      'theme_historia': 'Historia',
+
       // Guías Water Sort
       'watersort_objective': 'Organizar los líquidos de colores en tubos separados hasta que cada tubo contenga únicamente un solo color.',
       'watersort_inst_1': 'Toca un tubo para seleccionar el líquido que quieres mover',
@@ -315,6 +334,25 @@ class AppStrings {
       'control_erase_desc': 'Erase the number and notes from the selected cell',
       'control_hint': 'Hint',
       'control_hint_desc': 'Reveals the correct number for an empty cell',
+
+      // Word Search
+      'wordsearch_objective': 'Find all hidden words in the grid',
+      'wordsearch_inst_1': 'Tap the first letter of a word',
+      'wordsearch_inst_2': 'Drag your finger to the last letter of the word',
+      'wordsearch_inst_3': 'Words can be horizontal, vertical, or diagonal',
+      'wordsearch_inst_4': 'Words can be forward or backward',
+      'wordsearch_inst_5': 'Found words will be crossed out from the list',
+      'control_select_start': 'Select start',
+      'control_select_start_desc': 'Tap the first letter of the word',
+      'control_drag': 'Drag',
+      'control_drag_desc': 'Drag to the last letter',
+      'control_clear': 'Clear selection',
+      'control_clear_desc': 'Clear current selection',
+      'select_theme': 'Select theme',
+      'theme_general': 'General',
+      'theme_peliculas': 'Movies',
+      'theme_musica': 'Music',
+      'theme_historia': 'History',
 
       // Water Sort Guides
       'watersort_objective': 'Sort the colored water into tubes until each tube contains only one color.',

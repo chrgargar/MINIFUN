@@ -109,7 +109,6 @@ class DatabaseService {
   /// Crear usuario invitado
   Future<UserModel> createGuestUser() async {
     final db = await database;
-    final now = DateTime.now();
 
     final user = UserModel.guest();
     final id = await db.insert('users', user.toMap());

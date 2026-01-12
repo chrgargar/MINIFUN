@@ -38,7 +38,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   // Para animaciones
   AnimationController? _pourAnimationController;
-  Animation<double>? _pourAnimation;
+  Animation<double>? _pourAnimation; // ignore: unused_field
   int? pouringFromTube;
   int? pouringToTube;
   bool isPouring = false;
