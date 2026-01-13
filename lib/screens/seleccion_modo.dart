@@ -8,6 +8,7 @@ import '../juegos/buscaminas.dart';
 import '../juegos/SopadeLetras.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
+import 'buscaminas_difficulty_selection.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/sopa_de_letras_constants.dart';
@@ -143,7 +144,7 @@ class SeleccionModo extends StatelessWidget {
                             } else if (gameTitle == 'Buscaminas') {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => BuscaminasGame.facil),
+                                MaterialPageRoute(builder: (context) => const BuscaminasDifficultySelection()),
                               );
                             } else if (gameTitle == 'Sopa de Letras') {
                               _showThemeSelectionDialog(context, 'facil');
