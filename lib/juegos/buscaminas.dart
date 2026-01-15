@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/boton_guia.dart';
+import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/buscaminas_con.dart';
 
@@ -53,6 +57,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   Timer? gameTimer;
   
   bool isFlaggingMode = false;
+  bool isPaused = false; // Para pausar el juego al abrir la guía
   final Set<String> _pressedTiles = {}; // tracks briefly-pressed tiles for animation
 
   void _animateTile(int row, int col) {
@@ -80,8 +85,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
     controller = BuscaminasController(rows: rows, cols: cols, mineCount: mineCount);
     controller.createBoard();
-    
+
     _initializeGame();
+    _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
@@ -89,7 +95,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   }
 
   void _onAudioSettingsChanged() {
-    // El volumen de SFX se actualiza directamente en _playSound
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.setLoopVolume(audioSettings.musicVolume);
   }
 
   @override
@@ -104,9 +111,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     super.dispose();
   }
 
-  Future<void> _playSound(String sound) async {
+  void _startBackgroundMusic() {
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
+    AudioService.playLoop('Sonidos/music_buscaminas.mp3', audioSettings.musicVolume);
   }
 
   void _initializeGame() {
@@ -132,22 +139,21 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     gameTimer?.cancel();
     if (isContrareloj) {
       gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!gameOver && !won) {
+        if (!gameOver && !won && !isPaused) {
           setState(() {
             timeLeft--;
             if (timeLeft <= 0) {
               timer.cancel();
               gameOver = true;
               controller.revealAllMines();
-              _playSound('gameover.mp3');
-              _showGameOverDialog();
+                            _showGameOverDialog();
             }
           });
         }
       });
     } else if (isSinBanderas) {
       gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!gameOver && !won) {
+        if (!gameOver && !won && !isPaused) {
           setState(() {
             timeElapsed++;
           });
@@ -155,7 +161,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       });
     } else {
       gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!gameOver && !won) {
+        if (!gameOver && !won && !isPaused) {
           setState(() {
             timeElapsed++;
           });
@@ -190,13 +196,11 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     if (hitMine) {
       setState(() => gameOver = true);
       controller.revealAllMines();
-      _playSound('gameover.mp3');
-      _showGameOverDialog();
+            _showGameOverDialog();
       return;
     }
 
-    _playSound('move.mp3');
-    _checkWin();
+        _checkWin();
   }
 
   void _revealAdjacentCells(int row, int col) {
@@ -212,13 +216,11 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       if (controller.board[row][col].isFlagged) {
         controller.toggleFlag(row, col); // remove
         flagsPlaced = controller.countFlags();
-        _playSound('food.mp3');
-      } else {
+              } else {
         if (controller.countFlags() < mineCount) {
           controller.toggleFlag(row, col); // add
           flagsPlaced = controller.countFlags();
-          _playSound('food.mp3');
-        } else {
+                  } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('¡Límite máximo de minas alcanzado!')),
           );
@@ -231,7 +233,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   void _toggleFlaggingMode() {
     setState(() {
       isFlaggingMode = !isFlaggingMode;
-      _playSound(isFlaggingMode ? 'powerup.mp3' : 'move.mp3'); 
+       
     });
   }
 
@@ -245,8 +247,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     if (cellsRevealed == totalSafeCells) {
       won = true;
       gameTimer?.cancel();
-      _playSound('food.mp3');
-      _showWinDialog();
+            _showWinDialog();
     }
   }
 
@@ -374,27 +375,48 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                       Text('$rows x $cols', style: TextStyle(color: ColoresApp.blanco, fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
-                  // RIGHT: Flags counter, flag button, and close button
+                  // RIGHT: Flags counter, flag button, guide button, and close button
                   Column(
                     children: [
-                      Row(
-                        children: [
-                          if (!isSinBanderas)
-                            Row(
-                              children: [
-                                Text('${controller.countFlags()}/$mineCount', style: TextStyle(color: ColoresApp.blanco, fontSize: 20, fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: 24),
-                              ],
-                            ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            color: ColoresApp.blanco,
-                            iconSize: 28,
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
+                      Builder(
+                        builder: (context) {
+                          final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+                          return Row(
+                            children: [
+                              if (!isSinBanderas)
+                                Row(
+                                  children: [
+                                    Text('${controller.countFlags()}/$mineCount', style: TextStyle(color: ColoresApp.blanco, fontSize: 20, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: 24),
+                                  ],
+                                ),
+                              const SizedBox(width: 8),
+                              BotonGuia(
+                                gameTitle: 'Buscaminas',
+                                gameImagePath: 'assets/imagenes/buscaminas.png',
+                                objetivo: AppStrings.get('minesweeper_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('minesweeper_inst_1', currentLang),
+                                  AppStrings.get('minesweeper_inst_2', currentLang),
+                                  AppStrings.get('minesweeper_inst_3', currentLang),
+                                  AppStrings.get('minesweeper_inst_4', currentLang),
+                                ],
+                                controles: GuiasJuegos.getBuscaminasControles(currentLang),
+                                size: 40,
+                                onOpen: () => setState(() => isPaused = true),
+                                onClose: () => setState(() => isPaused = false),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                color: ColoresApp.blanco,
+                                iconSize: 28,
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       if (!isSinBanderas)
                         FloatingActionButton(

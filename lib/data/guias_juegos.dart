@@ -116,4 +116,41 @@ class GuiasJuegos {
       ),
     ];
   }
+
+  // Controles de Ahorcado traducidos
+  static List<ControlItem> getHangmanControles(String lang) {
+    return [
+      ControlItem(
+        icon: '🔤',
+        name: AppStrings.get('control_guess_letter', lang),
+        description: AppStrings.get('control_guess_letter_desc', lang),
+      ),
+      ControlItem(
+        icon: '🔄',
+        name: AppStrings.get('control_restart', lang),
+        description: AppStrings.get('control_restart_desc', lang),
+      ),
+    ];
+  }
+
+  // Controles de Buscaminas traducidos
+  static List<ControlItem> getBuscaminasControles(String lang) {
+    return [
+      ControlItem(
+        icon: '👆',
+        name: AppStrings.get('control_reveal', lang),
+        description: AppStrings.get('control_reveal_desc', lang),
+      ),
+      ControlItem(
+        icon: '🚩',
+        name: AppStrings.get('control_flag', lang),
+        description: AppStrings.get('control_flag_desc', lang),
+      ),
+      ControlItem(
+        icon: '🔄',
+        name: AppStrings.get('control_restart', lang),
+        description: AppStrings.get('control_restart_desc', lang),
+      ),
+    ];
+  }
 }

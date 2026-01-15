@@ -323,7 +323,8 @@ class GuiaJuegoDialog extends StatelessWidget {
   }
 
   /// Método estático para mostrar el diálogo fácilmente
-  static void show(
+  /// Retorna un Future que se completa cuando se cierra el diálogo
+  static Future<void> show(
     BuildContext context, {
     required String gameTitle,
     required String gameImagePath,
@@ -331,7 +332,7 @@ class GuiaJuegoDialog extends StatelessWidget {
     required List<String> instrucciones,
     required List<ControlItem> controles,
   }) {
-    showDialog(
+    return showDialog(
       context: context,
       builder: (context) => GuiaJuegoDialog(
         gameTitle: gameTitle,

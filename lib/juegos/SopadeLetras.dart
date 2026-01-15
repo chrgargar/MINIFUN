@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
+import '../widgets/boton_guia.dart';
+import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
+import '../tema/app_colors.dart';
+import '../tema/language_provider.dart';
+import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/sopa_de_letras_constants.dart';
 
@@ -44,6 +49,11 @@ class _WordSearchGameState extends State<WordSearchGame> {
   List<List<int>> selectedCells = [];
   int? startRow, startCol;
 
+  // Variables para drag
+  bool isDragging = false;
+  GlobalKey gridKey = GlobalKey();
+  double cellSize = 0;
+
   // Timer
   Timer? gameTimer;
   int elapsedSeconds = 0;
@@ -57,9 +67,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
   void initState() {
     super.initState();
     _initializeGame();
+    _startBackgroundMusic();
     if (widget.isTimeAttackMode) {
       _startTimer();
     }
+  }
+
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music_sopadeletras.mp3', audioSettings.musicVolume);
   }
 
   void _initializeGame() {
@@ -80,7 +96,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
     // Obtener lista de palabras de la temática y dificultad
     List<String> allWords = List.from(ConstantesSopaLetras.palabrasPorTematica[widget.theme]?[widget.difficulty] ?? []);
-    
+
+    // Remover espacios de las palabras y filtrar palabras vacías
+    allWords = allWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
+
     // Mezclar y seleccionar máximo número de palabras
     allWords.shuffle(Random());
     int maxWords = ConstantesSopaLetras.maxPalabras[widget.difficulty] ?? 8;
@@ -92,6 +111,8 @@ class _WordSearchGameState extends State<WordSearchGame> {
     // Si no hay palabras válidas, usar palabras de general
     if (wordsToFind.isEmpty) {
       List<String> defaultWords = ConstantesSopaLetras.palabrasPorTematica['general']?[widget.difficulty] ?? [];
+      // También remover espacios de las palabras por defecto
+      defaultWords = defaultWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
       defaultWords = defaultWords.where((word) => word.length <= gridSize).toList();
       defaultWords.shuffle(Random());
       wordsToFind = defaultWords.take(5).toList(); // Al menos 5 palabras por defecto
@@ -187,27 +208,73 @@ class _WordSearchGameState extends State<WordSearchGame> {
     });
   }
 
-  void _onCellTap(int row, int col) {
+  // Obtener la celda basándose en la posición del toque
+  List<int>? _getCellFromPosition(Offset globalPosition) {
+    final RenderBox? box = gridKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+
+    final Offset localPosition = box.globalToLocal(globalPosition);
+
+    // Calcular tamaño de celda incluyendo espaciado
+    final double gridWidth = box.size.width;
+    final double gridHeight = box.size.height;
+    final double effectiveCellWidth = gridWidth / gridSize;
+    final double effectiveCellHeight = gridHeight / gridSize;
+
+    final int col = (localPosition.dx / effectiveCellWidth).floor();
+    final int row = (localPosition.dy / effectiveCellHeight).floor();
+
+    // Verificar que está dentro del grid
+    if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
+      return [row, col];
+    }
+    return null;
+  }
+
+  void _onPanStart(DragStartDetails details) {
     if (isPaused || isGameOver) return;
 
-    setState(() {
-      if (startRow == null) {
-        // Primera selección
-        startRow = row;
-        startCol = col;
-        selectedCells = [[row, col]];
-      } else {
-        // Segunda selección - verificar si forma una línea recta
-        if (_isValidSelection(row, col)) {
-          // Llenar todas las celdas en la línea recta
+    final cell = _getCellFromPosition(details.globalPosition);
+    if (cell != null) {
+      setState(() {
+        isDragging = true;
+        startRow = cell[0];
+        startCol = cell[1];
+        selectedCells = [[cell[0], cell[1]]];
+      });
+    }
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (!isDragging || isPaused || isGameOver) return;
+    if (startRow == null || startCol == null) return;
+
+    final cell = _getCellFromPosition(details.globalPosition);
+    if (cell != null) {
+      final int row = cell[0];
+      final int col = cell[1];
+
+      // Verificar si es una selección válida (línea recta)
+      if (_isValidSelection(row, col)) {
+        setState(() {
           selectedCells = _getCellsInLine(startRow!, startCol!, row, col);
-          _checkForWord();
-        } else {
-          // Reiniciar selección
-          startRow = row;
-          startCol = col;
-          selectedCells = [[row, col]];
-        }
+        });
+      }
+    }
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    if (!isDragging || isPaused || isGameOver) return;
+
+    setState(() {
+      isDragging = false;
+      if (selectedCells.length >= 2) {
+        _checkForWord();
+      } else {
+        // Limpiar si solo hay una celda
+        selectedCells.clear();
+        startRow = null;
+        startCol = null;
       }
     });
   }
@@ -261,53 +328,29 @@ class _WordSearchGameState extends State<WordSearchGame> {
     }
 
     if (found) {
-      _playSound('success');
       if (foundWords.length == wordsToFind.length) {
         _victory();
       }
-    } else {
-      _playSound('error');
     }
 
     // Limpiar selección
     selectedCells.clear();
     startRow = null;
     startCol = null;
-  }
-
-  void _markSelection() {
-    if (selectedCells.length < 2) return;
-
-    // Marcar celdas como encontradas
-    for (var cell in selectedCells) {
-      foundCells.add('${cell[0]},${cell[1]}');
-    }
-    // Limpiar selección
-    selectedCells.clear();
-    startRow = null;
-    startCol = null;
-    setState(() {});
   }
 
   void _victory() {
     isVictory = true;
     isGameOver = true;
     gameTimer?.cancel();
-    _playSound('victory');
+    AudioService.stopLoop();
   }
 
   void _gameOver(bool victory) {
     isVictory = victory;
     isGameOver = true;
     gameTimer?.cancel();
-    _playSound(victory ? 'victory' : 'game_over');
-  }
-
-  void _playSound(String soundType) {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    if (audioSettings.sfxVolume > 0 && !audioSettings.isMuted) {
-      AudioService.playSound('sonidos/$soundType.mp3', audioSettings.sfxVolume);
-    }
+    AudioService.stopLoop();
   }
 
   void _togglePause() {
@@ -319,7 +362,84 @@ class _WordSearchGameState extends State<WordSearchGame> {
   @override
   void dispose() {
     gameTimer?.cancel();
+    AudioService.stopLoop();
     super.dispose();
+  }
+
+  Widget _buildGameOverDialog() {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          backgroundColor: ColoresApp.blanco,
+          title: Text(
+            isVictory ? "🎉 ${AppStrings.get('congratulations', currentLang)}" : "💀 ${AppStrings.get('game_over', currentLang)}",
+            style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            isVictory
+                ? "${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}\n${AppStrings.get('score', currentLang)}: $score"
+                : "${AppStrings.get('time_up', currentLang)}\n${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}",
+            style: TextStyle(color: ColoresApp.negro),
+          ),
+          actions: [
+            if (isVictory)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  String nextDifficulty = widget.difficulty == 'facil' ? 'medio' : widget.difficulty == 'medio' ? 'dificil' : 'facil';
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WordSearchGame(
+                        difficulty: nextDifficulty,
+                        theme: widget.theme,
+                        isTimeAttackMode: widget.isTimeAttackMode,
+                        isPerfectMode: widget.isPerfectMode,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(AppStrings.get('next_level', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
+              ),
+            if (!isVictory)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _initializeGame();
+                    timeLeft = ConstantesSopaLetras.duracionContrarreloj;
+                    score = 0;
+                    isGameOver = false;
+                    isVictory = false;
+                    if (widget.isTimeAttackMode) {
+                      _startTimer();
+                    }
+                  });
+                },
+                child: Text(AppStrings.get('retry', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
+              ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
+            ),
+          ],
+        ),
+      );
+    });
+
+    return Container(
+      color: Colors.black54,
+      child: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 
   @override
@@ -350,32 +470,49 @@ class _WordSearchGameState extends State<WordSearchGame> {
                           color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      GameControlBar(
-                        isPaused: isPaused,
-                        onPausePressed: _togglePause,
-                        onRestartPressed: () {
-                          setState(() {
-                            _initializeGame();
-                            elapsedSeconds = 0;
-                            timeLeft = ConstantesSopaLetras.duracionContrarreloj;
-                            score = 0;
-                            hintsUsed = 0;
-                            isGameOver = false;
-                            isVictory = false;
-                            if (widget.isTimeAttackMode) {
-                              _startTimer();
-                            }
-                          });
+                      Builder(
+                        builder: (context) {
+                          final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+                          return Row(
+                            children: [
+                              GameControlBar(
+                                isPaused: isPaused,
+                                onPausePressed: _togglePause,
+                                onRestartPressed: () {
+                                  setState(() {
+                                    _initializeGame();
+                                    elapsedSeconds = 0;
+                                    timeLeft = ConstantesSopaLetras.duracionContrarreloj;
+                                    score = 0;
+                                    hintsUsed = 0;
+                                    isGameOver = false;
+                                    isVictory = false;
+                                    if (widget.isTimeAttackMode) {
+                                      _startTimer();
+                                    }
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              BotonGuia(
+                                gameTitle: 'Sopa de Letras',
+                                gameImagePath: 'assets/imagenes/sopadeletras.png',
+                                objetivo: AppStrings.get('wordsearch_objective', currentLang),
+                                instrucciones: [
+                                  AppStrings.get('wordsearch_inst_1', currentLang),
+                                  AppStrings.get('wordsearch_inst_2', currentLang),
+                                  AppStrings.get('wordsearch_inst_3', currentLang),
+                                  AppStrings.get('wordsearch_inst_4', currentLang),
+                                  AppStrings.get('wordsearch_inst_5', currentLang),
+                                ],
+                                controles: GuiasJuegos.getWordSearchControles(currentLang),
+                                size: 40,
+                                onOpen: () => setState(() => isPaused = true),
+                                onClose: () => setState(() => isPaused = false),
+                              ),
+                            ],
+                          );
                         },
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        onPressed: _markSelection,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        child: const Text('Marcar', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
@@ -440,40 +577,57 @@ class _WordSearchGameState extends State<WordSearchGame> {
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(16),
-                    child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: gridSize,
-                        crossAxisSpacing: 2,
-                        mainAxisSpacing: 2,
-                      ),
-                      itemCount: gridSize * gridSize,
-                      itemBuilder: (context, index) {
-                        int row = index ~/ gridSize;
-                        int col = index % gridSize;
-                        bool isSelected = selectedCells.any((cell) => cell[0] == row && cell[1] == col);
-                        bool isFound = foundCells.contains('${row},${col}');
+                    child: GestureDetector(
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Calcular el tamaño disponible para el grid cuadrado
+                          final double availableSize = min(constraints.maxWidth, constraints.maxHeight);
 
-                        return GestureDetector(
-                          onTap: () => _onCellTap(row, col),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isFound ? Colors.green : (isSelected ? Colors.blue : (isDark ? Colors.grey[800] : Colors.white)),
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Center(
-                              child: Text(
-                                grid[row][col],
-                                style: TextStyle(
-                                  fontSize: gridSize <= 6 ? 18 : gridSize <= 8 ? 16 : 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: (isSelected || isFound) ? Colors.white : (isDark ? Colors.white : Colors.black),
+                          return Center(
+                            child: SizedBox(
+                              width: availableSize,
+                              height: availableSize,
+                              child: GridView.builder(
+                                key: gridKey,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: gridSize,
+                                  crossAxisSpacing: 2,
+                                  mainAxisSpacing: 2,
                                 ),
+                                itemCount: gridSize * gridSize,
+                                itemBuilder: (context, index) {
+                                  int row = index ~/ gridSize;
+                                  int col = index % gridSize;
+                                  bool isSelected = selectedCells.any((cell) => cell[0] == row && cell[1] == col);
+                                  bool isFound = foundCells.contains('${row},${col}');
+
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: isFound ? Colors.green : (isSelected ? Colors.blue : (isDark ? Colors.grey[800] : Colors.white)),
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        grid[row][col],
+                                        style: TextStyle(
+                                          fontSize: gridSize <= 6 ? 18 : gridSize <= 8 ? 16 : 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: (isSelected || isFound) ? Colors.white : (isDark ? Colors.white : Colors.black),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -502,59 +656,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
             // Game Over overlay
             if (isGameOver)
-              Container(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isVictory ? '¡Victoria!' : 'Game Over',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      if (isVictory) ...[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                String nextDifficulty = widget.difficulty == 'facil' ? 'medio' : widget.difficulty == 'medio' ? 'dificil' : 'facil';
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => WordSearchGame(
-                                      difficulty: nextDifficulty,
-                                      theme: widget.theme,
-                                      isTimeAttackMode: widget.isTimeAttackMode,
-                                      isPerfectMode: widget.isPerfectMode,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Text('Siguiente Nivel'),
-                            ),
-                            const SizedBox(width: 20),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Elegir Temática'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                        child: const Text('Volver al menú'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildGameOverDialog(),
           ],
         ),
       ),

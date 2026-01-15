@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
+import '../widgets/boton_guia.dart';
+import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -65,12 +67,19 @@ class _SudokuGameState extends State<SudokuGame> {
     super.initState();
     _generateSudoku();
     _startTimer();
+    _startBackgroundMusic();
   }
 
   @override
   void dispose() {
     gameTimer?.cancel();
+    AudioService.stopLoop();
     super.dispose();
+  }
+
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music_sudoku.mp3', audioSettings.musicVolume);
   }
 
   void _startTimer() {
@@ -87,11 +96,6 @@ class _SudokuGameState extends State<SudokuGame> {
         }
       });
     });
-  }
-
-  Future<void> _playSound(String sound) async {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
   }
 
   void _generateSudoku() {
@@ -203,8 +207,7 @@ class _SudokuGameState extends State<SudokuGame> {
 
         // Verificar si es correcto
         if (number == solution[selectedRow!][selectedCol!]) {
-          _playSound('food.mp3');
-          cellsFilled++;
+                    cellsFilled++;
 
           // Verificar si ganó
           if (cellsFilled == totalEmptyCells) {
@@ -213,8 +216,7 @@ class _SudokuGameState extends State<SudokuGame> {
           }
         } else {
           // Error
-          _playSound('obstaculo.mp3');
-          isError[selectedRow!][selectedCol!] = true;
+                    isError[selectedRow!][selectedCol!] = true;
           errorsCount++;
 
           // En modo perfecto, terminar el juego
@@ -239,8 +241,7 @@ class _SudokuGameState extends State<SudokuGame> {
           pencilNotes[selectedRow!][selectedCol!].add(number);
           pencilNotes[selectedRow!][selectedCol!].sort();
         }
-        _playSound('move.mp3');
-      }
+              }
     });
   }
 
@@ -273,8 +274,7 @@ class _SudokuGameState extends State<SudokuGame> {
             selectedRow = i;
             selectedCol = j;
           });
-          _playSound('food.mp3');
-
+          
           // Verificar si ganó después de usar la pista
           if (cellsFilled == totalEmptyCells) {
             gameTimer?.cancel();
@@ -304,63 +304,17 @@ class _SudokuGameState extends State<SudokuGame> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+        backgroundColor: ColoresApp.blanco,
+        title: Text(
+          won ? "🎉 $title" : "💀 $title",
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
         ),
-        title: Row(
-          children: [
-            Icon(
-              won ? Icons.emoji_events : Icons.close_rounded,
-              color: won ? const Color(0xFF7B3FF2) : Colors.red,
-              size: 32,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: won ? const Color(0xFF7B3FF2) : Colors.red,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (won) ...[
-              const SizedBox(height: 16),
-              Text(
-                AppStrings.get('what_to_do', currentLang),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
+        content: Text(
+          message,
+          style: TextStyle(color: ColoresApp.negro),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Cerrar diálogo
-              Navigator.pop(context); // Volver al menú
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[700],
-            ),
-            child: Text(AppStrings.get('exit_menu', currentLang)),
-          ),
-          ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Cerrar diálogo
               setState(() {
@@ -374,16 +328,17 @@ class _SudokuGameState extends State<SudokuGame> {
               });
               _startTimer();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.moradoPrincipal,
-              foregroundColor: ColoresApp.blanco,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+            child: Text(
+              won ? AppStrings.get('play_again', currentLang) : AppStrings.get('retry', currentLang),
+              style: TextStyle(color: ColoresApp.moradoPrincipal),
             ),
-            child: Text(won
-                ? AppStrings.get('play_again', currentLang)
-                : AppStrings.get('retry', currentLang)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar diálogo
+              Navigator.pop(context); // Volver al menú
+            },
+            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
           ),
         ],
       ),
@@ -472,7 +427,7 @@ class _SudokuGameState extends State<SudokuGame> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Botones de control (pausa, reiniciar, cerrar)
+                      // Botones de control (pausa, reiniciar, guía, cerrar)
                       Row(
                         children: [
                           GamePauseButton(
@@ -484,6 +439,22 @@ class _SudokuGameState extends State<SudokuGame> {
                           GameRestartButton(
                             onPressed: _restartGame,
                             size: 40,
+                          ),
+                          const SizedBox(width: 8),
+                          BotonGuia(
+                            gameTitle: 'Sudoku',
+                            gameImagePath: 'assets/imagenes/sudoku.png',
+                            objetivo: AppStrings.get('sudoku_objective', currentLang),
+                            instrucciones: [
+                              AppStrings.get('sudoku_inst_1', currentLang),
+                              AppStrings.get('sudoku_inst_2', currentLang),
+                              AppStrings.get('sudoku_inst_3', currentLang),
+                              AppStrings.get('sudoku_inst_4', currentLang),
+                            ],
+                            controles: GuiasJuegos.getSudokuControles(currentLang),
+                            size: 40,
+                            onOpen: () => setState(() => isPaused = true),
+                            onClose: () => setState(() => isPaused = false),
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(

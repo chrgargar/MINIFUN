@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../widgets/virtual_joystick.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
+import '../widgets/boton_guia.dart';
+import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -79,7 +81,7 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void _onAudioSettingsChanged() {
-    _updateSfxVolume();
+    _updateMusicVolume();
   }
 
   @override
@@ -102,18 +104,14 @@ class _SnakeGameState extends State<SnakeGame> {
     super.dispose();
   }
 
-  void _updateSfxVolume() {
-    // El volumen de SFX se actualiza directamente en _playSound
+  void _updateMusicVolume() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.setLoopVolume(audioSettings.musicVolume);
   }
 
-  Future<void> _playSound(String sound) async {
+  void _startBackgroundMusic() {
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
-  }
-
-  Future<void> _playMoveSound() async {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    await AudioService.playSound('Sonidos/move.mp3', audioSettings.sfxVolume);
+    AudioService.playLoop('Sonidos/music_snake.mp3', audioSettings.musicVolume);
   }
 
   void startGame() {
@@ -124,6 +122,9 @@ class _SnakeGameState extends State<SnakeGame> {
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     obstacleTimer?.cancel();
+
+    // Iniciar música de fondo
+    _startBackgroundMusic();
 
     // Inicializar variables del modo contrarreloj
     if (widget.isTimeAttackMode) {
@@ -245,7 +246,7 @@ class _SnakeGameState extends State<SnakeGame> {
     timer?.cancel();
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
-    _playSound('gameover.mp3');
+    AudioService.stopLoop();
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
@@ -253,22 +254,29 @@ class _SnakeGameState extends State<SnakeGame> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: Text(AppStrings.get('time_up', currentLang)),
-        content: Text("${AppStrings.get('final_score', currentLang)}: $score"),
+        backgroundColor: ColoresApp.blanco,
+        title: Text(
+          "⏱️ ${AppStrings.get('time_up', currentLang)}",
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "${AppStrings.get('final_score', currentLang)}: $score",
+          style: TextStyle(color: ColoresApp.negro),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               startGame();
             },
-            child: Text(AppStrings.get('restart', currentLang)),
+            child: Text(AppStrings.get('restart', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: Text(AppStrings.get('exit', currentLang)),
+            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
           ),
         ],
       ),
@@ -341,12 +349,8 @@ class _SnakeGameState extends State<SnakeGame> {
       foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
       obstacleTimer?.cancel(); // Detener temporizador de obstáculos
 
-      // Reproducir sonido específico según el tipo de colisión
-      if (hitObstacle) {
-        _playSound('obstaculo.mp3'); // Sonido de obstáculo
-      } else {
-        _playSound('gameover.mp3'); // Sonido de game over normal
-      }
+      // Detener música de fondo
+      AudioService.stopLoop();
 
       final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
@@ -354,22 +358,29 @@ class _SnakeGameState extends State<SnakeGame> {
         context: context,
         barrierDismissible: false,
         builder: (_) => AlertDialog(
-          title: Text(AppStrings.get('game_over', currentLang)),
-          content: Text("${AppStrings.get('score', currentLang)}: $score"),
+          backgroundColor: ColoresApp.blanco,
+          title: Text(
+            "💀 ${AppStrings.get('game_over', currentLang)}",
+            style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            "${AppStrings.get('score', currentLang)}: $score",
+            style: TextStyle(color: ColoresApp.negro),
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 startGame();
               },
-              child: Text(AppStrings.get('restart', currentLang)),
+              child: Text(AppStrings.get('restart', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
-              child: Text(AppStrings.get('exit', currentLang)),
+              child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
             ),
           ],
         ),
@@ -377,12 +388,7 @@ class _SnakeGameState extends State<SnakeGame> {
       return;
     }
 
-    // Reproducir sonido de movimiento
-    _playMoveSound();
-
     if (newHead == food) {
-      _playSound('food.mp3'); // Sonido al comer comida
-
       // En modo contrarreloj, agregar tiempo según el tipo de fruta
       if (widget.isTimeAttackMode) {
         score++;
@@ -655,44 +661,64 @@ class _SnakeGameState extends State<SnakeGame> {
             Positioned(
               top: 16,
               right: 16,
-              child: Row(
-                children: [
-                  GamePauseButton(
-                    isPaused: isPaused,
-                    onPressed: togglePause,
-                    size: 45,
-                  ),
-                  const SizedBox(width: 12),
-                  GameRestartButton(
-                    onPressed: () {
-                      if (isPaused) {
-                        isPaused = false;
-                      }
-                      startGame();
-                    },
-                    size: 45,
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: ColoresApp.rojoError.withOpacity(0.9),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: ColoresApp.rojoError.withOpacity(0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+              child: Builder(
+                builder: (context) {
+                  final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+                  return Row(
+                    children: [
+                      GamePauseButton(
+                        isPaused: isPaused,
+                        onPressed: togglePause,
+                        size: 45,
+                      ),
+                      const SizedBox(width: 12),
+                      GameRestartButton(
+                        onPressed: () {
+                          if (isPaused) {
+                            isPaused = false;
+                          }
+                          startGame();
+                        },
+                        size: 45,
+                      ),
+                      const SizedBox(width: 12),
+                      BotonGuia(
+                        gameTitle: 'Snake',
+                        gameImagePath: 'assets/imagenes/sssnake.png',
+                        objetivo: AppStrings.get('snake_objective', currentLang),
+                        instrucciones: [
+                          AppStrings.get('snake_inst_1', currentLang),
+                          AppStrings.get('snake_inst_2', currentLang),
+                          AppStrings.get('snake_inst_3', currentLang),
+                          AppStrings.get('snake_inst_4', currentLang),
+                        ],
+                        controles: GuiasJuegos.getSnakeControles(currentLang),
+                        onOpen: () => setState(() => isPaused = true),
+                        onClose: () => setState(() => isPaused = false),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: ColoresApp.rojoError.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: ColoresApp.rojoError.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.close),
-                      color: ColoresApp.blanco,
-                      iconSize: 24,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ],
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          color: ColoresApp.blanco,
+                          iconSize: 24,
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             // Joystick virtual centrado en la parte inferior

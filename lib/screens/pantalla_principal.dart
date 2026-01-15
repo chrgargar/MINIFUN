@@ -3,11 +3,46 @@ import 'package:provider/provider.dart';
 import '../widgets/tarjetas_juegos.dart';
 import '../widgets/boton_ajustes.dart';
 import '../tema/language_provider.dart';
+import '../tema/audio_settings.dart';
 import '../constants/app_strings.dart';
+import '../services/audio_service.dart';
 
 // Pantalla principal
-class PantallaPrincipal extends StatelessWidget {
+class PantallaPrincipal extends StatefulWidget {
   const PantallaPrincipal({super.key});
+
+  @override
+  State<PantallaPrincipal> createState() => _PantallaPrincipalState();
+}
+
+class _PantallaPrincipalState extends State<PantallaPrincipal> {
+  @override
+  void initState() {
+    super.initState();
+    _startBackgroundMusic();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
+    });
+  }
+
+  @override
+  void dispose() {
+    try {
+      Provider.of<AudioSettings>(context, listen: false).removeListener(_onAudioSettingsChanged);
+    } catch (e) {}
+    super.dispose();
+  }
+
+  void _onAudioSettingsChanged() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.setLoopVolume(audioSettings.musicVolume);
+  }
+
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music_menu.mp3', audioSettings.musicVolume);
+  }
 
   @override
   Widget build(BuildContext context) {

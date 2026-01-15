@@ -63,23 +63,10 @@ class VentanaAjustes {
                       const Divider(height: 32),
 
                       // Opción: Control de volumen de música
-                      _buildVolumeSlider(
+                      _buildMusicVolumeSlider(
                         context: dialogContext,
                         audioSettings: audioSettings,
-                        icon: Icons.music_note,
                         title: AppStrings.get('music_volume', currentLang),
-                        volumeType: 'music',
-                      ),
-
-                      const Divider(height: 32),
-
-                      // Opción: Control de volumen de efectos
-                      _buildVolumeSlider(
-                        context: dialogContext,
-                        audioSettings: audioSettings,
-                        icon: Icons.volume_up,
-                        title: AppStrings.get('effects_volume', currentLang),
-                        volumeType: 'sfx',
                       ),
 
                       const Divider(height: 32),
@@ -433,21 +420,17 @@ class VentanaAjustes {
     );
   }
 
-  // Widget para control de volumen con slider
-  static Widget _buildVolumeSlider({
+  // Widget para control de volumen de música con slider
+  static Widget _buildMusicVolumeSlider({
     required BuildContext context,
     required AudioSettings audioSettings,
-    required IconData icon,
     required String title,
-    required String volumeType, // 'music' o 'sfx'
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer<AudioSettings>(
       builder: (context, audio, child) {
-        final currentVolume = volumeType == 'music'
-            ? audio.rawMusicVolume
-            : audio.rawSfxVolume;
+        final currentVolume = audio.rawMusicVolume;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -462,9 +445,9 @@ class VentanaAjustes {
                       color: const Color(0xFF7B3FF2).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      icon,
-                      color: const Color(0xFF7B3FF2),
+                    child: const Icon(
+                      Icons.music_note,
+                      color: Color(0xFF7B3FF2),
                       size: 24,
                     ),
                   ),
@@ -509,11 +492,7 @@ class VentanaAjustes {
                   max: 1.0,
                   divisions: 20,
                   onChanged: (value) {
-                    if (volumeType == 'music') {
-                      audio.setMusicVolume(value);
-                    } else {
-                      audio.setSfxVolume(value);
-                    }
+                    audio.setMusicVolume(value);
                   },
                 ),
               ),

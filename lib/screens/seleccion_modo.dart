@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/boton_ajustes.dart';
+import '../widgets/boton_guia.dart';
+import '../widgets/guia_juego_dialog.dart';
+import '../data/guias_juegos.dart';
 import '../juegos/Snake.dart';
 import '../juegos/sudoku.dart';
 import '../juegos/WaterSort.dart';
 import '../juegos/buscaminas.dart';
 import '../juegos/SopadeLetras.dart';
-import '../widgets/guia_juego_dialog.dart';
-import '../data/guias_juegos.dart';
+import '../juegos/Ahorcado.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/sopa_de_letras_constants.dart';
+import '../constants/ahorcado_constants.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -58,7 +61,7 @@ class SeleccionModo extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Header: Botón atrás y ajustes
+                  // Header: Botón atrás, guía y ajustes
                   SizedBox(
                     height: headerHeight,
                     child: Row(
@@ -68,7 +71,13 @@ class SeleccionModo extends StatelessWidget {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.arrow_back_ios, size: 24),
                         ),
-                        const BotonAjustes(),
+                        Row(
+                          children: [
+                            _buildGuiaButton(currentLang),
+                            const SizedBox(width: 8),
+                            const BotonAjustes(),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -147,102 +156,27 @@ class SeleccionModo extends StatelessWidget {
                               );
                             } else if (gameTitle == 'Sopa de Letras') {
                               _showThemeSelectionDialog(context, 'facil');
+                            } else if (gameTitle == 'Ahorcado') {
+                              _showHangmanThemeDialog(context, 'facil');
                             }
                           },
                         ),
 
                         SizedBox(height: spacing),
 
-                        // Botón Guía
+                        // Botón Supervivencia PRO (Snake, Ahorcado) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Experto (Buscaminas)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: '📖',
-                          text: AppStrings.get('guide', currentLang),
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('snake_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('snake_inst_1', currentLang),
-                                  AppStrings.get('snake_inst_2', currentLang),
-                                  AppStrings.get('snake_inst_3', currentLang),
-                                  AppStrings.get('snake_inst_4', currentLang),
-                                  AppStrings.get('snake_inst_5', currentLang),
-                                ],
-                                controles: GuiasJuegos.getSnakeControles(currentLang),
-                              );
-                            } else if (gameTitle == 'Sudoku') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('sudoku_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('sudoku_inst_1', currentLang),
-                                  AppStrings.get('sudoku_inst_2', currentLang),
-                                  AppStrings.get('sudoku_inst_3', currentLang),
-                                  AppStrings.get('sudoku_inst_4', currentLang),
-                                  AppStrings.get('sudoku_inst_5', currentLang),
-                                  AppStrings.get('sudoku_inst_6', currentLang),
-                                  AppStrings.get('sudoku_inst_7', currentLang),
-                                  AppStrings.get('sudoku_inst_8', currentLang),
-                                  AppStrings.get('sudoku_inst_9', currentLang),
-                                ],
-                                controles: GuiasJuegos.getSudokuControles(currentLang),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('watersort_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('watersort_inst_1', currentLang),
-                                  AppStrings.get('watersort_inst_2', currentLang),
-                                  AppStrings.get('watersort_inst_3', currentLang),
-                                  AppStrings.get('watersort_inst_4', currentLang),
-                                  AppStrings.get('watersort_inst_5', currentLang),
-                                  AppStrings.get('watersort_inst_6', currentLang),
-                                  AppStrings.get('watersort_inst_7', currentLang),
-                                ],
-                                controles: GuiasJuegos.getWaterSortControles(currentLang),
-                              );
-                            } else if (gameTitle == 'Sopa de Letras') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('wordsearch_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('wordsearch_inst_1', currentLang),
-                                  AppStrings.get('wordsearch_inst_2', currentLang),
-                                  AppStrings.get('wordsearch_inst_3', currentLang),
-                                  AppStrings.get('wordsearch_inst_4', currentLang),
-                                  AppStrings.get('wordsearch_inst_5', currentLang),
-                                ],
-                                controles: GuiasJuegos.getWordSearchControles(currentLang),
-                              );
-                            }
-                          },
-                        ),
-
-                        SizedBox(height: spacing),
-
-                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Experto (Buscaminas)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : '💎')),
+                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : (gameTitle == 'Ahorcado' ? '💀' : '💎'))),
                           text: gameTitle == 'Snake'
                               ? AppStrings.get('survival_pro', currentLang)
                               : (gameTitle == 'Buscaminas'
                                   ? 'Experto'
                                   : (gameTitle == 'WaterSort'
                                       ? AppStrings.get('hard_pro', currentLang)
-                                      : AppStrings.get('perfect_pro', currentLang))),
+                                      : (gameTitle == 'Ahorcado'
+                                          ? AppStrings.get('hangman_survival', currentLang)
+                                          : AppStrings.get('perfect_pro', currentLang)))),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
@@ -276,6 +210,8 @@ class SeleccionModo extends StatelessWidget {
                               );
                             } else if (gameTitle == 'Sopa de Letras') {
                               _showThemeSelectionDialog(context, 'dificil');
+                            } else if (gameTitle == 'Ahorcado') {
+                              _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
                             }
                           },
                         ),
@@ -301,11 +237,15 @@ class SeleccionModo extends StatelessWidget {
 
                         if (gameTitle == 'Snake') SizedBox(height: spacing),
 
-                        // Botón Contrarreloj (Snake, Sudoku, WaterSort, Buscaminas)
+                        // Botón Contrarreloj (Snake, Sudoku, WaterSort, Buscaminas) / Velocidad (Ahorcado)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: '⏱️',
-                          text: gameTitle == 'Buscaminas' ? 'Contrarreloj' : AppStrings.get('time_attack', currentLang),
+                          icon: gameTitle == 'Ahorcado' ? '🚀' : '⏱️',
+                          text: gameTitle == 'Buscaminas'
+                              ? 'Contrarreloj'
+                              : (gameTitle == 'Ahorcado'
+                                  ? AppStrings.get('hangman_speed', currentLang)
+                                  : AppStrings.get('time_attack', currentLang)),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
                             if (gameTitle == 'Snake') {
@@ -338,6 +278,8 @@ class SeleccionModo extends StatelessWidget {
                               );
                             } else if (gameTitle == 'Sopa de Letras') {
                               _showThemeSelectionDialog(context, 'medio', isTimeAttackMode: true);
+                            } else if (gameTitle == 'Ahorcado') {
+                              _showHangmanThemeDialog(context, 'medio', isSpeedMode: true);
                             }
                           },
                         ),
@@ -369,6 +311,91 @@ class SeleccionModo extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  // Widget helper para crear el botón de guía según el juego
+  Widget _buildGuiaButton(String currentLang) {
+    String objetivo;
+    List<String> instrucciones;
+    List<ControlItem> controles;
+
+    switch (gameTitle) {
+      case 'Snake':
+        objetivo = AppStrings.get('snake_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('snake_inst_1', currentLang),
+          AppStrings.get('snake_inst_2', currentLang),
+          AppStrings.get('snake_inst_3', currentLang),
+          AppStrings.get('snake_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getSnakeControles(currentLang);
+        break;
+      case 'Sudoku':
+        objetivo = AppStrings.get('sudoku_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('sudoku_inst_1', currentLang),
+          AppStrings.get('sudoku_inst_2', currentLang),
+          AppStrings.get('sudoku_inst_3', currentLang),
+          AppStrings.get('sudoku_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getSudokuControles(currentLang);
+        break;
+      case 'WaterSort':
+        objetivo = AppStrings.get('watersort_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('watersort_inst_1', currentLang),
+          AppStrings.get('watersort_inst_2', currentLang),
+          AppStrings.get('watersort_inst_3', currentLang),
+          AppStrings.get('watersort_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getWaterSortControles(currentLang);
+        break;
+      case 'Buscaminas':
+        objetivo = AppStrings.get('minesweeper_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('minesweeper_inst_1', currentLang),
+          AppStrings.get('minesweeper_inst_2', currentLang),
+          AppStrings.get('minesweeper_inst_3', currentLang),
+          AppStrings.get('minesweeper_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getBuscaminasControles(currentLang);
+        break;
+      case 'Sopa de Letras':
+        objetivo = AppStrings.get('wordsearch_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('wordsearch_inst_1', currentLang),
+          AppStrings.get('wordsearch_inst_2', currentLang),
+          AppStrings.get('wordsearch_inst_3', currentLang),
+          AppStrings.get('wordsearch_inst_4', currentLang),
+          AppStrings.get('wordsearch_inst_5', currentLang),
+        ];
+        controles = GuiasJuegos.getWordSearchControles(currentLang);
+        break;
+      case 'Ahorcado':
+        objetivo = AppStrings.get('hangman_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('hangman_inst_1', currentLang),
+          AppStrings.get('hangman_inst_2', currentLang),
+          AppStrings.get('hangman_inst_3', currentLang),
+          AppStrings.get('hangman_inst_4', currentLang),
+          AppStrings.get('hangman_inst_5', currentLang),
+        ];
+        controles = GuiasJuegos.getHangmanControles(currentLang);
+        break;
+      default:
+        objetivo = '';
+        instrucciones = [];
+        controles = [];
+    }
+
+    return BotonGuia(
+      gameTitle: gameTitle,
+      gameImagePath: gameImagePath,
+      objetivo: objetivo,
+      instrucciones: instrucciones,
+      controles: controles,
+      size: 40,
     );
   }
 
@@ -421,7 +448,7 @@ class SeleccionModo extends StatelessWidget {
 
   void _showThemeSelectionDialog(BuildContext context, String difficulty, {bool isTimeAttackMode = false, bool isPerfectMode = false}) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
-    
+
     showDialog<String>(
       context: context,
       builder: (BuildContext context) {
@@ -451,6 +478,45 @@ class SeleccionModo extends StatelessWidget {
               theme: selectedTheme,
               isTimeAttackMode: isTimeAttackMode,
               isPerfectMode: isPerfectMode,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  void _showHangmanThemeDialog(BuildContext context, String difficulty, {bool isSpeedMode = false, bool isSurvivalMode = false}) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppStrings.get('select_theme', currentLang)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ConstantesAhorcado.tematicas.map((theme) {
+              String themeName = AppStrings.get('theme_$theme', currentLang);
+              return ListTile(
+                title: Text(themeName),
+                onTap: () {
+                  Navigator.of(context).pop(theme);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    ).then((selectedTheme) {
+      if (selectedTheme != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AhorcadoGame(
+              difficulty: difficulty,
+              theme: selectedTheme,
+              isSpeedMode: isSpeedMode,
+              isSurvivalMode: isSurvivalMode,
             ),
           ),
         );
