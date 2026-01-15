@@ -32,6 +32,7 @@ class BuscaminasGame extends StatefulWidget {
   static const BuscaminasGame facil = BuscaminasGame(rows: 10, cols: 10, mineCount: 15);
   static const BuscaminasGame medio = BuscaminasGame(rows: 16, cols: 16, mineCount: 40);
   static const BuscaminasGame dificil = BuscaminasGame(rows: 24, cols: 24, mineCount: 99);
+  static const BuscaminasGame extremo = BuscaminasGame(rows: 35, cols: 35, mineCount: 300);
   
   static const BuscaminasGame contrareloj = BuscaminasGame(
     rows: 10, cols: 10, mineCount: 15, isContrareloj: true,

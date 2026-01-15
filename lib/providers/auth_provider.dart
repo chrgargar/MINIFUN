@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
-import '../services/database_service.dart';
+// import '../services/database_service.dart'; // DATABASE DEACTIVATED
 
 /// Provider para gestionar el estado de autenticación
 class AuthProvider extends ChangeNotifier {
@@ -13,7 +13,7 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   // Servicio de base de datos
-  final DatabaseService _dbHelper = DatabaseService.instance;
+  // final DatabaseService _dbHelper = DatabaseService.instance; // DATABASE DEACTIVATED
 
   // Getters para acceder al estado
   UserModel? get currentUser => _currentUser;
@@ -25,6 +25,12 @@ class AuthProvider extends ChangeNotifier {
 
   /// Inicializar y verificar si hay una sesión guardada
   Future<void> init() async {
+    // DATABASE DEACTIVATED - Skipping database initialization
+    _isLoading = false;
+    notifyListeners();
+    return;
+    
+    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     notifyListeners();
 
@@ -52,10 +58,15 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+    */
   }
 
   /// Inicializar sin notificar (para primera carga)
   Future<void> initSilent() async {
+    // DATABASE DEACTIVATED - Skipping silent initialization
+    return;
+    
+    /* DATABASE DEACTIVATED CODE:
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('current_user_id');
@@ -77,6 +88,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _errorMessage = 'Error al inicializar sesión: $e';
     }
+    */
   }
 
   /// Registrar nuevo usuario
@@ -85,6 +97,15 @@ class AuthProvider extends ChangeNotifier {
     String? email,
     required String password,
   }) async {
+    // DATABASE DEACTIVATED - Registration disabled
+    _isLoading = true;
+    _errorMessage = 'La registración está desactivada temporalmente';
+    notifyListeners();
+    _isLoading = false;
+    notifyListeners();
+    return false;
+
+    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -144,6 +165,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    */
   }
 
   /// Iniciar sesión
@@ -151,6 +173,15 @@ class AuthProvider extends ChangeNotifier {
     required String usernameOrEmail,
     required String password,
   }) async {
+    // DATABASE DEACTIVATED - Login disabled
+    _isLoading = true;
+    _errorMessage = 'El inicio de sesión está desactivado temporalmente';
+    notifyListeners();
+    _isLoading = false;
+    notifyListeners();
+    return false;
+
+    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -178,14 +209,44 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    */
   }
 
   /// Continuar como invitado
   Future<bool> continueAsGuest() async {
+    // DATABASE DEACTIVATED - Using mock guest user
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
+    try {
+      // Create a mock guest user (database calls deactivated)
+      _currentUser = UserModel(
+        id: 1,
+        username: 'Guest',
+        email: null,
+        passwordHash: '',
+        isGuest: true,
+        isPremium: false,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+        streakDays: 0,
+        cloudId: null,
+      );
+      
+      await _saveSession(_currentUser!.id!);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error al crear sesión de invitado: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    /* DATABASE DEACTIVATED CODE:
     try {
       final user = await _dbHelper.createGuestUser();
       _currentUser = user;
@@ -200,6 +261,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    */
   }
 
   /// Convertir invitado a usuario registrado
@@ -208,6 +270,20 @@ class AuthProvider extends ChangeNotifier {
     String? email,
     required String password,
   }) async {
+    // DATABASE DEACTIVATED - Conversion disabled
+    if (_currentUser == null || !_currentUser!.isGuest) {
+      _errorMessage = 'No hay una sesión de invitado activa';
+      return false;
+    }
+
+    _isLoading = true;
+    _errorMessage = 'La conversión de cuenta está desactivada temporalmente';
+    notifyListeners();
+    _isLoading = false;
+    notifyListeners();
+    return false;
+
+    /* DATABASE DEACTIVATED CODE:
     if (_currentUser == null || !_currentUser!.isGuest) {
       _errorMessage = 'No hay una sesión de invitado activa';
       return false;
@@ -244,6 +320,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+    */
   }
 
   /// Cerrar sesión
@@ -263,6 +340,10 @@ class AuthProvider extends ChangeNotifier {
 
   /// Actualizar racha de días
   Future<void> _updateStreak() async {
+    // DATABASE DEACTIVATED - Streak update disabled
+    return;
+    
+    /* DATABASE DEACTIVATED CODE:
     if (_currentUser == null) return;
 
     final now = DateTime.now();
@@ -290,15 +371,21 @@ class AuthProvider extends ChangeNotifier {
       lastLogin: now,
     );
     notifyListeners();
+    */
   }
 
   /// Actualizar estado premium (para el futuro)
   Future<void> updatePremiumStatus(bool isPremium) async {
+    // DATABASE DEACTIVATED - Premium status update disabled
+    return;
+    
+    /* DATABASE DEACTIVATED CODE:
     if (_currentUser == null) return;
 
     await _dbHelper.updatePremiumStatus(_currentUser!.id!, isPremium);
     _currentUser = _currentUser!.copyWith(isPremium: isPremium);
     notifyListeners();
+    */
   }
 
   /// Limpiar mensaje de error
