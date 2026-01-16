@@ -28,10 +28,22 @@ class VentanaAjustes {
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 600),
                 padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                child: ScrollbarTheme(
+                  data: const ScrollbarThemeData(
+                    minThumbLength: 20,
+                    mainAxisMargin: 50,
+                    crossAxisMargin: -10,
+                  ),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    thickness: 6,
+                    radius: const Radius.circular(10),
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                       // Título del diálogo
                       Text(
                         AppStrings.get('settings', currentLang),
@@ -179,14 +191,17 @@ class VentanaAjustes {
                           ),
                         ),
                       ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      );
+    },
     );
   }
 

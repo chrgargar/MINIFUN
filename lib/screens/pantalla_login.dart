@@ -421,12 +421,23 @@ class _PantallaLoginState extends State<PantallaLogin> {
                         width: double.infinity,
                         height: 50,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            // Ir directo a la página principal
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-                            );
+                          onPressed: () async {
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            final success = await authProvider.loginWithGoogle();
+
+                            if (success && mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+                              );
+                            } else if (mounted && authProvider.errorMessage != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(authProvider.errorMessage!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           },
                           icon: Icon(
                             Icons.g_mobiledata,

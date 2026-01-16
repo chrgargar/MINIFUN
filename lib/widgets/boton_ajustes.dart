@@ -16,12 +16,12 @@ class BotonAjustes extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFF7B3FF2), // Morado
+            color: const Color(0xFF7B3FF2).withValues(alpha: 0.1), // Morado clarito
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
             Icons.settings,
-            color: Colors.white,
+            color: Color(0xFF7B3FF2), // Morado
             size: 24,
           ),
         ),

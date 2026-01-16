@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <application
-        android:label="minifun_2"
+        android:label="MINIFUN"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

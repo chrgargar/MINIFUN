@@ -122,7 +122,9 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                             vertical: bannerHeight * 0.15,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 255, 239, 98),
+                            color: isDark
+                                ? const Color.fromARGB(255, 180, 169, 69) // Amarillo oscurecido
+                                : const Color.fromARGB(255, 255, 239, 98),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -134,7 +136,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                                   style: TextStyle(
                                     fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.black,
+                                    color: isDark ? Colors.white : Colors.black,
                                   ),
                                 ),
                               ),

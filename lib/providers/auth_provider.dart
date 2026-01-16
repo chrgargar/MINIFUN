@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 // import '../services/database_service.dart'; // DATABASE DEACTIVATED
 
@@ -392,5 +393,69 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Iniciar sesión con Google
+  Future<bool> loginWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: '575590476395-s3eb8p7g533ichbs81qp8h23el53n1u7.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // El usuario canceló el login
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Crear usuario con datos de Google
+      _currentUser = UserModel(
+        id: googleUser.id.hashCode,
+        username: googleUser.displayName ?? 'Usuario Google',
+        email: googleUser.email,
+        passwordHash: '',
+        isGuest: false,
+        isPremium: false,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+        streakDays: 0,
+        cloudId: googleUser.id,
+      );
+
+      // Guardar sesión
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('current_user_id', _currentUser!.id!);
+      await prefs.setString('google_user_id', googleUser.id);
+      await prefs.setString('google_user_email', googleUser.email);
+      await prefs.setString('google_user_name', googleUser.displayName ?? '');
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Error al iniciar sesión con Google: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Cerrar sesión de Google
+  Future<void> logoutGoogle() async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (e) {
+      // Ignorar errores de logout de Google
+    }
+    await logout();
   }
 }
