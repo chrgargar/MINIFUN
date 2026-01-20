@@ -33,6 +33,8 @@ class BuscaminasGame extends StatefulWidget {
     rows: 10, cols: 10, mineCount: 15, isContrareloj: true,
   );
 
+  static const BuscaminasGame extremo = BuscaminasGame(rows: 35, cols: 35, mineCount: 300);
+
   @override
   State<BuscaminasGame> createState() => _BuscaminasGameState();
 }

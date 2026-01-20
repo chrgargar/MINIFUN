@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'screens/pantalla_login.dart';
 import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
@@ -12,8 +11,7 @@ void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar sqflite
-  await databaseFactory.setDatabasesPath(await getDatabasesPath());
+  // Database initialization removed - DATABASE DEACTIVATED
 
   runApp(
     // MultiProvider permite compartir múltiples estados en toda la app
