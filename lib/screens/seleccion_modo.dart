@@ -9,6 +9,7 @@ import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
+import 'buscaminas_difficulty_selection.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -141,7 +142,7 @@ class SeleccionModo extends StatelessWidget {
                             } else if (gameTitle == 'Buscaminas') {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => BuscaminasGame.facil),
+                                MaterialPageRoute(builder: (context) => const BuscaminasDifficultySelection()),
                               );
                             }
                           },
@@ -213,14 +214,14 @@ class SeleccionModo extends StatelessWidget {
 
                         SizedBox(height: spacing),
 
-                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Experto (Buscaminas)
+                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Extremo (Buscaminas)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : '💎')),
+                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '👑' : (gameTitle == 'WaterSort' ? '🧪' : '💎')),
                           text: gameTitle == 'Snake'
                               ? AppStrings.get('survival_pro', currentLang)
                               : (gameTitle == 'Buscaminas'
-                                  ? 'Experto'
+                                  ? 'Extremo'
                                   : (gameTitle == 'WaterSort'
                                       ? AppStrings.get('hard_pro', currentLang)
                                       : AppStrings.get('perfect_pro', currentLang))),
@@ -252,7 +253,7 @@ class SeleccionModo extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BuscaminasGame.dificil,
+                                  builder: (context) => BuscaminasGame.extremo,
                                 ),
                               );
                             }
