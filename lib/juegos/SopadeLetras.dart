@@ -36,6 +36,8 @@ class _WordSearchGameState extends State<WordSearchGame> {
   late List<List<String>> grid;
   late List<String> wordsToFind;
   late Set<String> foundWords;
+  late List<String> bonusWords; // Palabras bonus ocultas
+  late Set<String> foundBonusWords; // Palabras bonus encontradas
   late Map<String, List<List<int>>> wordPositions;
   late Set<String> foundCells; // Celdas encontradas, como "row,col"
   late int gridSize; // Tamaño del grid según dificultad
@@ -62,6 +64,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
   // Puntuación
   int score = 0;
   int hintsUsed = 0;
+
+  // Control de mensaje bonus
+  bool showBonusMessage = false;
+  late String lastBonusWord;
 
   @override
   void initState() {
@@ -122,6 +128,16 @@ class _WordSearchGameState extends State<WordSearchGame> {
     wordsToFind.sort((a, b) => a.length.compareTo(b.length));
 
     foundWords = {};
+    foundBonusWords = {};
+    
+    // Agregar palabras bonus (1-2 palabras según dificultad)
+    List<String> allBonusWords = List.from(ConstantesSopaLetras.palabrasPorTematica[widget.theme]?['medio'] ?? []);
+    allBonusWords = allBonusWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty && !wordsToFind.contains(word)).toList();
+    allBonusWords.shuffle(Random());
+    
+    int numBonusWords = widget.difficulty == 'facil' ? 1 : (widget.difficulty == 'medio' ? 1 : 2);
+    bonusWords = allBonusWords.take(numBonusWords).toList().where((word) => word.length <= gridSize).toList();
+    
     wordPositions = {};
     foundCells = {};
     _generateGrid();
@@ -142,6 +158,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
     }
     // Actualizar wordsToFind con solo las colocadas
     wordsToFind = placedWords;
+    
+    // Colocar palabras bonus en el grid
+    List<String> placedBonusWords = [];
+    for (String word in bonusWords) {
+      if (_placeWord(word)) {
+        placedBonusWords.add(word);
+      }
+    }
+    bonusWords = placedBonusWords;
 
     // Llenar espacios vacíos con letras aleatorias
     for (int i = 0; i < gridSize; i++) {
@@ -314,6 +339,9 @@ class _WordSearchGameState extends State<WordSearchGame> {
     String reversedWord = selectedWord.split('').reversed.join('');
 
     bool found = false;
+    bool isBonusWord = false;
+    
+    // Primero verificar palabras normales
     for (String word in wordsToFind) {
       if (!foundWords.contains(word) && (word == selectedWord || word == reversedWord)) {
         foundWords.add(word);
@@ -326,8 +354,40 @@ class _WordSearchGameState extends State<WordSearchGame> {
         break;
       }
     }
+    
+    // Si no se encontró palabra normal, verificar palabras bonus
+    if (!found) {
+      for (String word in bonusWords) {
+        if (!foundBonusWords.contains(word) && (word == selectedWord || word == reversedWord)) {
+          foundBonusWords.add(word);
+          score += 50; // Puntos bonus adicionales
+          // Marcar celdas como encontradas
+          for (var cell in selectedCells) {
+            foundCells.add('${cell[0]},${cell[1]}');
+          }
+          found = true;
+          isBonusWord = true;
+          lastBonusWord = word;
+          
+          // Mostrar mensaje de palabra bonus
+          setState(() {
+            showBonusMessage = true;
+          });
+          
+          // Ocultar mensaje después de 2 segundos
+          Future.delayed(Duration(seconds: 2), () {
+            if (mounted) {
+              setState(() {
+                showBonusMessage = false;
+              });
+            }
+          });
+          break;
+        }
+      }
+    }
 
-    if (found) {
+    if (found && !isBonusWord) {
       if (foundWords.length == wordsToFind.length) {
         _victory();
       }
@@ -653,6 +713,62 @@ class _WordSearchGameState extends State<WordSearchGame> {
               },
               onExit: () => Navigator.pop(context),
             ),
+
+            // Bonus word message overlay
+            if (showBonusMessage)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber[600],
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            AppStrings.get('bonus_word_found', Provider.of<LanguageProvider>(context).currentLanguage),
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '✨ $lastBonusWord ✨',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            AppStrings.get('bonus_points', Provider.of<LanguageProvider>(context).currentLanguage),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Game Over overlay
             if (isGameOver)
