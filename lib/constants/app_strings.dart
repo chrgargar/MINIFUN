@@ -69,6 +69,9 @@ class AppStrings {
       'moves': 'Movimientos',
       'moves_made': 'Movimientos realizados',
       'time_remaining': 'Tiempo restante',
+      'words_found': 'Palabras encontradas',
+      'the_word_was': 'La palabra era',
+      'words_completed': 'Palabras completadas',
 
       // Sudoku
       'pencil': 'Lápiz',
@@ -149,12 +152,35 @@ class AppStrings {
       'control_hint': 'Pista',
       'control_hint_desc': 'Revela el número correcto de una celda vacía (no disponible en modo perfecto)',
 
+      // Sopa de Letras
+      'wordsearch_objective': 'Encuentra todas las palabras ocultas en la cuadrícula',
+      'wordsearch_inst_1': 'Toca la primera letra de una palabra',
+      'wordsearch_inst_2': 'Arrastra el dedo hasta la última letra de la palabra',
+      'wordsearch_inst_3': 'Las palabras pueden estar en horizontal, vertical o diagonal',
+      'wordsearch_inst_4': 'Las palabras pueden estar al derecho o al revés',
+      'wordsearch_inst_5': 'Las palabras encontradas se tacharán de la lista',
+      'control_select_start': 'Seleccionar inicio',
+      'control_select_start_desc': 'Toca la primera letra de la palabra',
+      'control_drag': 'Arrastrar',
+      'control_drag_desc': 'Arrastra hasta la última letra',
+      'control_clear': 'Limpiar selección',
+      'control_clear_desc': 'Limpia la selección actual',
+      'select_theme': 'Seleccionar temática',
+      'theme_general': 'General',
+      'theme_peliculas': 'Películas',
+      'theme_musica': 'Música',
+      'theme_historia': 'Historia',
+
       // Guías Water Sort
       'watersort_objective': 'Organizar los líquidos de colores en tubos separados hasta que cada tubo contenga únicamente un solo color.',
       'watersort_inst_1': 'Toca un tubo para seleccionar el líquido que quieres mover',
       'watersort_inst_2': 'Toca otro tubo para verter el líquido seleccionado',
       'watersort_inst_3': 'Solo puedes verter líquido sobre el mismo color o en un tubo vacío',
-      'watersort_inst_4': 'El juego termina cuando todos los líquidos están organizados por color en tubos separados',
+      'watersort_inst_4': 'Cada tubo puede contener hasta 4 segmentos de líquido',
+      'control_select': 'Seleccionar',
+      'control_select_desc': 'Toca un tubo con líquido para seleccionarlo',
+      'control_pour': 'Verter',
+      'control_pour_desc': 'Toca otro tubo para verter el líquido seleccionado',
       'control_undo': 'Deshacer',
       'control_undo_desc': 'Deshace el último movimiento realizado',
       'control_restart': 'Reiniciar',
@@ -164,6 +190,32 @@ class AppStrings {
       'paused': 'PAUSA',
       'game_paused': 'Juego en Pausa',
       'resume': 'Continuar',
+
+      // Ahorcado
+      'hangman_objective': 'Adivina la palabra oculta letra por letra antes de que se complete el dibujo del ahorcado.',
+      'hangman_inst_1': 'Tienes 6 intentos para adivinar la palabra',
+      'hangman_inst_2': 'Toca una letra del teclado para adivinar',
+      'hangman_inst_3': 'Si la letra está en la palabra, se revelará',
+      'hangman_inst_4': 'Si la letra no está, se dibujará una parte del ahorcado',
+      'hangman_inst_5': 'Ganas si adivinas todas las letras antes de completar el dibujo',
+      'control_guess_letter': 'Adivinar letra',
+      'control_guess_letter_desc': 'Toca una letra del teclado para adivinarla',
+      'theme_animales': 'Animales',
+      'theme_paises': 'Países',
+      'theme_comida': 'Comida',
+      'hangman_speed': 'Velocidad',
+      'hangman_survival': 'Supervivencia\nPRO',
+
+      // Buscaminas
+      'minesweeper_objective': 'Descubre todas las casillas sin minas. Los números indican cuántas minas hay alrededor.',
+      'minesweeper_inst_1': 'Toca una casilla para revelarla',
+      'minesweeper_inst_2': 'Los números indican minas adyacentes',
+      'minesweeper_inst_3': 'Usa banderas para marcar las minas',
+      'minesweeper_inst_4': 'Si tocas una mina, pierdes',
+      'control_reveal': 'Revelar',
+      'control_reveal_desc': 'Toca una casilla para revelar su contenido',
+      'control_flag': 'Bandera',
+      'control_flag_desc': 'Mantén pulsado o activa el modo bandera para marcar minas',
     },
 
     // ENGLISH
@@ -230,6 +282,9 @@ class AppStrings {
       'moves': 'Moves',
       'moves_made': 'Moves made',
       'time_remaining': 'Time remaining',
+      'words_found': 'Words found',
+      'the_word_was': 'The word was',
+      'words_completed': 'Words completed',
 
       // Sudoku
       'pencil': 'Pencil',
@@ -316,6 +371,25 @@ class AppStrings {
       'control_hint': 'Hint',
       'control_hint_desc': 'Reveals the correct number for an empty cell',
 
+      // Word Search
+      'wordsearch_objective': 'Find all hidden words in the grid',
+      'wordsearch_inst_1': 'Tap the first letter of a word',
+      'wordsearch_inst_2': 'Drag your finger to the last letter of the word',
+      'wordsearch_inst_3': 'Words can be horizontal, vertical, or diagonal',
+      'wordsearch_inst_4': 'Words can be forward or backward',
+      'wordsearch_inst_5': 'Found words will be crossed out from the list',
+      'control_select_start': 'Select start',
+      'control_select_start_desc': 'Tap the first letter of the word',
+      'control_drag': 'Drag',
+      'control_drag_desc': 'Drag to the last letter',
+      'control_clear': 'Clear selection',
+      'control_clear_desc': 'Clear current selection',
+      'select_theme': 'Select theme',
+      'theme_general': 'General',
+      'theme_peliculas': 'Movies',
+      'theme_musica': 'Music',
+      'theme_historia': 'History',
+
       // Water Sort Guides
       'watersort_objective': 'Sort the colored water into tubes until each tube contains only one color.',
       'watersort_inst_1': 'Tap a tube to select it',
@@ -338,6 +412,32 @@ class AppStrings {
       'paused': 'PAUSED',
       'game_paused': 'Game Paused',
       'resume': 'Resume',
+
+      // Hangman
+      'hangman_objective': 'Guess the hidden word letter by letter before the hangman drawing is complete.',
+      'hangman_inst_1': 'You have 6 attempts to guess the word',
+      'hangman_inst_2': 'Tap a letter on the keyboard to guess',
+      'hangman_inst_3': 'If the letter is in the word, it will be revealed',
+      'hangman_inst_4': 'If the letter is not in the word, a part of the hangman will be drawn',
+      'hangman_inst_5': 'You win if you guess all letters before the drawing is complete',
+      'control_guess_letter': 'Guess letter',
+      'control_guess_letter_desc': 'Tap a letter on the keyboard to guess it',
+      'theme_animales': 'Animals',
+      'theme_paises': 'Countries',
+      'theme_comida': 'Food',
+      'hangman_speed': 'Speed',
+      'hangman_survival': 'Survival\nPRO',
+
+      // Minesweeper
+      'minesweeper_objective': 'Reveal all squares without mines. Numbers indicate how many mines are nearby.',
+      'minesweeper_inst_1': 'Tap a square to reveal it',
+      'minesweeper_inst_2': 'Numbers indicate adjacent mines',
+      'minesweeper_inst_3': 'Use flags to mark mines',
+      'minesweeper_inst_4': 'If you tap a mine, you lose',
+      'control_reveal': 'Reveal',
+      'control_reveal_desc': 'Tap a square to reveal its content',
+      'control_flag': 'Flag',
+      'control_flag_desc': 'Long press or enable flag mode to mark mines',
     },
 
     // CATALÀ
@@ -404,6 +504,9 @@ class AppStrings {
       'moves': 'Moviments',
       'moves_made': 'Moviments realitzats',
       'time_remaining': 'Temps restant',
+      'words_found': 'Paraules trobades',
+      'the_word_was': 'La paraula era',
+      'words_completed': 'Paraules completades',
 
       // Sudoku
       'pencil': 'Llapis',
@@ -512,6 +615,32 @@ class AppStrings {
       'paused': 'PAUSA',
       'game_paused': 'Joc en Pausa',
       'resume': 'Continuar',
+
+      // Penjat (Ahorcado)
+      'hangman_objective': 'Endevina la paraula oculta lletra per lletra abans que es complete el dibuix del penjat.',
+      'hangman_inst_1': 'Tens 6 intents per a endevinar la paraula',
+      'hangman_inst_2': 'Toca una lletra del teclat per a endevinar',
+      'hangman_inst_3': 'Si la lletra està en la paraula, es revelarà',
+      'hangman_inst_4': 'Si la lletra no hi és, es dibuixarà una part del penjat',
+      'hangman_inst_5': 'Guanyes si endevines totes les lletres abans de completar el dibuix',
+      'control_guess_letter': 'Endevinar lletra',
+      'control_guess_letter_desc': 'Toca una lletra del teclat per a endevinar-la',
+      'theme_animales': 'Animals',
+      'theme_paises': 'Països',
+      'theme_comida': 'Menjar',
+      'hangman_speed': 'Velocitat',
+      'hangman_survival': 'Supervivència\nPRO',
+
+      // Buscamines
+      'minesweeper_objective': 'Descobreix totes les caselles sense mines. Els números indiquen quantes mines hi ha al voltant.',
+      'minesweeper_inst_1': 'Toca una casella per a revelar-la',
+      'minesweeper_inst_2': 'Els números indiquen mines adjacents',
+      'minesweeper_inst_3': 'Utilitza banderes per a marcar les mines',
+      'minesweeper_inst_4': 'Si toques una mina, perds',
+      'control_reveal': 'Revelar',
+      'control_reveal_desc': 'Toca una casella per a revelar el seu contingut',
+      'control_flag': 'Bandera',
+      'control_flag_desc': 'Mantingues premut o activa el mode bandera per a marcar mines',
     },
   };
 }

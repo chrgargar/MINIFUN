@@ -73,6 +73,11 @@ class _SudokuGameState extends State<SudokuGame> {
     super.dispose();
   }
 
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music.mp3', audioSettings.musicVolume);
+  }
+
   void _startTimer() {
     gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -185,6 +190,8 @@ class _SudokuGameState extends State<SudokuGame> {
   void _placeNumber(int number) {
     if (selectedRow == null || selectedCol == null) return;
     if (isFixed[selectedRow!][selectedCol!]) return;
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/move.mp3', audioSettings.musicVolume);
 
     setState(() {
       if (isPencilMode) {
@@ -287,6 +294,10 @@ class _SudokuGameState extends State<SudokuGame> {
   }
 
   void _gameOver(bool won) {
+    AudioService.stopLoop();
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound(won ? 'Sonidos/food.mp3' : 'Sonidos/gameover.mp3', audioSettings.musicVolume);
+    
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     String title = won

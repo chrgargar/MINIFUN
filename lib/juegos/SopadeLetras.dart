@@ -62,6 +62,11 @@ class _WordSearchGameState extends State<WordSearchGame> {
     }
   }
 
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music.mp3', audioSettings.musicVolume);
+  }
+
   void _initializeGame() {
     // Determinar tamaño del grid según dificultad
     switch (widget.difficulty) {
@@ -261,7 +266,9 @@ class _WordSearchGameState extends State<WordSearchGame> {
     }
 
     if (found) {
-      _playSound('success');
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/move.mp3', audioSettings.musicVolume);
+      
       if (foundWords.length == wordsToFind.length) {
         _victory();
       }
@@ -293,7 +300,9 @@ class _WordSearchGameState extends State<WordSearchGame> {
     isVictory = true;
     isGameOver = true;
     gameTimer?.cancel();
-    _playSound('victory');
+    AudioService.stopLoop();
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/food.mp3', audioSettings.musicVolume);
   }
 
   void _gameOver(bool victory) {

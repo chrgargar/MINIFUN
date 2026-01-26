@@ -83,13 +83,27 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
   }
 
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music.mp3', audioSettings.musicVolume);
+  }
+
   void _initGame() {
     final config = ConstantesWaterSort.getDifficultyConfig(widget.difficulty);
 
-    tubes = _generatePuzzle(
-      config['colors'] as int,
-      config['tubesExtra'] as int,
-    );
+    // Calcular dificultad progresiva basada en el nivel
+    int baseColors = config['colors'] as int;
+    int extraTubes = config['tubesExtra'] as int;
+
+    // Cada 3 niveles añadimos un color más (hasta un máximo de 12)
+    int additionalColors = (level - 1) ~/ 3;
+    int totalColors = (baseColors + additionalColors).clamp(baseColors, 12);
+
+    // Cada 5 niveles reducimos un tubo extra (mínimo 1)
+    int reducedTubes = (level - 1) ~/ 5;
+    int finalExtraTubes = (extraTubes - reducedTubes).clamp(1, extraTubes);
+
+    tubes = _generatePuzzle(totalColors, finalExtraTubes);
 
     selectedTube = null;
     moves = 0;
@@ -98,7 +112,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     history.clear();
 
     if (widget.isTimeAttackMode) {
-      timeLeft = config['timeLimit'] as int;
+      // Reducir tiempo según nivel (mínimo 60 segundos)
+      int baseTime = config['timeLimit'] as int;
+      int timeReduction = (level - 1) * 5;
+      timeLeft = (baseTime - timeReduction).clamp(60, baseTime);
       _startTimer();
     }
 
@@ -232,6 +249,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       pouringToTube = to;
     });
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/move.mp3', audioSettings.musicVolume);
+
     await _pourAnimationController!.forward();
 
     setState(() {
@@ -274,6 +294,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showWinDialog() {
+    AudioService.stopLoop();
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/food.mp3', audioSettings.musicVolume); // Victory sound
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     showDialog(

@@ -1,110 +1,147 @@
-import 'package:flutter/material.dart';
-
-/// Constantes para el juego Sopa de Letras (Word Search)
+/// Constantes para el juego Sopa de Letras
 class ConstantesSopaLetras {
-  // Duración del modo contrarreloj en segundos
-  static const int duracionContrarreloj = 180; // 3 minutos
+  // Constantes del tablero
+  // Nota: El tamaño del grid se calcula dinámicamente según dificultad en el juego
 
-  // Puntuación
-  static const int puntosPorPalabra = 10;
-  static const int bonusPalabraLarga = 5; // Bonus por palabras de más de 6 letras
-  static const int penalizacionHint = 2; // Penalización por usar pista
+  // Palabras por dificultad
+  static const List<String> palabrasFaciles = [
+    'GATO',
+    'PERRO',
+    'CASA',
+    'SOL',
+    'LUNA',
+    'AGUA',
+    'FUEGO',
+    'TIERRA',
+    'AIRE',
+    'ARBOL'
+  ];
 
-  // Máximo número de palabras por dificultad
-  static const Map<String, int> maxPalabras = {
-    'facil': 8,
-    'medio': 12,
-    'dificil': 15,
-  };
+  static const List<String> palabrasMedias = [
+    'ELEFANTE',
+    'MARIPOSA',
+    'COMPUTADORA',
+    'TELEFONO',
+    'BICICLETA',
+    'HELADERIA',
+    'ESCUELA',
+    'BIBLIOTECA',
+    'HOSPITAL',
+    'SUPERMERCADO'
+  ];
 
-  // Direcciones posibles para colocar palabras (8 direcciones: horizontal, vertical, diagonales)
-  static const List<List<int>> direcciones = [
-    [0, 1],   // Derecha
-    [1, 0],   // Abajo
-    [0, -1],  // Izquierda
-    [-1, 0],  // Arriba
-    [1, 1],   // Diagonal abajo-derecha
-    [1, -1],  // Diagonal abajo-izquierda
-    [-1, 1],  // Diagonal arriba-derecha
-    [-1, -1], // Diagonal arriba-izquierda
+  static const List<String> palabrasDificiles = [
+    'ELECTRICIDAD',
+    'UNIVERSIDAD',
+    'TECNOLOGIA',
+    'PROGRAMACION',
+    'INFORMACION',
+    'COMUNICACION',
+    'DESARROLLO',
+    'INVESTIGACION',
+    'EDUCACION',
+    'CIENCIA'
   ];
 
   // Palabras por temática y dificultad
   static const Map<String, Map<String, List<String>>> palabrasPorTematica = {
     'general': {
       'facil': [
-        'CASA', 'PERRO', 'GATO', 'SOL', 'LUNA', 'AGUA', 'FUEGO', 'TIERRA',
-        'AMOR', 'PAZ', 'HOMBRE', 'MUJER', 'NIÑO', 'MADRE', 'PADRE', 'AMIGO'
+        'GATO', 'PERRO', 'CASA', 'SOL', 'LUNA', 'AGUA', 'FUEGO', 'TIERRA', 'AIRE', 'ARBOL',
+        'FLOR', 'RIO', 'MAR', 'ESTRELLA', 'NIEVE', 'VIENTO', 'LLUVIA', 'RAYO', 'TRUENO', 'NIEBLA'
       ],
       'medio': [
-        'COMPUTADORA', 'TELEVISOR', 'TELEFONO', 'BICICLETA', 'AUTOMOVIL',
-        'HELADERIA', 'RESTAURANTE', 'SUPERMERCADO', 'BIBLIOTECA', 'ESCUELA',
-        'UNIVERSIDAD', 'HOSPITAL', 'FARMACIA', 'PELUCUERIA', 'GIMNASIO'
+        'ELEFANTE', 'MARIPOSA', 'COMPUTADORA', 'TELEFONO', 'BICICLETA', 'HELADERIA', 'ESCUELA', 'BIBLIOTECA',
+        'HOSPITAL', 'SUPERMERCADO', 'TELEVISION', 'REFRIGERADOR', 'MICROONDAS', 'LAVADORA', 'ASPIRADORA',
+        'TELEVISOR', 'RADIO', 'TELEFONO', 'IMPRESORA', 'ESCANER'
       ],
       'dificil': [
-        'ELECTRICIDAD', 'TECNOLOGIA', 'COMUNICACION', 'TRANSPORTE',
-        'ALIMENTACION', 'EDUCACION', 'SALUD', 'DEPORTE', 'ENTRETENIMIENTO',
-        'ARQUITECTURA', 'INGENIERIA', 'MEDICINA', 'ABOGACIA', 'ECONOMIA'
-      ],
+        'ELECTRICIDAD', 'UNIVERSIDAD', 'TECNOLOGIA', 'PROGRAMACION', 'INFORMACION', 'COMUNICACION',
+        'DESARROLLO', 'INVESTIGACION', 'EDUCACION', 'CIENCIA', 'MATEMATICAS', 'FISICA', 'QUIMICA',
+        'BIOLOGIA', 'HISTORIA', 'GEOGRAFIA', 'LITERATURA', 'FILOSOFIA'
+      ]
     },
     'peliculas': {
       'facil': [
-        'TITANIC', 'AVATAR', 'MATRIX', 'JOKER', 'BATMAN', 'SPIDERMAN',
-        'HARRY', 'POTTER', 'STAR', 'WARS', 'INDIANA', 'JONES'
+        'TITANIC', 'AVATAR', 'JOKER', 'FROZEN', 'MOANA', 'COCO', 'LION', 'UP', 'BRAVE', 'TOY',
+        'CARS', 'NEMO', 'SHREK', 'POOH', 'BAMBI', 'DUMBO', 'PINOCCHIO', 'ALADDIN', 'MULAN', 'TARZAN'
       ],
       'medio': [
-        'INTERSTELLAR', 'INCEPTION', 'GLADIATOR', 'BRAVEHEART',
-        'PULP', 'FICTION', 'FORREST', 'GUMP', 'THE', 'LION', 'KING',
-        'ALADDIN', 'BEAUTY', 'BEAST'
+        'HARRY POTTER', 'STAR WARS', 'AVENGERS', 'SPIDERMAN', 'BATMAN', 'SUPERMAN', 'IRON MAN',
+        'CAPTAIN AMERICA', 'THOR', 'HULK', 'WONDER WOMAN', 'FLASH', 'AQUAMAN', 'GREEN LANTERN',
+        'JUSTICE LEAGUE', 'X MEN', 'FANTASTIC FOUR', 'GUARDIANS', 'ANT MAN', 'BLACK WIDOW'
       ],
       'dificil': [
-        'SCHINDLERS', 'LIST', 'THE', 'DEPARTED', 'GOODFELLAS',
-        'CASABLANCA', 'CITIZEN', 'KANE', 'VERTIGO', 'PSYCHO',
-        'NORTH', 'WEST', 'EASY', 'RIDER'
-      ],
+        'THE DARK KNIGHT', 'INCEPTION', 'INTERSTELLAR', 'THE MATRIX', 'PULP FICTION', 'FIGHT CLUB',
+        'FORREST GUMP', 'THE GODFATHER', 'SCHINDLERS LIST', 'CASABLANCA', 'CITIZEN KANE',
+        'THE WIZARD OF OZ', 'GONE WITH THE WIND', 'LAWRENCE OF ARABIA', 'VERTIGO', 'PSYCHO',
+        '2001 A SPACE ODYSSEY', 'CLOCKWORK ORANGE', 'TAXI DRIVER', 'JAWS'
+      ]
     },
     'musica': {
       'facil': [
-        'ROCK', 'POP', 'JAZZ', 'BLUES', 'REGGAE', 'HIPHOP', 'DISCO',
-        'SALSA', 'TANGO', 'FOLK', 'RAP', 'PUNK', 'METAL', 'INDIE'
+        'ROCK', 'POP', 'JAZZ', 'BLUES', 'REGGAE', 'HIPHOP', 'RAP', 'SOUL', 'FUNK', 'DISCO',
+        'COUNTRY', 'FOLK', 'CLASSICAL', 'ELECTRONIC', 'METAL', 'PUNK', 'INDIE', 'ALTERNATIVE'
       ],
       'medio': [
-        'GUITARRA', 'PIANO', 'BATERIA', 'BAJO', 'SAXOFON', 'TROMPETA',
-        'VIOLIN', 'FLAUTA', 'MICROFONO', 'ALTAVOZ', 'AMPLIFICADOR'
+        'BEATLES', 'ROLLING STONES', 'QUEEN', 'LED ZEPPELIN', 'PINK FLOYD', 'BOB DYLAN',
+        'MICHAEL JACKSON', 'MADONNA', 'PRINCE', 'BRUCE SPRINGSTEEN', 'U2', 'REM', 'NIRVANA',
+        'PEARL JAM', 'RADIOHEAD', 'COLDPLAY', 'ADELE', 'TAYLOR SWIFT'
       ],
       'dificil': [
-        'ORQUESTA', 'SINFONIA', 'CONCIERTO', 'OPERA', 'BALLET',
-        'CORO', 'SOLISTA', 'DIRECTOR', 'COMPOSITOR', 'ARREGLO'
-      ],
+        'SYMPHONY', 'CONCERTO', 'SONATA', 'OPERA', 'ORATORIO', 'CANTATA', 'FUGUE', 'PRELUDE',
+        'ETUDE', 'NOCTURNE', 'BALLADE', 'SCHERZO', 'RONDO', 'OVERTURE', 'SUITE', 'SERENADE',
+        'DIVERTIMENTO', 'CAPRICCIO', 'TOCCATA', 'FANTASIA'
+      ]
     },
     'historia': {
       'facil': [
-        'ROMA', 'GRECIA', 'EGIPTO', 'CHINA', 'INDIA', 'FRANCIA',
-        'INGLATERRA', 'ESPAÑA', 'ITALIA', 'ALEMANIA', 'RUSIA', 'JAPON'
+        'ROMA', 'GRECIA', 'EGIPTO', 'CHINA', 'INDIA', 'MESOPOTAMIA', 'AZTECAS', 'INCAS', 'MAYA',
+        'VIKINGOS', 'CELTAS', 'PERSAS', 'CARTHAGO', 'ESPARTA', 'ATENAS', 'TROY', 'BABYLON', 'ASSYRIA'
       ],
       'medio': [
-        'REVOLUCION', 'GUERRA', 'PAZ', 'TRATADO', 'CONQUISTA',
-        'COLONIZACION', 'INDEPENDENCIA', 'DEMOCRACIA', 'MONARQUIA'
+        'REVOLUCION FRANCESA', 'GUERRA MUNDIAL', 'RENACIMIENTO', 'ILUSTRACION', 'INDUSTRIALIZACION',
+        'COLONIZACION', 'IMPERIO ROMANO', 'IMPERIO OTOMANO', 'IMPERIO MONGOL', 'CRUZADAS',
+        'EXPLORACIONES', 'REFORMA PROTESTANTE', 'CONTRAREFORMA', 'ABSOLUTISMO', 'LIBERALISMO'
       ],
       'dificil': [
-        'INDUSTRIALIZACION', 'RENACIMIENTO', 'ILUSTRACION',
-        'REVOLUCION', 'FRANCESA', 'GUERRA', 'MUNDIAL', 'COLD', 'WAR',
-        'GLOBALIZACION', 'TECNOLOGIA', 'MODERNIZACION'
-      ],
-    },
+        'REVOLUCION INDUSTRIAL', 'GUERRA DE LOS CIEN ANOS', 'GUERRA DE LOS TREINTA ANOS',
+        'GUERRA DE SUCESION ESPANOLA', 'GUERRA DE SUCESION AUSTRIA', 'GUERRA DE LOS SIETE ANOS',
+        'GUERRA DE INDEPENDENCIA AMERICANA', 'REVOLUCION AMERICANA', 'REVOLUCION HAITIANA',
+        'REVOLUCION MEXICANA', 'REVOLUCION RUSA', 'GUERRA CIVIL ESPANOLA', 'SEGUNDA GUERRA MUNDIAL'
+      ]
+    }
   };
 
-  // Colores para el resaltado de palabras encontradas
-  static const List<Color> highlightColors = [
-    Color(0xFFF44336), // Rojo
-    Color(0xFF2196F3), // Azul
-    Color(0xFF4CAF50), // Verde
-    Color(0xFFFFEB3B), // Amarillo
-    Color(0xFF9C27B0), // Púrpura
-    Color(0xFFFF9800), // Naranja
-    Color(0xFFE91E63), // Rosa
-    Color(0xFF00BCD4), // Cian
-    Color(0xFF3F51B5), // Índigo
-    Color(0xFFFFC107), // Ámbar
+  // Temáticas disponibles
+  static const List<String> tematicas = ['general', 'peliculas', 'musica', 'historia'];
+
+  // Número máximo de palabras por dificultad
+  static const Map<String, int> maxPalabras = {
+    'facil': 8,
+    'medio': 10,
+    'dificil': 12
+  };
+
+  // Constantes de tiempo contrarreloj (en segundos)
+  static const int duracionContrarreloj = 300; // 5 minutos
+
+  // Constantes de puntuación
+  static const int puntosPorPalabra = 20; // Puntos por palabra encontrada
+  static const int penalizacionPista = 30; // Penalización por usar pista
+
+  // Límites de errores
+  static const int maxErroresModoPerfecto = 0; // Modo perfecto: sin errores
+
+  // Direcciones posibles (horizontal, vertical, diagonal)
+  static const List<List<int>> direcciones = [
+    [0, 1],   // derecha
+    [1, 0],   // abajo
+    [1, 1],   // diagonal abajo-derecha
+    [1, -1],  // diagonal abajo-izquierda
+    [0, -1],  // izquierda
+    [-1, 0],  // arriba
+    [-1, -1], // diagonal arriba-izquierda
+    [-1, 1],  // diagonal arriba-derecha
   ];
 }

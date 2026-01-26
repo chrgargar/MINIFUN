@@ -192,7 +192,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     if (hitMine) {
       setState(() => gameOver = true);
       controller.revealAllMines();
-      _playSound('gameover.mp3');
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/gameover.mp3', audioSettings.musicVolume);
       _showGameOverDialog();
       return;
     }
@@ -247,7 +248,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     if (cellsRevealed == totalSafeCells) {
       won = true;
       gameTimer?.cancel();
-      _playSound('food.mp3');
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/food.mp3', audioSettings.musicVolume); // Victory sound
       _showWinDialog();
     }
   }

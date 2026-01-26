@@ -116,6 +116,11 @@ class _SnakeGameState extends State<SnakeGame> {
     await AudioService.playSound('Sonidos/move.mp3', audioSettings.sfxVolume);
   }
 
+  void _startBackgroundMusic() {
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playLoop('Sonidos/music.mp3', audioSettings.musicVolume);
+  }
+
   void startGame() {
     snake = [const Point(10, 10)];
     direction = Direction.right;
@@ -246,6 +251,8 @@ class _SnakeGameState extends State<SnakeGame> {
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     _playSound('gameover.mp3');
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/gameover.mp3', audioSettings.musicVolume);
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
@@ -336,6 +343,11 @@ class _SnakeGameState extends State<SnakeGame> {
         newHead.y >= rows ||
         snake.contains(newHead) ||
         hitObstacle) {
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      if (hitObstacle) {
+        AudioService.playSound('Sonidos/obstaculo.mp3', audioSettings.musicVolume);
+      }
+      
       timer?.cancel();
       gameTimer?.cancel(); // Detener temporizador del modo contrarreloj
       foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
@@ -426,6 +438,9 @@ class _SnakeGameState extends State<SnakeGame> {
         score++;
         snake = [newHead, ...snake]; // Crecer normalmente
       }
+
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/food.mp3', audioSettings.musicVolume);
 
       spawnFood();
     } else {

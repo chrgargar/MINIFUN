@@ -95,4 +95,62 @@ class GuiasJuegos {
       ),
     ];
   }
+
+  // Controles de Sopa de Letras traducidos
+  static List<ControlItem> getWordSearchControles(String lang) {
+    return [
+      ControlItem(
+        icon: '👆',
+        name: AppStrings.get('control_select_start', lang),
+        description: AppStrings.get('control_select_start_desc', lang),
+      ),
+      ControlItem(
+        icon: '👆👆',
+        name: AppStrings.get('control_drag', lang),
+        description: AppStrings.get('control_drag_desc', lang),
+      ),
+      ControlItem(
+        icon: '🧹',
+        name: AppStrings.get('control_clear', lang),
+        description: AppStrings.get('control_clear_desc', lang),
+      ),
+    ];
+  }
+
+  // Controles de Ahorcado traducidos
+  static List<ControlItem> getHangmanControles(String lang) {
+    return [
+      ControlItem(
+        icon: '🔤',
+        name: AppStrings.get('control_guess_letter', lang),
+        description: AppStrings.get('control_guess_letter_desc', lang),
+      ),
+      ControlItem(
+        icon: '🔄',
+        name: AppStrings.get('control_restart', lang),
+        description: AppStrings.get('control_restart_desc', lang),
+      ),
+    ];
+  }
+
+  // Controles de Buscaminas traducidos
+  static List<ControlItem> getBuscaminasControles(String lang) {
+    return [
+      ControlItem(
+        icon: '👆',
+        name: AppStrings.get('control_reveal', lang),
+        description: AppStrings.get('control_reveal_desc', lang),
+      ),
+      ControlItem(
+        icon: '🚩',
+        name: AppStrings.get('control_flag', lang),
+        description: AppStrings.get('control_flag_desc', lang),
+      ),
+      ControlItem(
+        icon: '🔄',
+        name: AppStrings.get('control_restart', lang),
+        description: AppStrings.get('control_restart_desc', lang),
+      ),
+    ];
+  }
 }
