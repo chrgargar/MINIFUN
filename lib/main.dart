@@ -7,11 +7,16 @@ import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
 import 'tema/language_provider.dart';
 import 'providers/auth_provider.dart';
+import 'utils/app_logger.dart';
+import 'constants/api_constants.dart';
 
 // Función principal que se ejecuta al iniciar la app
 void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar el logger
+  appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
 
   // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {

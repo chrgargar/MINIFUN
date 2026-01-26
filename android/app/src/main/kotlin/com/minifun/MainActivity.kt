@@ -1,4 +1,4 @@
-package com.example.minifun_2
+package com.minifun
 
 import io.flutter.embedding.android.FlutterActivity
 
