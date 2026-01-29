@@ -238,4 +238,34 @@ class ApiService {
       _handleError(e, endpoint);
     }
   }
+
+  /// POST /auth/forgot-password
+  /// Solicitar restablecimiento de contraseña
+  ///
+  /// [email] es el correo electrónico del usuario
+  /// Envía un email con el enlace para restablecer la contraseña
+  static Future<Map<String, dynamic>> forgotPassword({
+    required String email,
+  }) async {
+    const endpoint = ApiConstants.authForgotPassword;
+    appLogger.apiCall('POST', endpoint);
+
+    try {
+      final response = await http
+          .post(
+            _buildUrl(endpoint),
+            headers: _baseHeaders(),
+            body: jsonEncode({
+              'email': email,
+            }),
+          )
+          .timeout(
+            Duration(seconds: ApiConstants.authTimeout),
+          );
+
+      return _handleResponse(response, endpoint);
+    } catch (e) {
+      _handleError(e, endpoint);
+    }
+  }
 }
