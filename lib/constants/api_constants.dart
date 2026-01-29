@@ -9,7 +9,7 @@ class ApiConstants {
   // ==================== CONFIGURACIÓN DE ENTORNO ====================
 
   /// Modo de desarrollo (cambiar a false en producción)
-  static const bool isDevelopment = true;
+  static const bool isDevelopment = false;
 
   // ==================== URLs BASE ====================
 
@@ -21,7 +21,7 @@ class ApiConstants {
   static const String _baseUrlAndroidEmulator = 'http://10.0.2.2:3000/api';
 
   /// URL base para producción (configurar cuando se despliegue)
-  static const String _baseUrlProduction = 'https://api.minifun.com/api';
+  static const String _baseUrlProduction = 'https://backend-minifun.onrender.com/api';
 
   /// URL base activa según el entorno
   static String get baseUrl => isDevelopment ? _baseUrlDevelopment : _baseUrlProduction;
