@@ -170,6 +170,8 @@ class AppStrings {
       'theme_peliculas': 'Películas',
       'theme_musica': 'Música',
       'theme_historia': 'Historia',
+      'bonus_word_found': '¡PALABRA EXTRA ENCONTRADA!',
+      'bonus_points': '+50 puntos',
 
       // Guías Water Sort
       'watersort_objective': 'Organizar los líquidos de colores en tubos separados hasta que cada tubo contenga únicamente un solo color.',
@@ -389,6 +391,8 @@ class AppStrings {
       'theme_peliculas': 'Movies',
       'theme_musica': 'Music',
       'theme_historia': 'History',
+      'bonus_word_found': 'BONUS WORD FOUND!',
+      'bonus_points': '+50 points',
 
       // Water Sort Guides
       'watersort_objective': 'Sort the colored water into tubes until each tube contains only one color.',
@@ -610,6 +614,16 @@ class AppStrings {
       'control_undo_desc': 'Desfà l\'últim moviment realitzat',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivell des del principi',
+
+      // Guies Sopa de Letras
+      'wordsearch_objective': 'Troba totes les paraules ocultes en la quadrícula',
+      'wordsearch_inst_1': 'Toca la primera lletra d\'una paraula',
+      'wordsearch_inst_2': 'Arrossega el dit fins a l\'última lletra de la paraula',
+      'wordsearch_inst_3': 'Les paraules poden estar en horitzontal, vertical o diagonal',
+      'wordsearch_inst_4': 'Les paraules poden estar al derecho o al revés',
+      'wordsearch_inst_5': 'Les paraules trobades es traçaran de la llista',
+      'bonus_word_found': '¡PARAULA EXTRA TROBADA!',
+      'bonus_points': '+50 punts',
 
       // Pausa
       'paused': 'PAUSA',
