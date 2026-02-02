@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user_model.dart';
-// import '../services/database_service.dart'; // DATABASE DEACTIVATED
 
-/// Provider para gestionar el estado de autenticación
+import '../models/user_model.dart';
+import '../services/api_service.dart';
+import '../constants/api_constants.dart';
+import '../exceptions/api_exceptions.dart';
+import '../utils/app_logger.dart';
+
+/// Provider para gestionar el estado de autenticación de la aplicación
+///
+/// Maneja el ciclo de vida completo de autenticación: registro, login, logout,
+/// persistencia de sesión y validación de tokens. Integrado con el backend
+/// para autenticación tradicional y con Google Sign-In para OAuth.
 class AuthProvider extends ChangeNotifier {
   // Estado del usuario actual
   UserModel? _currentUser;
@@ -25,94 +33,119 @@ class AuthProvider extends ChangeNotifier {
   bool get isPremium => _currentUser?.isPremium ?? false;
 
   /// Inicializar y verificar si hay una sesión guardada
+  ///
+  /// Se ejecuta al iniciar la app para restaurar la sesión del usuario
+  /// si existe un token válido almacenado. Si el token ha expirado o
+  /// es inválido, limpia la sesión automáticamente.
   Future<void> init() async {
-    // DATABASE DEACTIVATED - Skipping database initialization
-    _isLoading = false;
-    notifyListeners();
-    return;
-    
-    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('current_user_id');
+      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
 
-      if (userId != null) {
-        // Cargar el usuario desde la base de datos
-        final users = await _dbHelper.getAllUsers();
-        final user = users.where((u) => u.id == userId).firstOrNull;
+      if (token != null) {
+        appLogger.info('Validando sesión existente');
 
-        if (user != null) {
-          _currentUser = user;
-          await _dbHelper.updateLastLogin(userId);
-          await _updateStreak();
-        } else {
-          // Usuario no encontrado, limpiar sesión
-          await prefs.remove('current_user_id');
+        try {
+          final response = await ApiService.getMe(token);
+
+          if (response['success'] == true) {
+            final userData = response['data']['user'] as Map<String, dynamic>;
+
+            _currentUser = _createUserFromServerData(userData);
+            appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id});
+          } else {
+            appLogger.warning('Token inválido, limpiando sesión');
+            await _clearSession(prefs);
+          }
+        } on TokenExpiredException catch (e) {
+          appLogger.warning('Token expirado', e);
+          await _clearSession(prefs);
+          _errorMessage = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+        } on ApiException catch (e) {
+          appLogger.error('Error de API validando sesión', e);
+          await _clearSession(prefs);
         }
       }
     } catch (e) {
-      _errorMessage = 'Error al inicializar sesión: $e';
+      appLogger.error('Error al inicializar sesión', e);
+      _errorMessage = 'Error al inicializar sesión';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
-    */
+  }
+
+  /// Limpiar sesión del almacenamiento local
+  Future<void> _clearSession(SharedPreferences prefs) async {
+    await prefs.remove(ApiConstants.storageKeyAuthToken);
+    await prefs.remove(ApiConstants.storageKeyUserId);
+  }
+
+  /// Crear UserModel desde datos del servidor
+  ///
+  /// Centraliza la lógica de parseo para evitar duplicación
+  UserModel _createUserFromServerData(Map<String, dynamic> userData) {
+    return UserModel(
+      id: userData['id'] as int,
+      username: userData['username'] as String,
+      email: userData['email'] as String?,
+      passwordHash: '', // No almacenamos el hash en el cliente por seguridad
+      isGuest: false,
+      isPremium: userData['is_premium'] as bool? ?? false,
+      createdAt: DateTime.parse(userData['created_at'] as String),
+      lastLogin: DateTime.parse(userData['last_login'] as String),
+      streakDays: userData['streak_days'] as int? ?? 0,
+    );
   }
 
   /// Inicializar sin notificar (para primera carga)
+  ///
+  /// Similar a init() pero sin llamar notifyListeners(), útil cuando
+  /// se necesita validar la sesión sin actualizar la UI
   Future<void> initSilent() async {
-    // DATABASE DEACTIVATED - Skipping silent initialization
-    return;
-    
-    /* DATABASE DEACTIVATED CODE:
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('current_user_id');
+      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
 
-      if (userId != null) {
-        // Cargar el usuario desde la base de datos
-        final users = await _dbHelper.getAllUsers();
-        final user = users.where((u) => u.id == userId).firstOrNull;
+      if (token != null) {
+        try {
+          final response = await ApiService.getMe(token);
 
-        if (user != null) {
-          _currentUser = user;
-          await _dbHelper.updateLastLogin(userId);
-          // No llamar a _updateStreak() aquí para evitar notifyListeners
-        } else {
-          // Usuario no encontrado, limpiar sesión
-          await prefs.remove('current_user_id');
+          if (response['success'] == true) {
+            final userData = response['data']['user'] as Map<String, dynamic>;
+            _currentUser = _createUserFromServerData(userData);
+          } else {
+            await _clearSession(prefs);
+          }
+        } on ApiException {
+          await _clearSession(prefs);
         }
       }
     } catch (e) {
-      _errorMessage = 'Error al inicializar sesión: $e';
+      appLogger.error('Error en initSilent', e);
+      _errorMessage = 'Error al inicializar sesión';
     }
-    */
   }
 
   /// Registrar nuevo usuario
+  ///
+  /// Crea una cuenta nueva en el backend y almacena el token JWT.
+  /// Las validaciones básicas se hacen en el cliente, pero el backend
+  /// también valida por seguridad.
   Future<bool> register({
     required String username,
     String? email,
     required String password,
   }) async {
-    // DATABASE DEACTIVATED - Registration disabled
-    _isLoading = true;
-    _errorMessage = 'La registración está desactivada temporalmente';
-    notifyListeners();
-    _isLoading = false;
-    notifyListeners();
-    return false;
-
-    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Validaciones
+      // Validaciones locales (el backend también validará)
       if (username.isEmpty || password.isEmpty) {
         _errorMessage = 'El nombre de usuario y la contraseña son requeridos';
         _isLoading = false;
@@ -127,90 +160,107 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Verificar si el usuario ya existe
-      final existingUser = await _dbHelper.getUserByUsername(username);
-      if (existingUser != null) {
-        _errorMessage = 'El nombre de usuario ya está en uso';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      appLogger.authEvent('Intentando registro', metadata: {'username': username});
 
-      // Verificar si el email ya existe (si se proporcionó)
-      if (email != null && email.isNotEmpty) {
-        final existingEmail = await _dbHelper.getUserByEmail(email);
-        if (existingEmail != null) {
-          _errorMessage = 'El email ya está en uso';
-          _isLoading = false;
-          notifyListeners();
-          return false;
-        }
-      }
-
-      // Crear el usuario
-      final user = await _dbHelper.createUser(
+      final response = await ApiService.register(
         username: username,
         email: email,
         password: password,
       );
 
-      _currentUser = user;
-      await _saveSession(user.id!);
+      if (response['success'] == true) {
+        final token = response['data']['token'] as String;
+        final userData = response['data']['user'] as Map<String, dynamic>;
 
+        _currentUser = _createUserFromServerData(userData);
+
+        // Guardar token JWT y sesión
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(ApiConstants.storageKeyAuthToken, token);
+        await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+
+        appLogger.authEvent('Registro exitoso', metadata: {'userId': _currentUser!.id});
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Error al registrar usuario';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } on ApiException catch (e) {
+      // Usar mensaje amigable de la excepción personalizada
+      _errorMessage = e.userFriendlyMessage;
+      appLogger.error('Error en registro', e);
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error al registrar usuario: $e';
+      _errorMessage = 'Error al registrar usuario';
+      appLogger.error('Error inesperado en registro', e);
       _isLoading = false;
       notifyListeners();
       return false;
     }
-    */
   }
 
   /// Iniciar sesión
+  ///
+  /// Autentica al usuario con el backend usando username/email y contraseña.
+  /// Si la autenticación es exitosa, almacena el token JWT para futuras peticiones.
   Future<bool> login({
     required String usernameOrEmail,
     required String password,
   }) async {
-    // DATABASE DEACTIVATED - Login disabled
-    _isLoading = true;
-    _errorMessage = 'El inicio de sesión está desactivado temporalmente';
-    notifyListeners();
-    _isLoading = false;
-    notifyListeners();
-    return false;
-
-    /* DATABASE DEACTIVATED CODE:
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final user = await _dbHelper.authenticateUser(usernameOrEmail, password);
+      appLogger.authEvent('Intentando login', metadata: {'usernameOrEmail': usernameOrEmail});
 
-      if (user == null) {
-        _errorMessage = 'Usuario o contraseña incorrectos';
+      final response = await ApiService.login(
+        usernameOrEmail: usernameOrEmail,
+        password: password,
+      );
+
+      if (response['success'] == true) {
+        final token = response['data']['token'] as String;
+        final userData = response['data']['user'] as Map<String, dynamic>;
+
+        _currentUser = _createUserFromServerData(userData);
+
+        // Guardar token JWT y sesión
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(ApiConstants.storageKeyAuthToken, token);
+        await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+
+        appLogger.authEvent('Login exitoso', metadata: {'userId': _currentUser!.id});
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Error al iniciar sesión';
         _isLoading = false;
         notifyListeners();
         return false;
       }
-
-      _currentUser = user;
-      await _saveSession(user.id!);
-      await _updateStreak();
-
+    } on ApiException catch (e) {
+      _errorMessage = e.userFriendlyMessage;
+      appLogger.error('Error en login', e);
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error al iniciar sesión: $e';
+      _errorMessage = 'Error al iniciar sesión';
+      appLogger.error('Error inesperado en login', e);
       _isLoading = false;
       notifyListeners();
       return false;
     }
-    */
   }
 
   /// Continuar como invitado
@@ -325,9 +375,28 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Cerrar sesión
+  ///
+  /// Limpia la sesión del usuario tanto en el cliente como (opcionalmente)
+  /// en el servidor. Con JWT stateless, el logout es principalmente del lado
+  /// del cliente al eliminar el token.
   Future<void> logout() async {
+    appLogger.authEvent('Cerrando sesión', metadata: {'userId': _currentUser?.id});
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('current_user_id');
+
+    // Intentar hacer logout en el backend (opcional con JWT)
+    final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+    if (token != null) {
+      try {
+        await ApiService.logout(token);
+      } catch (e) {
+        // Ignorar errores de logout del backend ya que es opcional
+        appLogger.warning('Error en logout del backend (ignorado)', e);
+      }
+    }
+
+    // Limpiar sesión local (esto es lo crítico)
+    await _clearSession(prefs);
     _currentUser = null;
     _errorMessage = null;
     notifyListeners();
@@ -396,12 +465,18 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Iniciar sesión con Google
+  ///
+  /// Implementa OAuth con Google Sign-In. Actualmente crea un usuario local
+  /// con los datos de Google. En el futuro, esto debería integrarse con el
+  /// backend para validar el token de Google y sincronizar datos.
   Future<bool> loginWithGoogle() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      appLogger.authEvent('Intentando login con Google');
+
       final GoogleSignIn googleSignIn = GoogleSignIn(
         serverClientId: '575590476395-s3eb8p7g533ichbs81qp8h23el53n1u7.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
@@ -411,12 +486,14 @@ class AuthProvider extends ChangeNotifier {
 
       if (googleUser == null) {
         // El usuario canceló el login
+        appLogger.info('Login con Google cancelado por el usuario');
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      // Crear usuario con datos de Google
+      // Crear usuario local con datos de Google
+      // TODO: En el futuro, validar el ID token con el backend
       _currentUser = UserModel(
         id: googleUser.id.hashCode,
         username: googleUser.displayName ?? 'Usuario Google',
@@ -432,16 +509,19 @@ class AuthProvider extends ChangeNotifier {
 
       // Guardar sesión
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('current_user_id', _currentUser!.id!);
-      await prefs.setString('google_user_id', googleUser.id);
-      await prefs.setString('google_user_email', googleUser.email);
-      await prefs.setString('google_user_name', googleUser.displayName ?? '');
+      await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+      await prefs.setString(ApiConstants.storageKeyGoogleUserId, googleUser.id);
+      await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, googleUser.email);
+      await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
+
+      appLogger.authEvent('Login con Google exitoso', metadata: {'userId': _currentUser!.id});
 
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = 'Error al iniciar sesión con Google: $e';
+      _errorMessage = 'Error al iniciar sesión con Google';
+      appLogger.error('Error en login con Google', e);
       _isLoading = false;
       notifyListeners();
       return false;

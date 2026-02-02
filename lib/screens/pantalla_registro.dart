@@ -92,11 +92,47 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
 
     if (success && mounted) {
-      // Registro exitoso, navegar a la pantalla principal
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-      );
+      // Si el usuario proporcionó email, mostrar diálogo de verificación
+      final hasEmail = _emailController.text.trim().isNotEmpty;
+
+      if (hasEmail) {
+        // Mostrar diálogo informando sobre la verificación de email
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.email_outlined, color: ColoresApp.moradoLogin),
+                const SizedBox(width: 8),
+                const Text('Verifica tu email'),
+              ],
+            ),
+            content: const Text(
+              'Te hemos enviado un correo de verificación. '
+              'Revisa tu bandeja de entrada (y la carpeta de spam) '
+              'para activar tu cuenta.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Entendido',
+                  style: TextStyle(color: ColoresApp.moradoLogin),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Navegar a la pantalla principal
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+        );
+      }
     } else if (mounted) {
       // Mostrar error del provider
       ScaffoldMessenger.of(context).showSnackBar(

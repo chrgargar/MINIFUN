@@ -109,6 +109,13 @@ class AppStrings {
       'email_placeholder': 'correoelectrónico@dominio.com',
       'error_register': 'Error al registrarse',
 
+      // Recuperar contraseña
+      'recover_password': 'Recuperar contraseña',
+      'recover_password_subtitle': 'Introduce tu email y te enviaremos un enlace para restablecer tu contraseña',
+      'send_link': 'Enviar enlace',
+      'email_sent': 'Si el email existe, recibirás un enlace de recuperación',
+      'back_to_login': 'Volver al inicio de sesión',
+
       // Pantalla principal
       'missions': 'MISIONES',
       'get_pro': 'Adquiere MINIFUN PRO por',
@@ -174,6 +181,8 @@ class AppStrings {
       'theme_peliculas': 'Películas',
       'theme_musica': 'Música',
       'theme_historia': 'Historia',
+      'bonus_word_found': '¡PALABRA EXTRA ENCONTRADA!',
+      'bonus_points': '+50 puntos',
 
       // Guías Water Sort
       'watersort_objective': 'Organizar los líquidos de colores en tubos separados hasta que cada tubo contenga únicamente un solo color.',
@@ -326,6 +335,13 @@ class AppStrings {
       'email_placeholder': 'email@domain.com',
       'error_register': 'Error registering',
 
+      // Password recovery
+      'recover_password': 'Recover password',
+      'recover_password_subtitle': 'Enter your email and we will send you a link to reset your password',
+      'send_link': 'Send link',
+      'email_sent': 'If the email exists, you will receive a recovery link',
+      'back_to_login': 'Back to login',
+
       // Main screen
       'missions': 'MISSIONS',
       'get_pro': 'Get MINIFUN PRO for',
@@ -397,6 +413,8 @@ class AppStrings {
       'theme_peliculas': 'Movies',
       'theme_musica': 'Music',
       'theme_historia': 'History',
+      'bonus_word_found': 'BONUS WORD FOUND!',
+      'bonus_points': '+50 points',
 
       // Water Sort Guides
       'watersort_objective': 'Sort the colored water into tubes until each tube contains only one color.',
@@ -552,6 +570,13 @@ class AppStrings {
       'email_placeholder': 'correuelectronic@domini.com',
       'error_register': 'Error al registrar-se',
 
+      // Recuperar contrasenya
+      'recover_password': 'Recuperar contrasenya',
+      'recover_password_subtitle': 'Introdueix el teu email i t\'enviarem un enllaç per a restablir la teua contrasenya',
+      'send_link': 'Enviar enllaç',
+      'email_sent': 'Si l\'email existeix, rebràs un enllaç de recuperació',
+      'back_to_login': 'Tornar a l\'inici de sessió',
+
       // Pantalla principal
       'missions': 'MISSIONS',
       'get_pro': 'Adquirix MINIFUN PRO per',
@@ -622,6 +647,16 @@ class AppStrings {
       'control_undo_desc': 'Desfà l\'últim moviment realitzat',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivell des del principi',
+
+      // Guies Sopa de Letras
+      'wordsearch_objective': 'Troba totes les paraules ocultes en la quadrícula',
+      'wordsearch_inst_1': 'Toca la primera lletra d\'una paraula',
+      'wordsearch_inst_2': 'Arrossega el dit fins a l\'última lletra de la paraula',
+      'wordsearch_inst_3': 'Les paraules poden estar en horitzontal, vertical o diagonal',
+      'wordsearch_inst_4': 'Les paraules poden estar al derecho o al revés',
+      'wordsearch_inst_5': 'Les paraules trobades es traçaran de la llista',
+      'bonus_word_found': '¡PARAULA EXTRA TROBADA!',
+      'bonus_points': '+50 punts',
 
       // Pausa
       'paused': 'PAUSA',

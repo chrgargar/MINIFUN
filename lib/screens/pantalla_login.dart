@@ -7,6 +7,7 @@ import '../constants/app_strings.dart';
 import '../utils/validators.dart';
 import 'pantalla_registro.dart';
 import 'pantalla_principal.dart';
+import 'pantalla_recuperar_password.dart';
 
 // Pantalla de inicio de sesión
 class PantallaLogin extends StatefulWidget {
@@ -328,7 +329,14 @@ class _PantallaLoginState extends State<PantallaLogin> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton(
-                          onPressed: () {}, // Lo que hará al pulsarlo
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PantallaRecuperarPassword(),
+                              ),
+                            );
+                          },
                           child: Text(
                             AppStrings.get('forgot_password', currentLang),
                             style: TextStyle(
