@@ -21,6 +21,10 @@ class AppStrings {
       'next_level': 'Siguiente Nivel',
       'undo': 'Deshacer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultad',
+      'easy': 'Fácil',
+      'medium': 'Medio',
+      'hard': 'Difícil',
 
       // Ajustes
       'dark_theme': 'Tema oscuro',
@@ -234,6 +238,10 @@ class AppStrings {
       'next_level': 'Next Level',
       'undo': 'Undo',
       'or': 'or',
+      'select_difficulty': 'Select Difficulty',
+      'easy': 'Easy',
+      'medium': 'Medium',
+      'hard': 'Hard',
 
       // Settings
       'dark_theme': 'Dark theme',
@@ -456,6 +464,10 @@ class AppStrings {
       'next_level': 'Següent Nivell',
       'undo': 'Desfer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultat',
+      'easy': 'Fàcil',
+      'medium': 'Mig',
+      'hard': 'Difícil',
 
       // Ajustos
       'dark_theme': 'Tema fosc',
