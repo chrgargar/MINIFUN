@@ -4,7 +4,7 @@ class AppStrings {
     return _translations[language]?[key] ?? _translations['es']?[key] ?? key;
   }
 
-  static const Map<String, Map<String, String>> _translations = {
+  static final Map<String, Map<String, String>> _translations = {
     // ESPAÑOL
     'es': {
       // General
