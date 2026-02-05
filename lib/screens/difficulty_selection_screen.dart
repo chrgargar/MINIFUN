@@ -91,31 +91,28 @@ class DifficultySelectionScreen extends StatelessWidget {
                         _buildDifficultyButton(
                           context: context,
                           height: buttonHeight,
-                          icon: '😊',
                           difficulty: 'facil',
                           text: AppStrings.get('easy', currentLang),
                           description: _getDifficultyDescription(context, 'facil'),
-                          color: const Color(0xFF00C853),
+                          color: const Color(0xFF7B3FF2),
                         ),
                         SizedBox(height: spacing),
                         _buildDifficultyButton(
                           context: context,
                           height: buttonHeight,
-                          icon: '🎯',
                           difficulty: 'medio',
                           text: AppStrings.get('medium', currentLang),
                           description: _getDifficultyDescription(context, 'medio'),
-                          color: const Color(0xFFFFA500),
+                          color: const Color(0xFF7B3FF2),
                         ),
                         SizedBox(height: spacing),
                         _buildDifficultyButton(
                           context: context,
                           height: buttonHeight,
-                          icon: '🔥',
                           difficulty: 'dificil',
                           text: AppStrings.get('hard', currentLang),
                           description: _getDifficultyDescription(context, 'dificil'),
-                          color: const Color(0xFFD32F2F),
+                          color: const Color(0xFF7B3FF2),
                         ),
                         
                         // Botón Extra (PRO / Experto) si aplica
@@ -124,7 +121,6 @@ class DifficultySelectionScreen extends StatelessWidget {
                           _buildDifficultyButton(
                             context: context,
                             height: buttonHeight * 0.9,
-                            icon: '👑',
                             difficulty: 'extremo',
                             text: 'Extremo PRO',
                             description: '35x35 - 300 minas',
@@ -174,7 +170,6 @@ class DifficultySelectionScreen extends StatelessWidget {
   Widget _buildDifficultyButton({
     required BuildContext context,
     required double height,
-    required String icon,
     required String difficulty,
     required String text,
     required String description,
@@ -198,19 +193,16 @@ class DifficultySelectionScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                icon,
-                style: TextStyle(fontSize: height * 0.35),
-              ),
-              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       text,
+                                            textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: height * 0.28,
                         fontWeight: FontWeight.bold,
@@ -220,6 +212,7 @@ class DifficultySelectionScreen extends StatelessWidget {
                     if (description.isNotEmpty)
                       Text(
                         description,
+                                                textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: height * 0.18,
                           color: Colors.white.withOpacity(0.9),

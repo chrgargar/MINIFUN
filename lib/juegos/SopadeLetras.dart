@@ -565,6 +565,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
                                     score = 0;
                                     isGameOver = false;
                                     isVictory = false;
+                                    isPaused = false;
                                     if (widget.isTimeAttackMode) {
                                       _startTimer();
                                     }
@@ -723,6 +724,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
                   score = 0;
                   isGameOver = false;
                   isVictory = false;
+                  isPaused = false;
                   if (widget.isTimeAttackMode) {
                     _startTimer();
                   }
