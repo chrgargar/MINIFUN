@@ -21,6 +21,10 @@ class AppStrings {
       'next_level': 'Siguiente Nivel',
       'undo': 'Deshacer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultad',
+      'easy': 'Fácil',
+      'medium': 'Medio',
+      'hard': 'Difícil',
 
       // Ajustes
       'dark_theme': 'Tema oscuro',
@@ -104,6 +108,13 @@ class AppStrings {
       'add_your_data': 'Añade tus datos para\ncrear una cuenta',
       'email_placeholder': 'correoelectrónico@dominio.com',
       'error_register': 'Error al registrarse',
+
+      // Recuperar contraseña
+      'recover_password': 'Recuperar contraseña',
+      'recover_password_subtitle': 'Introduce tu email y te enviaremos un enlace para restablecer tu contraseña',
+      'send_link': 'Enviar enlace',
+      'email_sent': 'Si el email existe, recibirás un enlace de recuperación',
+      'back_to_login': 'Volver al inicio de sesión',
 
       // Pantalla principal
       'missions': 'MISIONES',
@@ -236,6 +247,10 @@ class AppStrings {
       'next_level': 'Next Level',
       'undo': 'Undo',
       'or': 'or',
+      'select_difficulty': 'Select Difficulty',
+      'easy': 'Easy',
+      'medium': 'Medium',
+      'hard': 'Hard',
 
       // Settings
       'dark_theme': 'Dark theme',
@@ -319,6 +334,13 @@ class AppStrings {
       'add_your_data': 'Add your data to\ncreate an account',
       'email_placeholder': 'email@domain.com',
       'error_register': 'Error registering',
+
+      // Password recovery
+      'recover_password': 'Recover password',
+      'recover_password_subtitle': 'Enter your email and we will send you a link to reset your password',
+      'send_link': 'Send link',
+      'email_sent': 'If the email exists, you will receive a recovery link',
+      'back_to_login': 'Back to login',
 
       // Main screen
       'missions': 'MISSIONS',
@@ -460,6 +482,10 @@ class AppStrings {
       'next_level': 'Següent Nivell',
       'undo': 'Desfer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultat',
+      'easy': 'Fàcil',
+      'medium': 'Mig',
+      'hard': 'Difícil',
 
       // Ajustos
       'dark_theme': 'Tema fosc',
@@ -543,6 +569,13 @@ class AppStrings {
       'add_your_data': 'Afig les teues dades per a\ncrear un compte',
       'email_placeholder': 'correuelectronic@domini.com',
       'error_register': 'Error al registrar-se',
+
+      // Recuperar contrasenya
+      'recover_password': 'Recuperar contrasenya',
+      'recover_password_subtitle': 'Introdueix el teu email i t\'enviarem un enllaç per a restablir la teua contrasenya',
+      'send_link': 'Enviar enllaç',
+      'email_sent': 'Si l\'email existeix, rebràs un enllaç de recuperació',
+      'back_to_login': 'Tornar a l\'inici de sessió',
 
       // Pantalla principal
       'missions': 'MISSIONS',

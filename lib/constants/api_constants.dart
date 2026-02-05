@@ -36,6 +36,7 @@ class ApiConstants {
   static const String authLogin = '/auth/login';
   static const String authMe = '/auth/me';
   static const String authLogout = '/auth/logout';
+  static const String authForgotPassword = '/auth/forgot-password';
 
   /// Endpoint de health check
   static const String health = '/health';

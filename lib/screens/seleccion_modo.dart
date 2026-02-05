@@ -5,12 +5,12 @@ import '../widgets/boton_guia.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../juegos/Snake.dart';
-import '../juegos/sudoku.dart';
+import '../juegos/Sudoku.dart';
 import '../juegos/WaterSort.dart';
 import '../juegos/buscaminas.dart';
 import '../juegos/SopadeLetras.dart';
-import '../juegos/Ahorcado.dart';
-import 'buscaminas_difficulty_selection.dart';
+import '../juegos/ahorcado.dart';
+import 'difficulty_selection_screen.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/sopa_de_letras_constants.dart';
@@ -62,7 +62,7 @@ class SeleccionModo extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Header: Botón atrás, guía y ajustes
+                  // Header: Botón atrás y ajustes (Guía movida abajo)
                   SizedBox(
                     height: headerHeight,
                     child: Row(
@@ -72,13 +72,7 @@ class SeleccionModo extends StatelessWidget {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.arrow_back_ios, size: 24),
                         ),
-                        Row(
-                          children: [
-                            _buildGuiaButton(currentLang),
-                            const SizedBox(width: 8),
-                            const BotonAjustes(),
-                          ],
-                        ),
+                        const BotonAjustes(),
                       ],
                     ),
                   ),
@@ -126,9 +120,9 @@ class SeleccionModo extends StatelessWidget {
                   // Botones de modalidad
                   Expanded(
                     child: ListView(
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       children: [
-                        // Botón Jugar
+                        // 1. Botón Jugar (Play)
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '🎮',
@@ -140,32 +134,24 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(builder: (context) => const SnakeGame()),
                               );
-                            } else if (gameTitle == 'Sudoku') {
+                            } else {
+                              // Redirigir a pantalla de selección de dificultad para todos los demás juegos
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const SudokuGame(difficulty: 'medio')),
+                                MaterialPageRoute(
+                                  builder: (context) => DifficultySelectionScreen(
+                                    gameTitle: gameTitle,
+                                    gameImagePath: gameImagePath,
+                                  ),
+                                ),
                               );
-                            } else if (gameTitle == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const WaterSortGame(difficulty: 'facil')),
-                              );
-                            } else if (gameTitle == 'Buscaminas') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const BuscaminasDifficultySelection()),
-                              );
-                            } else if (gameTitle == 'Sopa de Letras') {
-                              _showThemeSelectionDialog(context, 'facil');
-                            } else if (gameTitle == 'Ahorcado') {
-                              _showHangmanThemeDialog(context, 'facil');
                             }
                           },
                         ),
 
                         SizedBox(height: spacing),
 
-                        // Botón Supervivencia PRO (Snake, Ahorcado) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Experto (Buscaminas)
+                        // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.)
                         _buildModeButton(
                           height: buttonHeight,
                           icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : (gameTitle == 'Ahorcado' ? '💀' : '💎'))),
@@ -219,8 +205,8 @@ class SeleccionModo extends StatelessWidget {
 
                         SizedBox(height: spacing),
 
-                        // Botón Velocidad (solo Snake)
-                        if (gameTitle == 'Snake')
+                        // 3. Modalidades (Contrarreloj, Velocidad, Sin Banderas, etc.)
+                        if (gameTitle == 'Snake') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
@@ -235,58 +221,40 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
-
-                        if (gameTitle == 'Snake') SizedBox(height: spacing),
-
-                        // Botón Contrarreloj (Snake, Sudoku, WaterSort, Buscaminas) / Velocidad (Ahorcado)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: gameTitle == 'Ahorcado' ? '🚀' : '⏱️',
-                          text: gameTitle == 'Buscaminas'
-                              ? 'Contrarreloj'
-                              : (gameTitle == 'Ahorcado'
-                                  ? AppStrings.get('hangman_speed', currentLang)
-                                  : AppStrings.get('time_attack', currentLang)),
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
+                          SizedBox(height: spacing),
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SnakeGame(isTimeAttackMode: true),
                                 ),
                               );
-                            } else if (gameTitle == 'Sudoku') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const WaterSortGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'Buscaminas') {
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Buscaminas') ...[
+                           _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: 'Contrarreloj',
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => BuscaminasGame.contrareloj,
                                 ),
                               );
-                            } else if (gameTitle == 'Sopa de Letras') {
-                              _showThemeSelectionDialog(context, 'medio', isTimeAttackMode: true);
-                            } else if (gameTitle == 'Ahorcado') {
-                              _showHangmanThemeDialog(context, 'medio', isSpeedMode: true);
-                            }
-                          },
-                        ),
-
-                        // Botón Sin Banderas (solo Buscaminas)
-                        if (gameTitle == 'Buscaminas')
+                            },
+                          ),
+                          SizedBox(height: spacing),
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🏳️',
@@ -302,7 +270,82 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
+                          SizedBox(height: spacing),
+                        ],
 
+                        if (gameTitle == 'Sudoku') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SudokuGame(isTimeAttackMode: true),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'WaterSort') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const WaterSortGame(isTimeAttackMode: true),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Sopa de Letras') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              _showThemeSelectionDialog(context, 'medio', isTimeAttackMode: true);
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Ahorcado') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🚀',
+                            text: AppStrings.get('hangman_speed', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              _showHangmanThemeDialog(context, 'medio', isSpeedMode: true);
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        // 4. Botón Guía (Guide)
+                        _buildModeButton(
+                          height: buttonHeight,
+                          icon: '📖',
+                          text: AppStrings.get('guide', currentLang),
+                          color: const Color(0xFF7B3FF2),
+                          onTap: () {
+                            _openGuia(context, currentLang);
+                          },
+                        ),
+                        SizedBox(height: spacing),
                       ],
                     ),
                   ),
@@ -315,8 +358,8 @@ class SeleccionModo extends StatelessWidget {
     );
   }
 
-  // Widget helper para crear el botón de guía según el juego
-  Widget _buildGuiaButton(String currentLang) {
+  // Método para abrir la guía del juego
+  void _openGuia(BuildContext context, String currentLang) {
     String objetivo;
     List<String> instrucciones;
     List<ControlItem> controles;
@@ -390,13 +433,13 @@ class SeleccionModo extends StatelessWidget {
         controles = [];
     }
 
-    return BotonGuia(
+    GuiaJuegoDialog.show(
+      context,
       gameTitle: gameTitle,
       gameImagePath: gameImagePath,
       objetivo: objetivo,
       instrucciones: instrucciones,
       controles: controles,
-      size: 40,
     );
   }
 
