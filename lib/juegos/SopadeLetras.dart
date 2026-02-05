@@ -35,6 +35,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
   // Grid de letras
   late List<List<String>> grid;
   late List<String> wordsToFind;
+  
   late Set<String> foundWords;
   late List<String> bonusWords; // Palabras bonus ocultas
   late Set<String> foundBonusWords; // Palabras bonus encontradas
@@ -63,7 +64,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
   // Puntuación
   int score = 0;
-  int hintsUsed = 0;
+  
 
   // Control de mensaje bonus
   bool showBonusMessage = false;
@@ -100,28 +101,46 @@ class _WordSearchGameState extends State<WordSearchGame> {
         gridSize = 6;
     }
 
-    // Obtener lista de palabras de la temática y dificultad
-    List<String> allWords = List.from(ConstantesSopaLetras.palabrasPorTematica[widget.theme]?[widget.difficulty] ?? []);
+    // Obtener idioma actual
+    final currentLanguage = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    
+    // Obtener lista de palabras de la temática, idioma y dificultad
+    List<String> allWords = List.from(ConstantesSopaLetras.getPalabras(widget.theme, currentLanguage, widget.difficulty));
 
     // Remover espacios de las palabras y filtrar palabras vacías
     allWords = allWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
 
-    // Mezclar y seleccionar máximo número de palabras
+    // Mezclar todas las palabras disponibles y seleccionar candidatos
     allWords.shuffle(Random());
     int maxWords = ConstantesSopaLetras.maxPalabras[widget.difficulty] ?? 8;
-    wordsToFind = allWords.take(maxWords).toList();
 
-    // Filtrar palabras que no caben en el grid (más largas que el tamaño)
-    wordsToFind = wordsToFind.where((word) => word.length <= gridSize).toList();
+    // Tomar candidatos (hasta maxWords) desde la lista mezclada
+    List<String> candidateWords = allWords.take(maxWords).toList();
 
-    // Si no hay palabras válidas, usar palabras de general
-    if (wordsToFind.isEmpty) {
-      List<String> defaultWords = ConstantesSopaLetras.palabrasPorTematica['general']?[widget.difficulty] ?? [];
-      // También remover espacios de las palabras por defecto
+    // Determinar longitud máxima entre candidatos
+    int maxLen = 0;
+    if (candidateWords.isNotEmpty) {
+      maxLen = candidateWords.map((w) => w.length).reduce(max);
+    }
+
+    // Recomendar tamaño mínimo en función del número de palabras: 3 + nPalabras
+    int recommendedSize = max(gridSize, maxLen);
+    recommendedSize = max(recommendedSize, 3 + candidateWords.length);
+    // Evitar grids demasiado grandes
+    recommendedSize = min(recommendedSize, 14);
+
+    // Actualizar gridSize con el recomendado
+    gridSize = recommendedSize;
+
+    // Filtrar candidatos que quepan en el grid actual
+    wordsToFind = candidateWords.where((word) => word.length <= gridSize).toList();
+
+    // Si quedaron muy pocas o ninguna palabra válida, intentar cargar palabras por defecto
+    if (wordsToFind.length < 3) {
+      List<String> defaultWords = List.from(ConstantesSopaLetras.getPalabras('general', currentLanguage, widget.difficulty));
       defaultWords = defaultWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
-      defaultWords = defaultWords.where((word) => word.length <= gridSize).toList();
       defaultWords.shuffle(Random());
-      wordsToFind = defaultWords.take(5).toList(); // Al menos 5 palabras por defecto
+      wordsToFind = defaultWords.where((word) => word.length <= gridSize).take(max(5, maxWords)).toList();
     }
 
     // Ordenar por longitud ascendente para colocar palabras cortas primero
@@ -131,7 +150,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
     foundBonusWords = {};
     
     // Agregar palabras bonus (1-2 palabras según dificultad)
-    List<String> allBonusWords = List.from(ConstantesSopaLetras.palabrasPorTematica[widget.theme]?['medio'] ?? []);
+    List<String> allBonusWords = List.from(ConstantesSopaLetras.getPalabras(widget.theme, currentLanguage, 'medio'));
     allBonusWords = allBonusWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty && !wordsToFind.contains(word)).toList();
     allBonusWords.shuffle(Random());
     
@@ -544,7 +563,6 @@ class _WordSearchGameState extends State<WordSearchGame> {
                                     elapsedSeconds = 0;
                                     timeLeft = ConstantesSopaLetras.duracionContrarreloj;
                                     score = 0;
-                                    hintsUsed = 0;
                                     isGameOver = false;
                                     isVictory = false;
                                     if (widget.isTimeAttackMode) {
@@ -703,7 +721,6 @@ class _WordSearchGameState extends State<WordSearchGame> {
                   elapsedSeconds = 0;
                   timeLeft = ConstantesSopaLetras.duracionContrarreloj;
                   score = 0;
-                  hintsUsed = 0;
                   isGameOver = false;
                   isVictory = false;
                   if (widget.isTimeAttackMode) {
