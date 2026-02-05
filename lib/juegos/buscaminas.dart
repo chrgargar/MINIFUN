@@ -55,6 +55,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   int cellsRevealed = 0;
   int timeElapsed = 0;
   int timeLeft = 0; // used in contrarreloj mode
+  int hintsRemaining = 3; // 3 hints per game
   Timer? gameTimer;
   
   bool isFlaggingMode = false;
@@ -133,7 +134,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       timeLeft = 0;
     }
     _startTimer();
-    isFlaggingMode = false; 
+    isFlaggingMode = false;
+    hintsRemaining = 3;
   }
 
   void _startTimer() {
@@ -223,7 +225,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           flagsPlaced = controller.countFlags();
                   } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Límite máximo de minas alcanzado!')),
+            const SnackBar(content: Text('¡Límite máximo de banderas alcanzado!')),
           );
         }
       }
@@ -240,6 +242,36 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
   void _revealAllMines() {
     controller.revealAllMines();
+  }
+
+  void _useHint() {
+    if (hintsRemaining <= 0 || gameOver || won || isPaused) return;
+
+    // Find all candidate cells (safe, unrevealed, not flagged)
+    List<Point<int>> candidates = [];
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final cell = controller.board[r][c];
+        if (!cell.isRevealed && !cell.isMine && !cell.isFlagged) {
+          candidates.add(Point(r, c));
+        }
+      }
+    }
+
+    if (candidates.isNotEmpty) {
+      final random = Random();
+      final pick = candidates[random.nextInt(candidates.length)];
+      
+      setState(() {
+        hintsRemaining--;
+      });
+      
+      _revealCell(pick.x, pick.y);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay casillas seguras disponibles para pista')),
+      );
+    }
   }
 
   void _checkWin() {
@@ -271,8 +303,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
-                _initializeGame();
+              Navigator.pop(context);
+              Future.delayed(const Duration(milliseconds: 50), () {
+                if (mounted) setState(() => _initializeGame());
               });
             },
             child: Text("Reintentar", style: TextStyle(color: ColoresApp.moradoPrincipal)),
@@ -307,13 +340,18 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
-                if (isContrareloj || isSinBanderas) {
-                  mineCount = (mineCount * 1.2).toInt().clamp(1, rows * cols - 1);
-                  rows = (rows * 1.15).toInt().clamp(rows, 30);
-                  cols = (cols * 1.15).toInt().clamp(cols, 30);
+              Navigator.pop(context);
+              Future.delayed(const Duration(milliseconds: 50), () {
+                if (mounted) {
+                  setState(() {
+                    if (isContrareloj || isSinBanderas) {
+                      mineCount = (mineCount * 1.2).toInt().clamp(1, rows * cols - 1);
+                      rows = (rows * 1.15).toInt().clamp(rows, 30);
+                      cols = (cols * 1.15).toInt().clamp(cols, 30);
+                    }
+                    _initializeGame();
+                  });
                 }
-                _initializeGame();
               });
             },
             child: Text("Jugar de nuevo", style: TextStyle(color: ColoresApp.moradoPrincipal)),
@@ -324,6 +362,47 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
               Navigator.pop(context);
             },
             child: Text("Salir", style: TextStyle(color: ColoresApp.rojoError)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPauseDialog() {
+    setState(() => isPaused = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: ColoresApp.blanco,
+        title: Text(
+          AppStrings.get('paused', Provider.of<LanguageProvider>(context, listen: false).currentLanguage),
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          AppStrings.get('game_paused', Provider.of<LanguageProvider>(context, listen: false).currentLanguage),
+          style: TextStyle(color: ColoresApp.negro),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() => isPaused = false);
+            },
+            child: Text(
+              AppStrings.get('resume', Provider.of<LanguageProvider>(context, listen: false).currentLanguage),
+              style: TextStyle(color: ColoresApp.moradoPrincipal),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text(
+              AppStrings.get('exit', Provider.of<LanguageProvider>(context, listen: false).currentLanguage),
+              style: TextStyle(color: ColoresApp.rojoError),
+            ),
           ),
         ],
       ),
@@ -401,12 +480,20 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                                   AppStrings.get('minesweeper_inst_1', currentLang),
                                   AppStrings.get('minesweeper_inst_2', currentLang),
                                   AppStrings.get('minesweeper_inst_3', currentLang),
+                                  AppStrings.get('minesweeper_inst_5', currentLang),
                                   AppStrings.get('minesweeper_inst_4', currentLang),
                                 ],
                                 controles: GuiasJuegos.getBuscaminasControles(currentLang),
                                 size: 40,
                                 onOpen: () => setState(() => isPaused = true),
                                 onClose: () => setState(() => isPaused = false),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.pause),
+                                color: ColoresApp.blanco,
+                                iconSize: 28,
+                                onPressed: _showPauseDialog,
                               ),
                               const SizedBox(width: 8),
                               IconButton(
@@ -499,12 +586,55 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
-              child: FloatingActionButton(
-                heroTag: 'reiniciarBtn',
-                mini: true,
-                onPressed: _initializeGame,
-                backgroundColor: ColoresApp.moradoPrincipal,
-                child: const Icon(Icons.refresh, color: Colors.white),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'hintBtn',
+                    mini: true,
+                    onPressed: hintsRemaining > 0 ? _useHint : null,
+                    backgroundColor: hintsRemaining > 0 ? ColoresApp.naranjaAdvertencia : Colors.grey,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                         const Icon(Icons.lightbulb, color: Colors.white),
+                         if (hintsRemaining > 0)
+                           Positioned(
+                             right: 0,
+                             bottom: 0,
+                             child: Container(
+                               padding: const EdgeInsets.all(2),
+                               decoration: const BoxDecoration(
+                                 color: Colors.red,
+                                 shape: BoxShape.circle,
+                               ),
+                               constraints: const BoxConstraints(
+                                 minWidth: 12,
+                                 minHeight: 12,
+                               ),
+                               child: Text(
+                                 '$hintsRemaining',
+                                 style: const TextStyle(
+                                   color: Colors.white,
+                                   fontSize: 8,
+                                   fontWeight: FontWeight.bold,
+                                 ),
+                                 textAlign: TextAlign.center,
+                               ),
+                             ),
+                           ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  FloatingActionButton(
+                    heroTag: 'reiniciarBtn',
+                    mini: true,
+                    onPressed: _initializeGame,
+                    backgroundColor: ColoresApp.moradoPrincipal,
+                    child: const Icon(Icons.refresh, color: Colors.white),
+                  ),
+                ],
               ),
             ),
           ],

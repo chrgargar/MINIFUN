@@ -142,6 +142,11 @@ class GuiasJuegos {
         description: AppStrings.get('control_flag_desc', lang),
       ),
       ControlItem(
+        icon: '💡',
+        name: AppStrings.get('control_hint', lang),
+        description: AppStrings.get('control_hint_desc', lang),
+      ),
+      ControlItem(
         icon: '🔄',
         name: AppStrings.get('control_restart', lang),
         description: AppStrings.get('control_restart_desc', lang),
