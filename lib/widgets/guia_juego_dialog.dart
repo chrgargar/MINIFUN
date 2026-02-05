@@ -60,12 +60,16 @@ class GuiaJuegoDialog extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     // Título
-                    Text(
-                      '${AppStrings.get('guide_of', currentLang)} $gameTitle',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.black,
+                    Flexible(
+                      child: Text(
+                        '${AppStrings.get('guide_of', currentLang)} $gameTitle',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
