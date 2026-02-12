@@ -50,9 +50,9 @@ class AppStrings {
       'time_attack': 'Contrarreloj',
       'perfect': 'Perfecto',
       'speed': 'Velocidad',
-      'survival_pro': 'Supervivencia\nPRO',
-      'perfect_pro': 'Perfecto\nPRO',
-      'hard_pro': 'Difícil\nPRO',
+      'survival_pro': 'Supervivencia',
+      'perfect_pro': 'Perfecto',
+      'hard_pro': 'Difícil',
 
       // Game Over
       'congratulations': '¡Felicidades!',
@@ -204,7 +204,7 @@ class AppStrings {
       'theme_paises': 'Países',
       'theme_comida': 'Comida',
       'hangman_speed': 'Velocidad',
-      'hangman_survival': 'Supervivencia\nPRO',
+      'hangman_survival': 'Supervivencia',
 
       // Buscaminas
       'minesweeper_objective': 'Descubre todas las casillas sin minas. Los números indican cuántas minas hay alrededor.',
@@ -263,9 +263,9 @@ class AppStrings {
       'time_attack': 'Time Attack',
       'perfect': 'Perfect',
       'speed': 'Speed',
-      'survival_pro': 'Survival\nPRO',
-      'perfect_pro': 'Perfect\nPRO',
-      'hard_pro': 'Hard\nPRO',
+      'survival_pro': 'Survival',
+      'perfect_pro': 'Perfect',
+      'hard_pro': 'Hard',
 
       // Game Over
       'congratulations': 'Congratulations!',
@@ -426,7 +426,7 @@ class AppStrings {
       'theme_paises': 'Countries',
       'theme_comida': 'Food',
       'hangman_speed': 'Speed',
-      'hangman_survival': 'Survival\nPRO',
+      'hangman_survival': 'Survival',
 
       // Minesweeper
       'minesweeper_objective': 'Reveal all squares without mines. Numbers indicate how many mines are nearby.',
@@ -485,9 +485,9 @@ class AppStrings {
       'time_attack': 'Contrarellotge',
       'perfect': 'Perfecte',
       'speed': 'Velocitat',
-      'survival_pro': 'Supervivència\nPRO',
-      'perfect_pro': 'Perfecte\nPRO',
-      'hard_pro': 'Difícil\nPRO',
+      'survival_pro': 'Supervivència',
+      'perfect_pro': 'Perfecte',
+      'hard_pro': 'Difícil',
 
       // Game Over
       'congratulations': 'Felicitats!',
@@ -629,7 +629,7 @@ class AppStrings {
       'theme_paises': 'Països',
       'theme_comida': 'Menjar',
       'hangman_speed': 'Velocitat',
-      'hangman_survival': 'Supervivència\nPRO',
+      'hangman_survival': 'Supervivència',
 
       // Buscamines
       'minesweeper_objective': 'Descobreix totes les caselles sense mines. Els números indiquen quantes mines hi ha al voltant.',

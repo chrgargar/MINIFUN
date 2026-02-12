@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/boton_ajustes.dart';
-import '../juegos/Snake.dart';
-import '../juegos/sudoku.dart';
-import '../juegos/WaterSort.dart';
-import '../juegos/buscaminas.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
+import '../juegos/Snake.dart';
+import '../juegos/Sudoku.dart';
+import '../juegos/WaterSort.dart';
+import '../juegos/buscaminas.dart';
+import '../juegos/SopadeLetras.dart';
+import '../juegos/ahorcado.dart';
+import 'difficulty_selection_screen.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
-import 'buscaminas_difficulty_selection.dart';
+import '../constants/sopa_de_letras_constants.dart';
+import '../constants/ahorcado_constants.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -57,7 +62,7 @@ class SeleccionModo extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Header: Botón atrás y ajustes
+                  // Header: Botón atrás y ajustes (Guía movida abajo)
                   SizedBox(
                     height: headerHeight,
                     child: Row(
@@ -77,10 +82,10 @@ class SeleccionModo extends StatelessWidget {
                     height: titleHeight,
                     child: Center(
                       child: Text(
-                        AppStrings.get('select_mode', currentLang),
+                        gameTitle.toUpperCase(),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: (titleHeight * 0.35).clamp(18.0, 26.0),
+                          fontSize: (titleHeight * 0.45).clamp(20.0, 32.0),
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : Colors.black,
                           height: 1.2,
@@ -93,17 +98,17 @@ class SeleccionModo extends StatelessWidget {
                   SizedBox(
                     height: imageHeight,
                     child: Center(
-                      child: Container(
-                        width: imageSize,
-                        height: imageSize,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                        child: ClipOval(
+                      child: Hero(
+                        tag: gameTitle,
+                        child: Container(
+                          width: constraints.maxWidth * 0.6,
+                          height: imageHeight * 0.9,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Image.asset(
                             gameImagePath,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       ),
@@ -115,9 +120,9 @@ class SeleccionModo extends StatelessWidget {
                   // Botones de modalidad
                   Expanded(
                     child: ListView(
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const BouncingScrollPhysics(),
                       children: [
-                        // Botón Jugar
+                        // 1. Botón Jugar (Play)
                         _buildModeButton(
                           height: buttonHeight,
                           icon: '🎮',
@@ -129,20 +134,16 @@ class SeleccionModo extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(builder: (context) => const SnakeGame()),
                               );
-                            } else if (gameTitle == 'Sudoku') {
+                            } else {
+                              // Redirigir a pantalla de selección de dificultad para todos los demás juegos
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const SudokuGame(difficulty: 'medio')),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const WaterSortGame(difficulty: 'facil')),
-                              );
-                            } else if (gameTitle == 'Buscaminas') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const BuscaminasDifficultySelection()),
+                                MaterialPageRoute(
+                                  builder: (context) => DifficultySelectionScreen(
+                                    gameTitle: gameTitle,
+                                    gameImagePath: gameImagePath,
+                                  ),
+                                ),
                               );
                             }
                           },
@@ -150,84 +151,29 @@ class SeleccionModo extends StatelessWidget {
 
                         SizedBox(height: spacing),
 
-                        // Botón Guía
+                        // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: '📖',
-                          text: AppStrings.get('guide', currentLang),
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('snake_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('snake_inst_1', currentLang),
-                                  AppStrings.get('snake_inst_2', currentLang),
-                                  AppStrings.get('snake_inst_3', currentLang),
-                                  AppStrings.get('snake_inst_4', currentLang),
-                                  AppStrings.get('snake_inst_5', currentLang),
-                                ],
-                                controles: GuiasJuegos.getSnakeControles(currentLang),
-                              );
-                            } else if (gameTitle == 'Sudoku') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('sudoku_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('sudoku_inst_1', currentLang),
-                                  AppStrings.get('sudoku_inst_2', currentLang),
-                                  AppStrings.get('sudoku_inst_3', currentLang),
-                                  AppStrings.get('sudoku_inst_4', currentLang),
-                                  AppStrings.get('sudoku_inst_5', currentLang),
-                                  AppStrings.get('sudoku_inst_6', currentLang),
-                                  AppStrings.get('sudoku_inst_7', currentLang),
-                                  AppStrings.get('sudoku_inst_8', currentLang),
-                                  AppStrings.get('sudoku_inst_9', currentLang),
-                                ],
-                                controles: GuiasJuegos.getSudokuControles(currentLang),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              GuiaJuegoDialog.show(
-                                context,
-                                gameTitle: gameTitle,
-                                gameImagePath: gameImagePath,
-                                objetivo: AppStrings.get('watersort_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('watersort_inst_1', currentLang),
-                                  AppStrings.get('watersort_inst_2', currentLang),
-                                  AppStrings.get('watersort_inst_3', currentLang),
-                                  AppStrings.get('watersort_inst_4', currentLang),
-                                  AppStrings.get('watersort_inst_5', currentLang),
-                                  AppStrings.get('watersort_inst_6', currentLang),
-                                  AppStrings.get('watersort_inst_7', currentLang),
-                                ],
-                                controles: GuiasJuegos.getWaterSortControles(currentLang),
-                              );
-                            }
-                          },
-                        ),
-
-                        SizedBox(height: spacing),
-
-                        // Botón Supervivencia PRO (Snake) / Perfecto PRO (Sudoku) / Difícil PRO (WaterSort) / Extremo (Buscaminas)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '👑' : (gameTitle == 'WaterSort' ? '🧪' : '💎')),
+                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : (gameTitle == 'Ahorcado' ? '💀' : '💎'))),
                           text: gameTitle == 'Snake'
                               ? AppStrings.get('survival_pro', currentLang)
                               : (gameTitle == 'Buscaminas'
-                                  ? 'Extremo'
+                                  ? 'Experto'
                                   : (gameTitle == 'WaterSort'
                                       ? AppStrings.get('hard_pro', currentLang)
-                                      : AppStrings.get('perfect_pro', currentLang))),
+                                      : (gameTitle == 'Ahorcado'
+                                          ? AppStrings.get('hangman_survival', currentLang)
+                                          : AppStrings.get('perfect_pro', currentLang)))),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
+                            // Verificar si es invitado
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            if (authProvider.isGuest) {
+                              _showBuyProDialog(context);
+                              return;
+                            }
+
                             if (gameTitle == 'Snake') {
                               Navigator.push(
                                 context,
@@ -253,17 +199,21 @@ class SeleccionModo extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BuscaminasGame.extremo,
+                                  builder: (context) => BuscaminasGame.dificil,
                                 ),
                               );
+                            } else if (gameTitle == 'Sopa de Letras') {
+                              _showThemeSelectionDialog(context, 'dificil');
+                            } else if (gameTitle == 'Ahorcado') {
+                              _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
                             }
                           },
                         ),
 
                         SizedBox(height: spacing),
 
-                        // Botón Velocidad (solo Snake)
-                        if (gameTitle == 'Snake')
+                        // 3. Modalidades (Contrarreloj, Velocidad, Sin Banderas, etc.)
+                        if (gameTitle == 'Snake') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
@@ -278,50 +228,40 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
-
-                        if (gameTitle == 'Snake') SizedBox(height: spacing),
-
-                        // Botón Contrarreloj (Snake, Sudoku, WaterSort, Buscaminas)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: '⏱️',
-                          text: gameTitle == 'Buscaminas' ? 'Contrarreloj' : AppStrings.get('time_attack', currentLang),
-                          color: const Color(0xFF7B3FF2),
-                          onTap: () {
-                            if (gameTitle == 'Snake') {
+                          SizedBox(height: spacing),
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SnakeGame(isTimeAttackMode: true),
                                 ),
                               );
-                            } else if (gameTitle == 'Sudoku') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const WaterSortGame(isTimeAttackMode: true),
-                                ),
-                              );
-                            } else if (gameTitle == 'Buscaminas') {
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Buscaminas') ...[
+                           _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: 'Contrarreloj',
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => BuscaminasGame.contrareloj,
                                 ),
                               );
-                            }
-                          },
-                        ),
-
-                        // Botón Sin Banderas (solo Buscaminas)
-                        if (gameTitle == 'Buscaminas')
+                            },
+                          ),
+                          SizedBox(height: spacing),
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🏳️',
@@ -337,7 +277,82 @@ class SeleccionModo extends StatelessWidget {
                               );
                             },
                           ),
+                          SizedBox(height: spacing),
+                        ],
 
+                        if (gameTitle == 'Sudoku') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SudokuGame(isTimeAttackMode: true),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'WaterSort') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const WaterSortGame(isTimeAttackMode: true),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Sopa de Letras') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '⏱️',
+                            text: AppStrings.get('time_attack', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              _showThemeSelectionDialog(context, 'medio', isTimeAttackMode: true);
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        if (gameTitle == 'Ahorcado') ...[
+                          _buildModeButton(
+                            height: buttonHeight,
+                            icon: '🚀',
+                            text: AppStrings.get('hangman_speed', currentLang),
+                            color: const Color(0xFF7B3FF2),
+                            onTap: () {
+                              _showHangmanThemeDialog(context, 'medio', isSpeedMode: true);
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                        ],
+
+                        // 4. Botón Guía (Guide)
+                        _buildModeButton(
+                          height: buttonHeight,
+                          icon: '📖',
+                          text: AppStrings.get('guide', currentLang),
+                          color: const Color(0xFF7B3FF2),
+                          onTap: () {
+                            _openGuia(context, currentLang);
+                          },
+                        ),
+                        SizedBox(height: spacing),
                       ],
                     ),
                   ),
@@ -347,6 +362,91 @@ class SeleccionModo extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  // Método para abrir la guía del juego
+  void _openGuia(BuildContext context, String currentLang) {
+    String objetivo;
+    List<String> instrucciones;
+    List<ControlItem> controles;
+
+    switch (gameTitle) {
+      case 'Snake':
+        objetivo = AppStrings.get('snake_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('snake_inst_1', currentLang),
+          AppStrings.get('snake_inst_2', currentLang),
+          AppStrings.get('snake_inst_3', currentLang),
+          AppStrings.get('snake_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getSnakeControles(currentLang);
+        break;
+      case 'Sudoku':
+        objetivo = AppStrings.get('sudoku_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('sudoku_inst_1', currentLang),
+          AppStrings.get('sudoku_inst_2', currentLang),
+          AppStrings.get('sudoku_inst_3', currentLang),
+          AppStrings.get('sudoku_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getSudokuControles(currentLang);
+        break;
+      case 'WaterSort':
+        objetivo = AppStrings.get('watersort_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('watersort_inst_1', currentLang),
+          AppStrings.get('watersort_inst_2', currentLang),
+          AppStrings.get('watersort_inst_3', currentLang),
+          AppStrings.get('watersort_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getWaterSortControles(currentLang);
+        break;
+      case 'Buscaminas':
+        objetivo = AppStrings.get('minesweeper_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('minesweeper_inst_1', currentLang),
+          AppStrings.get('minesweeper_inst_2', currentLang),
+          AppStrings.get('minesweeper_inst_3', currentLang),
+          AppStrings.get('minesweeper_inst_4', currentLang),
+        ];
+        controles = GuiasJuegos.getBuscaminasControles(currentLang);
+        break;
+      case 'Sopa de Letras':
+        objetivo = AppStrings.get('wordsearch_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('wordsearch_inst_1', currentLang),
+          AppStrings.get('wordsearch_inst_2', currentLang),
+          AppStrings.get('wordsearch_inst_3', currentLang),
+          AppStrings.get('wordsearch_inst_4', currentLang),
+          AppStrings.get('wordsearch_inst_5', currentLang),
+        ];
+        controles = GuiasJuegos.getWordSearchControles(currentLang);
+        break;
+      case 'Ahorcado':
+        objetivo = AppStrings.get('hangman_objective', currentLang);
+        instrucciones = [
+          AppStrings.get('hangman_inst_1', currentLang),
+          AppStrings.get('hangman_inst_2', currentLang),
+          AppStrings.get('hangman_inst_3', currentLang),
+          AppStrings.get('hangman_inst_4', currentLang),
+          AppStrings.get('hangman_inst_5', currentLang),
+        ];
+        controles = GuiasJuegos.getHangmanControles(currentLang);
+        break;
+      default:
+        objetivo = '';
+        instrucciones = [];
+        controles = [];
+    }
+
+    GuiaJuegoDialog.show(
+      context,
+      gameTitle: gameTitle,
+      gameImagePath: gameImagePath,
+      objetivo: objetivo,
+      instrucciones: instrucciones,
+      controles: controles,
     );
   }
 
@@ -394,6 +494,156 @@ class SeleccionModo extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showThemeSelectionDialog(BuildContext context, String difficulty, {bool isTimeAttackMode = false, bool isPerfectMode = false}) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppStrings.get('select_theme', currentLang)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ConstantesSopaLetras.tematicas.map((theme) {
+              String themeName = AppStrings.get('theme_$theme', currentLang);
+              return ListTile(
+                title: Text(themeName),
+                onTap: () {
+                  Navigator.of(context).pop(theme);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    ).then((selectedTheme) {
+      if (selectedTheme != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WordSearchGame(
+              difficulty: difficulty,
+              theme: selectedTheme,
+              isTimeAttackMode: isTimeAttackMode,
+              isPerfectMode: isPerfectMode,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  void _showHangmanThemeDialog(BuildContext context, String difficulty, {bool isSpeedMode = false, bool isSurvivalMode = false}) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(AppStrings.get('select_theme', currentLang)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ConstantesAhorcado.tematicas.map((theme) {
+              String themeName = AppStrings.get('theme_$theme', currentLang);
+              return ListTile(
+                title: Text(themeName),
+                onTap: () {
+                  Navigator.of(context).pop(theme);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    ).then((selectedTheme) {
+      if (selectedTheme != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AhorcadoGame(
+              difficulty: difficulty,
+              theme: selectedTheme,
+              isSpeedMode: isSpeedMode,
+              isSurvivalMode: isSurvivalMode,
+            ),
+          ),
+        );
+      }
+    });
+  }
+  void _showBuyProDialog(BuildContext context) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(20),
+          title: Column(
+            children: [
+              const Icon(
+                Icons.star_rounded,
+                size: 60,
+                color: Colors.amber,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'MINIFUN PRO',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${AppStrings.get('get_pro', currentLang)} 4.99€',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                currentLang == 'es' 
+                    ? 'Desbloquea todos los modos expertos, elimina la publicidad y accede a contenido exclusivo.' 
+                    : (currentLang == 'ca' 
+                        ? 'Desbloqueja tots els modes experts, elimina la publicitat i accedeix a contingut exclusiu.' 
+                        : 'Unlock all expert modes, remove ads, and access exclusive content.'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                AppStrings.get('close', currentLang),
+                style: const TextStyle(fontSize: 16),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B3FF2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () {
+                // TODO: Implement Purchase flow
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                '4.99€',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
