@@ -2,6 +2,7 @@
 ///
 /// Estas clases permiten un manejo más específico de errores
 /// en lugar de usar Exception genérico
+library;
 
 /// Excepción base para todos los errores de API
 abstract class ApiException implements Exception {
@@ -78,8 +79,8 @@ class ForbiddenException extends ApiException {
 class ValidationException extends ApiException {
   final Map<String, String>? fieldErrors;
 
-  const ValidationException(String message, {this.fieldErrors})
-      : super(message, statusCode: 400);
+  const ValidationException(super.message, {this.fieldErrors})
+      : super(statusCode: 400);
 
   @override
   String get userFriendlyMessage => message;
@@ -87,7 +88,7 @@ class ValidationException extends ApiException {
 
 /// Recurso duplicado (409) - Por ejemplo, username ya existe
 class ConflictException extends ApiException {
-  const ConflictException(String message) : super(message, statusCode: 409);
+  const ConflictException(super.message) : super(statusCode: 409);
 
   @override
   String get userFriendlyMessage => message;

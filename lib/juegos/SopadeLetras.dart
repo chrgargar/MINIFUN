@@ -691,7 +691,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
                                   int row = index ~/ gridSize;
                                   int col = index % gridSize;
                                   bool isSelected = selectedCells.any((cell) => cell[0] == row && cell[1] == col);
-                                  bool isFound = foundCells.contains('${row},${col}');
+                                  bool isFound = foundCells.contains('$row,$col');
 
                                   return Container(
                                     decoration: BoxDecoration(
