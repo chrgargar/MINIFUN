@@ -98,4 +98,5 @@ class ApiConstants {
   static const String storageKeyGoogleUserId = 'google_user_id';
   static const String storageKeyGoogleUserEmail = 'google_user_email';
   static const String storageKeyGoogleUserName = 'google_user_name';
+  static const String storageKeyGoogleUserAvatar = 'google_user_avatar';
 }

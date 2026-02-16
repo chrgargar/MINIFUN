@@ -114,7 +114,9 @@ class VentanaAjustes {
                           await authProvider.logout();
 
                           // Crear sesión de invitado
-                          final success = await authProvider.continueAsGuest();
+                          final success = await authProvider.continueAsGuest(
+                            guestName: AppStrings.get('guest_name', currentLang),
+                          );
 
                           if (success && dialogContext.mounted) {
                             // Cerrar el diálogo

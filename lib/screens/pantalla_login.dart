@@ -123,8 +123,11 @@ class _PantallaLoginState extends State<PantallaLogin> {
   // Entrar como invitado
   Future<void> _jugarComoInvitado() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    final success = await authProvider.continueAsGuest();
+    final success = await authProvider.continueAsGuest(
+      guestName: AppStrings.get('guest_name', currentLang),
+    );
 
     if (success && mounted) {
       Navigator.pushReplacement(

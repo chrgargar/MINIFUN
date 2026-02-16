@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 import '../models/user_model.dart';
 import '../services/api_service.dart';
@@ -28,6 +30,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get isGuest => _currentUser?.isGuest ?? false;
   bool get isPremium => _currentUser?.isPremium ?? false;
+  bool get isGoogleUser => _currentUser?.cloudId != null;
 
   /// Inicializar y verificar si hay una sesión guardada
   ///
@@ -66,6 +69,28 @@ class AuthProvider extends ChangeNotifier {
         } on ApiException catch (e) {
           appLogger.error('Error de API validando sesión', e);
           await _clearSession(prefs);
+        }
+      } else {
+        // Restaurar sesión de Google si existe
+        final googleUserId = prefs.getString(ApiConstants.storageKeyGoogleUserId);
+        if (googleUserId != null) {
+          final googleName = prefs.getString(ApiConstants.storageKeyGoogleUserName) ?? '';
+          final googleEmail = prefs.getString(ApiConstants.storageKeyGoogleUserEmail) ?? '';
+          final googleAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+          _currentUser = UserModel(
+            id: googleUserId.hashCode,
+            username: googleName.isNotEmpty ? googleName : 'Usuario Google',
+            email: googleEmail,
+            passwordHash: '',
+            isGuest: false,
+            isPremium: false,
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+            streakDays: 0,
+            cloudId: googleUserId,
+            avatarBase64: googleAvatar,
+          );
+          appLogger.authEvent('Sesión de Google restaurada', metadata: {'userId': _currentUser!.id});
         }
       }
     } catch (e) {
@@ -114,6 +139,10 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove(ApiConstants.storageKeyAuthToken);
     await prefs.remove(ApiConstants.storageKeyRefreshToken);
     await prefs.remove(ApiConstants.storageKeyUserId);
+    await prefs.remove(ApiConstants.storageKeyGoogleUserId);
+    await prefs.remove(ApiConstants.storageKeyGoogleUserEmail);
+    await prefs.remove(ApiConstants.storageKeyGoogleUserName);
+    await prefs.remove(ApiConstants.storageKeyGoogleUserAvatar);
   }
 
   /// Crear UserModel desde datos del servidor
@@ -303,7 +332,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Continuar como invitado
-  Future<bool> continueAsGuest() async {
+  Future<bool> continueAsGuest({String guestName = 'Invitado'}) async {
     // DATABASE DEACTIVATED - Using mock guest user
     _isLoading = true;
     _errorMessage = null;
@@ -313,7 +342,7 @@ class AuthProvider extends ChangeNotifier {
       // Create a mock guest user (database calls deactivated)
       _currentUser = UserModel(
         id: 1,
-        username: 'Guest',
+        username: guestName,
         email: null,
         passwordHash: '',
         isGuest: true,
@@ -400,6 +429,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Para usuarios de Google, actualizar localmente
+      if (isGoogleUser) {
+        final prefs = await SharedPreferences.getInstance();
+        _currentUser = _currentUser!.copyWith(
+          username: username ?? _currentUser!.username,
+          email: email ?? _currentUser!.email,
+        );
+        if (username != null) {
+          await prefs.setString(ApiConstants.storageKeyGoogleUserName, username);
+        }
+        if (email != null) {
+          await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, email);
+        }
+        appLogger.authEvent('Perfil actualizado localmente (Google)');
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(ApiConstants.storageKeyAuthToken);
 
@@ -455,6 +503,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Para usuarios de Google, guardar avatar localmente
+      if (isGoogleUser) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(ApiConstants.storageKeyGoogleUserAvatar, base64Image);
+        _currentUser = _currentUser!.copyWith(avatarBase64: base64Image);
+        appLogger.authEvent('Avatar actualizado localmente (Google)', metadata: {'userId': _currentUser!.id});
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(ApiConstants.storageKeyAuthToken);
 
@@ -540,8 +599,29 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
+      // Obtener foto de perfil de Google como Base64
+      String? avatarBase64;
+      final prefs = await SharedPreferences.getInstance();
+      final savedAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+
+      if (savedAvatar != null) {
+        // Usar avatar guardado previamente (el usuario lo cambió)
+        avatarBase64 = savedAvatar;
+      } else if (googleUser.photoUrl != null) {
+        // Descargar foto de Google y convertir a Base64
+        try {
+          final photoResponse = await http.get(Uri.parse(googleUser.photoUrl!));
+          if (photoResponse.statusCode == 200) {
+            final base64Data = base64Encode(photoResponse.bodyBytes);
+            avatarBase64 = 'data:image/jpeg;base64,$base64Data';
+            await prefs.setString(ApiConstants.storageKeyGoogleUserAvatar, avatarBase64);
+          }
+        } catch (e) {
+          appLogger.error('Error descargando foto de Google', e);
+        }
+      }
+
       // Crear usuario local con datos de Google
-      // TODO: En el futuro, validar el ID token con el backend
       _currentUser = UserModel(
         id: googleUser.id.hashCode,
         username: googleUser.displayName ?? 'Usuario Google',
@@ -553,10 +633,10 @@ class AuthProvider extends ChangeNotifier {
         lastLogin: DateTime.now(),
         streakDays: 0,
         cloudId: googleUser.id,
+        avatarBase64: avatarBase64,
       );
 
       // Guardar sesión
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
       await prefs.setString(ApiConstants.storageKeyGoogleUserId, googleUser.id);
       await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, googleUser.email);
