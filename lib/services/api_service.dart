@@ -354,4 +354,27 @@ class ApiService {
       _handleError(e, endpoint);
     }
   }
+
+  /// DELETE /auth/avatar - Eliminar avatar del usuario
+  static Future<Map<String, dynamic>> deleteAvatar({
+    required String token,
+  }) async {
+    const endpoint = ApiConstants.authAvatar;
+    appLogger.apiCall('DELETE', endpoint);
+
+    try {
+      final response = await http
+          .delete(
+            _buildUrl(endpoint),
+            headers: _authHeaders(token),
+          )
+          .timeout(
+            Duration(seconds: ApiConstants.requestTimeout),
+          );
+
+      return _handleResponse(response, endpoint);
+    } catch (e) {
+      _handleError(e, endpoint);
+    }
+  }
 }

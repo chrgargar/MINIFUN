@@ -382,8 +382,8 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
                     ],
                     controles: GuiasJuegos.getHangmanControles(currentLang),
                     size: 40,
-                    onOpen: () => setState(() => isPaused = true),
-                    onClose: () => setState(() => isPaused = false),
+                    onOpen: () { if (!isPaused) _togglePause(); },
+                    onClose: () { if (isPaused) _togglePause(); },
                   ),
                 ],
               );

@@ -595,8 +595,8 @@ class _WordSearchGameState extends State<WordSearchGame> {
                                 ],
                                 controles: GuiasJuegos.getWordSearchControles(currentLang),
                                 size: 40,
-                                onOpen: () => setState(() => isPaused = true),
-                                onClose: () => setState(() => isPaused = false),
+                                onOpen: () { if (!isPaused) _togglePause(); },
+                                onClose: () { if (isPaused) _togglePause(); },
                               ),
                             ],
                           );

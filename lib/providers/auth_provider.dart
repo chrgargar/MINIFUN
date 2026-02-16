@@ -559,6 +559,64 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Eliminar avatar del usuario
+  Future<bool> deleteAvatar() async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Para usuarios de Google, borrar avatar localmente
+      if (isGoogleUser) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(ApiConstants.storageKeyGoogleUserAvatar);
+        _currentUser = _currentUser!.copyWith(clearAvatar: true);
+        appLogger.authEvent('Avatar eliminado localmente (Google)');
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+
+      if (token == null) {
+        _errorMessage = 'Sesión no válida';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await ApiService.deleteAvatar(token: token);
+
+      if (response['success'] == true) {
+        final userData = response['data']['user'] as Map<String, dynamic>;
+        _currentUser = _createUserFromServerData(userData);
+        appLogger.authEvent('Avatar eliminado');
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Error al eliminar avatar';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.userFriendlyMessage;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Error al eliminar avatar';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Actualizar estado premium (para el futuro)
   Future<void> updatePremiumStatus(bool isPremium) async {
     // DATABASE DEACTIVATED - Premium status update disabled

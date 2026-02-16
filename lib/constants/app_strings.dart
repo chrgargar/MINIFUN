@@ -10,6 +10,7 @@ class AppStrings {
       // General
       'settings': 'Ajustes',
       'close': 'Cerrar',
+      'cancel': 'Cancelar',
       'play': 'Jugar',
       'guide': 'Guía',
       'back': 'Volver',
@@ -129,6 +130,10 @@ class AppStrings {
       'gallery': 'Galería',
       'save_changes': 'Guardar cambios',
       'profile_updated': 'Perfil actualizado',
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': '¿Estás seguro de que quieres eliminar tu foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permiso de cámara denegado. Actívalo en los ajustes del dispositivo.',
 
       // Guías
       'guide_of': 'Guía de',
@@ -249,6 +254,7 @@ class AppStrings {
       // General
       'settings': 'Settings',
       'close': 'Close',
+      'cancel': 'Cancel',
       'play': 'Play',
       'guide': 'Guide',
       'back': 'Back',
@@ -368,6 +374,10 @@ class AppStrings {
       'gallery': 'Gallery',
       'save_changes': 'Save changes',
       'profile_updated': 'Profile updated',
+      'delete_photo': 'Delete photo',
+      'delete_photo_confirm': 'Are you sure you want to delete your profile photo?',
+      'photo_deleted': 'Profile photo deleted',
+      'camera_permission_denied': 'Camera permission denied. Enable it in device settings.',
 
       // Guides
       'guide_of': 'Guide for',
@@ -497,6 +507,7 @@ class AppStrings {
       // General
       'settings': 'Ajustos',
       'close': 'Tancar',
+      'cancel': 'Cancel·lar',
       'play': 'Jugar',
       'guide': 'Guia',
       'back': 'Tornar',
@@ -616,6 +627,10 @@ class AppStrings {
       'gallery': 'Galeria',
       'save_changes': 'Guardar canvis',
       'profile_updated': 'Perfil actualitzat',
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': 'Estàs segur que vols eliminar la teua foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permís de càmera denegat. Activa\'l als ajustos del dispositiu.',
 
       // Guies
       'guide_of': 'Guia de',
