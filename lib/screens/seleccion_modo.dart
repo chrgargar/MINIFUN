@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/boton_ajustes.dart';
-import '../widgets/boton_guia.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
 import '../juegos/Snake.dart';

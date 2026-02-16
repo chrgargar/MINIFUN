@@ -22,18 +22,19 @@ class LanguageProvider extends ChangeNotifier {
   // Cargar idioma guardado o detectar del dispositivo
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedLanguage = prefs.getString('language');
 
-    if (savedLanguage != null) {
-      _currentLanguage = savedLanguage;
+    if (prefs.containsKey('language')) {
+      _currentLanguage = prefs.getString('language') ?? 'es';
     } else {
-      // Detectar idioma del dispositivo
+      // Detectar idioma del dispositivo en la primera instalación
       final deviceLocale = ui.PlatformDispatcher.instance.locale.languageCode;
       if (availableLanguages.containsKey(deviceLocale)) {
         _currentLanguage = deviceLocale;
       } else {
         _currentLanguage = 'es'; // Fallback a español
       }
+      // Guardar el idioma detectado
+      await prefs.setString('language', _currentLanguage);
     }
     notifyListeners();
   }
