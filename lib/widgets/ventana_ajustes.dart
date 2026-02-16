@@ -95,7 +95,7 @@ class VentanaAjustes {
                       // Opción: Racha de días
                       _buildStreakOption(
                         context: dialogContext,
-                        streakDays: 0, // Placeholder
+                        streakDays: Provider.of<AuthProvider>(context, listen: false).currentUser?.streakDays ?? 0,
                         currentLang: currentLang,
                       ),
 

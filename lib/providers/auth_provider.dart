@@ -21,9 +21,6 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Servicio de base de datos
-  // final DatabaseService _dbHelper = DatabaseService.instance; // DATABASE DEACTIVATED
-
   // Getters para acceder al estado
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -35,8 +32,8 @@ class AuthProvider extends ChangeNotifier {
   /// Inicializar y verificar si hay una sesión guardada
   ///
   /// Se ejecuta al iniciar la app para restaurar la sesión del usuario
-  /// si existe un token válido almacenado. Si el token ha expirado o
-  /// es inválido, limpia la sesión automáticamente.
+  /// si existe un token válido almacenado. Si el token ha expirado,
+  /// intenta renovarlo con el refresh token antes de limpiar la sesión.
   Future<void> init() async {
     _isLoading = true;
     notifyListeners();
@@ -60,10 +57,12 @@ class AuthProvider extends ChangeNotifier {
             appLogger.warning('Token inválido, limpiando sesión');
             await _clearSession(prefs);
           }
-        } on TokenExpiredException catch (e) {
-          appLogger.warning('Token expirado', e);
-          await _clearSession(prefs);
-          _errorMessage = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+        } on TokenExpiredException {
+          // Intentar renovar con refresh token
+          final renewed = await _tryRefreshToken(prefs);
+          if (!renewed) {
+            _errorMessage = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+          }
         } on ApiException catch (e) {
           appLogger.error('Error de API validando sesión', e);
           await _clearSession(prefs);
@@ -78,9 +77,42 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Intentar renovar la sesión usando el refresh token
+  Future<bool> _tryRefreshToken(SharedPreferences prefs) async {
+    final refreshToken = prefs.getString(ApiConstants.storageKeyRefreshToken);
+    if (refreshToken == null) {
+      await _clearSession(prefs);
+      return false;
+    }
+
+    try {
+      appLogger.info('Intentando renovar token con refresh token');
+      final response = await ApiService.refreshToken(refreshToken: refreshToken);
+
+      if (response['success'] == true) {
+        final newToken = response['data']['token'] as String;
+        final newRefreshToken = response['data']['refreshToken'] as String;
+        final userData = response['data']['user'] as Map<String, dynamic>;
+
+        await prefs.setString(ApiConstants.storageKeyAuthToken, newToken);
+        await prefs.setString(ApiConstants.storageKeyRefreshToken, newRefreshToken);
+
+        _currentUser = _createUserFromServerData(userData);
+        appLogger.authEvent('Token renovado automáticamente', metadata: {'userId': _currentUser!.id});
+        return true;
+      }
+    } catch (e) {
+      appLogger.warning('No se pudo renovar el token', e);
+    }
+
+    await _clearSession(prefs);
+    return false;
+  }
+
   /// Limpiar sesión del almacenamiento local
   Future<void> _clearSession(SharedPreferences prefs) async {
     await prefs.remove(ApiConstants.storageKeyAuthToken);
+    await prefs.remove(ApiConstants.storageKeyRefreshToken);
     await prefs.remove(ApiConstants.storageKeyUserId);
   }
 
@@ -98,6 +130,7 @@ class AuthProvider extends ChangeNotifier {
       createdAt: DateTime.parse(userData['created_at'] as String),
       lastLogin: DateTime.parse(userData['last_login'] as String),
       streakDays: userData['streak_days'] as int? ?? 0,
+      avatarBase64: userData['avatar_base64'] as String?,
     );
   }
 
@@ -120,6 +153,8 @@ class AuthProvider extends ChangeNotifier {
           } else {
             await _clearSession(prefs);
           }
+        } on TokenExpiredException {
+          await _tryRefreshToken(prefs);
         } on ApiException {
           await _clearSession(prefs);
         }
@@ -170,13 +205,15 @@ class AuthProvider extends ChangeNotifier {
 
       if (response['success'] == true) {
         final token = response['data']['token'] as String;
+        final refreshToken = response['data']['refreshToken'] as String;
         final userData = response['data']['user'] as Map<String, dynamic>;
 
         _currentUser = _createUserFromServerData(userData);
 
-        // Guardar token JWT y sesión
+        // Guardar token JWT, refresh token y sesión
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(ApiConstants.storageKeyAuthToken, token);
+        await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
         await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
 
         appLogger.authEvent('Registro exitoso', metadata: {'userId': _currentUser!.id});
@@ -228,13 +265,15 @@ class AuthProvider extends ChangeNotifier {
 
       if (response['success'] == true) {
         final token = response['data']['token'] as String;
+        final refreshToken = response['data']['refreshToken'] as String;
         final userData = response['data']['user'] as Map<String, dynamic>;
 
         _currentUser = _createUserFromServerData(userData);
 
-        // Guardar token JWT y sesión
+        // Guardar token JWT, refresh token y sesión
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(ApiConstants.storageKeyAuthToken, token);
+        await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
         await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
 
         appLogger.authEvent('Login exitoso', metadata: {'userId': _currentUser!.id});
@@ -284,7 +323,7 @@ class AuthProvider extends ChangeNotifier {
         streakDays: 0,
         cloudId: null,
       );
-      
+
       await _saveSession(_currentUser!.id!);
 
       _isLoading = false;
@@ -296,23 +335,6 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-
-    /* DATABASE DEACTIVATED CODE:
-    try {
-      final user = await _dbHelper.createGuestUser();
-      _currentUser = user;
-      await _saveSession(user.id!);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = 'Error al crear sesión de invitado: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-    */
   }
 
   /// Convertir invitado a usuario registrado
@@ -333,45 +355,6 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return false;
-
-    /* DATABASE DEACTIVATED CODE:
-    if (_currentUser == null || !_currentUser!.isGuest) {
-      _errorMessage = 'No hay una sesión de invitado activa';
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final user = await _dbHelper.convertGuestToRegistered(
-        guestId: _currentUser!.id!,
-        username: username,
-        email: email,
-        password: password,
-      );
-
-      if (user == null) {
-        _errorMessage = 'El nombre de usuario ya está en uso';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      _currentUser = user;
-      await _saveSession(user.id!);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = 'Error al convertir cuenta: $e';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-    */
   }
 
   /// Cerrar sesión
@@ -408,54 +391,119 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setInt('current_user_id', userId);
   }
 
-  /// Actualizar racha de días
-  Future<void> _updateStreak() async {
-    // DATABASE DEACTIVATED - Streak update disabled
-    return;
-    
-    /* DATABASE DEACTIVATED CODE:
-    if (_currentUser == null) return;
+  /// Actualizar perfil del usuario (username, email)
+  Future<bool> updateProfile({String? username, String? email}) async {
+    if (_currentUser == null) return false;
 
-    final now = DateTime.now();
-    final lastLogin = _currentUser!.lastLogin;
-
-    // Calcular diferencia en días
-    final difference = now.difference(lastLogin).inDays;
-
-    int newStreak = _currentUser!.streakDays;
-
-    if (difference == 0) {
-      // Mismo día, no hacer nada
-      return;
-    } else if (difference == 1) {
-      // Día consecutivo, aumentar racha
-      newStreak++;
-    } else {
-      // Racha rota, reiniciar
-      newStreak = 1;
-    }
-
-    await _dbHelper.updateStreakDays(_currentUser!.id!, newStreak);
-    _currentUser = _currentUser!.copyWith(
-      streakDays: newStreak,
-      lastLogin: now,
-    );
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-    */
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+
+      if (token == null) {
+        _errorMessage = 'Sesión no válida';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await ApiService.updateProfile(
+        token: token,
+        username: username,
+        email: email,
+      );
+
+      if (response['success'] == true) {
+        final userData = response['data']['user'] as Map<String, dynamic>;
+        _currentUser = _createUserFromServerData(userData);
+
+        appLogger.authEvent('Perfil actualizado', metadata: {'userId': _currentUser!.id});
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Error al actualizar perfil';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.userFriendlyMessage;
+      appLogger.error('Error actualizando perfil', e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Error al actualizar perfil';
+      appLogger.error('Error inesperado actualizando perfil', e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Actualizar avatar del usuario (Base64)
+  Future<bool> updateAvatar(String base64Image) async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+
+      if (token == null) {
+        _errorMessage = 'Sesión no válida';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final response = await ApiService.updateAvatar(
+        token: token,
+        base64Image: base64Image,
+      );
+
+      if (response['success'] == true) {
+        final userData = response['data']['user'] as Map<String, dynamic>;
+        _currentUser = _createUserFromServerData(userData);
+
+        appLogger.authEvent('Avatar actualizado', metadata: {'userId': _currentUser!.id});
+
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Error al actualizar avatar';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } on ApiException catch (e) {
+      _errorMessage = e.userFriendlyMessage;
+      appLogger.error('Error actualizando avatar', e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Error al actualizar avatar';
+      appLogger.error('Error inesperado actualizando avatar', e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Actualizar estado premium (para el futuro)
   Future<void> updatePremiumStatus(bool isPremium) async {
     // DATABASE DEACTIVATED - Premium status update disabled
     return;
-    
-    /* DATABASE DEACTIVATED CODE:
-    if (_currentUser == null) return;
-
-    await _dbHelper.updatePremiumStatus(_currentUser!.id!, isPremium);
-    _currentUser = _currentUser!.copyWith(isPremium: isPremium);
-    notifyListeners();
-    */
   }
 
   /// Limpiar mensaje de error

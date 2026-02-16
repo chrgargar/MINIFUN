@@ -9,6 +9,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime lastLogin;
   final int streakDays;
+  final String? avatarBase64;
 
   // Para sincronización futura con la nube
   final String? cloudId;
@@ -25,6 +26,7 @@ class UserModel {
     required this.createdAt,
     required this.lastLogin,
     this.streakDays = 0,
+    this.avatarBase64,
     this.cloudId,
     this.isSynced = false,
     this.lastSyncAt,
@@ -42,6 +44,7 @@ class UserModel {
       createdAt: DateTime.parse(map['created_at'] as String),
       lastLogin: DateTime.parse(map['last_login'] as String),
       streakDays: map['streak_days'] as int? ?? 0,
+      avatarBase64: map['avatar_base64'] as String?,
       cloudId: map['cloud_id'] as String?,
       isSynced: map['is_synced'] == 1,
       lastSyncAt: map['last_sync_at'] != null
@@ -62,6 +65,7 @@ class UserModel {
       'created_at': createdAt.toIso8601String(),
       'last_login': lastLogin.toIso8601String(),
       'streak_days': streakDays,
+      'avatar_base64': avatarBase64,
       'cloud_id': cloudId,
       'is_synced': isSynced ? 1 : 0,
       'last_sync_at': lastSyncAt?.toIso8601String(),
@@ -79,6 +83,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLogin,
     int? streakDays,
+    String? avatarBase64,
     String? cloudId,
     bool? isSynced,
     DateTime? lastSyncAt,
@@ -93,6 +98,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
       streakDays: streakDays ?? this.streakDays,
+      avatarBase64: avatarBase64 ?? this.avatarBase64,
       cloudId: cloudId ?? this.cloudId,
       isSynced: isSynced ?? this.isSynced,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,

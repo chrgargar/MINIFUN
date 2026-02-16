@@ -5,6 +5,7 @@ import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/api_service.dart';
 import '../utils/validators.dart';
+import '../utils/app_logger.dart';
 
 /// Pantalla para recuperar la contraseña
 class PantallaRecuperarPassword extends StatefulWidget {
@@ -52,7 +53,8 @@ class _PantallaRecuperarPasswordState extends State<PantallaRecuperarPassword> {
           _emailSent = true;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      appLogger.error('Error en forgotPassword', e, stackTrace);
       if (mounted) {
         setState(() {
           _isLoading = false;

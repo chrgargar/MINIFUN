@@ -268,4 +268,90 @@ class ApiService {
       _handleError(e, endpoint);
     }
   }
+
+  /// POST /auth/refresh-token
+  /// Renovar access token usando refresh token
+  static Future<Map<String, dynamic>> refreshToken({
+    required String refreshToken,
+  }) async {
+    const endpoint = ApiConstants.authRefreshToken;
+    appLogger.apiCall('POST', endpoint);
+
+    try {
+      final response = await http
+          .post(
+            _buildUrl(endpoint),
+            headers: _baseHeaders(),
+            body: jsonEncode({
+              'refreshToken': refreshToken,
+            }),
+          )
+          .timeout(
+            Duration(seconds: ApiConstants.authTimeout),
+          );
+
+      return _handleResponse(response, endpoint);
+    } catch (e) {
+      _handleError(e, endpoint);
+    }
+  }
+
+  /// PATCH /auth/profile
+  /// Actualizar perfil del usuario
+  static Future<Map<String, dynamic>> updateProfile({
+    required String token,
+    String? username,
+    String? email,
+  }) async {
+    const endpoint = ApiConstants.authProfile;
+    appLogger.apiCall('PATCH', endpoint);
+
+    try {
+      final body = <String, dynamic>{};
+      if (username != null) body['username'] = username;
+      if (email != null) body['email'] = email;
+
+      final response = await http
+          .patch(
+            _buildUrl(endpoint),
+            headers: _authHeaders(token),
+            body: jsonEncode(body),
+          )
+          .timeout(
+            Duration(seconds: ApiConstants.requestTimeout),
+          );
+
+      return _handleResponse(response, endpoint);
+    } catch (e) {
+      _handleError(e, endpoint);
+    }
+  }
+
+  /// PUT /auth/avatar
+  /// Actualizar avatar del usuario (Base64)
+  static Future<Map<String, dynamic>> updateAvatar({
+    required String token,
+    required String base64Image,
+  }) async {
+    const endpoint = ApiConstants.authAvatar;
+    appLogger.apiCall('PUT', endpoint);
+
+    try {
+      final response = await http
+          .put(
+            _buildUrl(endpoint),
+            headers: _authHeaders(token),
+            body: jsonEncode({
+              'avatar': base64Image,
+            }),
+          )
+          .timeout(
+            Duration(seconds: ApiConstants.uploadTimeout),
+          );
+
+      return _handleResponse(response, endpoint);
+    } catch (e) {
+      _handleError(e, endpoint);
+    }
+  }
 }

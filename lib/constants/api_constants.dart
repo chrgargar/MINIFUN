@@ -37,6 +37,9 @@ class ApiConstants {
   static const String authMe = '/auth/me';
   static const String authLogout = '/auth/logout';
   static const String authForgotPassword = '/auth/forgot-password';
+  static const String authRefreshToken = '/auth/refresh-token';
+  static const String authProfile = '/auth/profile';
+  static const String authAvatar = '/auth/avatar';
 
   /// Endpoint de health check
   static const String health = '/health';
@@ -87,6 +90,9 @@ class ApiConstants {
 
   /// Key para guardar el ID del usuario actual
   static const String storageKeyUserId = 'current_user_id';
+
+  /// Key para guardar el refresh token
+  static const String storageKeyRefreshToken = 'refresh_token';
 
   /// Keys de Google Sign-In
   static const String storageKeyGoogleUserId = 'google_user_id';

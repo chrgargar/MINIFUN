@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/tarjetas_juegos.dart';
@@ -6,6 +7,8 @@ import '../tema/language_provider.dart';
 import '../tema/audio_settings.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
+import '../providers/auth_provider.dart';
+import 'pantalla_perfil.dart';
 
 // Pantalla principal
 class PantallaPrincipal extends StatefulWidget {
@@ -59,15 +62,64 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
         automaticallyImplyLeading: false, // Sin botón de retroceso
         backgroundColor: Colors.transparent, // Fondo transparente para ver la imagen
 
-        // Título de la app
-        title: const Text(
-          'MINIFUN',
-          style: TextStyle(
-            color: Color(0xFF7B3FF2), // Color morado
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2, // Espaciado entre letras del titulo
-          ),
+        // Avatar del usuario en la esquina superior izquierda
+        leading: Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            final user = authProvider.currentUser;
+            return GestureDetector(
+              onTap: () {
+                if (user != null && !user.isGuest) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PantallaPerfil()),
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFF7B3FF2).withValues(alpha: 0.2),
+                  backgroundImage: user?.avatarBase64 != null
+                      ? MemoryImage(base64Decode(user!.avatarBase64!.split(',').last))
+                      : null,
+                  child: user?.avatarBase64 == null
+                      ? const Icon(Icons.person, color: Color(0xFF7B3FF2), size: 20)
+                      : null,
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Título con nombre del usuario
+        title: Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            final username = authProvider.currentUser?.username;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'MINIFUN',
+                  style: TextStyle(
+                    color: Color(0xFF7B3FF2),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                if (username != null)
+                  Text(
+                    username,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
         centerTitle: true, // Para centrarlo
 

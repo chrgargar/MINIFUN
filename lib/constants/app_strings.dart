@@ -120,6 +120,15 @@ class AppStrings {
       'missions': 'MISIONES',
       'get_pro': 'Adquiere MINIFUN PRO por',
 
+      // Perfil
+      'profile': 'Perfil',
+      'edit_profile': 'Editar perfil',
+      'change_photo': 'Cambiar foto',
+      'camera': 'Cámara',
+      'gallery': 'Galería',
+      'save_changes': 'Guardar cambios',
+      'profile_updated': 'Perfil actualizado',
+
       // Guías
       'guide_of': 'Guía de',
       'objective': 'Objetivo',
@@ -348,6 +357,15 @@ class AppStrings {
       // Main screen
       'missions': 'MISSIONS',
       'get_pro': 'Get MINIFUN PRO for',
+
+      // Profile
+      'profile': 'Profile',
+      'edit_profile': 'Edit profile',
+      'change_photo': 'Change photo',
+      'camera': 'Camera',
+      'gallery': 'Gallery',
+      'save_changes': 'Save changes',
+      'profile_updated': 'Profile updated',
 
       // Guides
       'guide_of': 'Guide for',
@@ -586,6 +604,15 @@ class AppStrings {
       // Pantalla principal
       'missions': 'MISSIONS',
       'get_pro': 'Adquirix MINIFUN PRO per',
+
+      // Perfil
+      'profile': 'Perfil',
+      'edit_profile': 'Editar perfil',
+      'change_photo': 'Canviar foto',
+      'camera': 'Càmera',
+      'gallery': 'Galeria',
+      'save_changes': 'Guardar canvis',
+      'profile_updated': 'Perfil actualitzat',
 
       // Guies
       'guide_of': 'Guia de',
