@@ -139,10 +139,8 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove(ApiConstants.storageKeyAuthToken);
     await prefs.remove(ApiConstants.storageKeyRefreshToken);
     await prefs.remove(ApiConstants.storageKeyUserId);
-    await prefs.remove(ApiConstants.storageKeyGoogleUserId);
-    await prefs.remove(ApiConstants.storageKeyGoogleUserEmail);
-    await prefs.remove(ApiConstants.storageKeyGoogleUserName);
-    await prefs.remove(ApiConstants.storageKeyGoogleUserAvatar);
+    // No borrar datos de Google para que persistan entre sesiones
+    // Se borran solo en logoutGoogle() cuando el usuario cierra sesión explícitamente
   }
 
   /// Crear UserModel desde datos del servidor
@@ -722,6 +720,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       // Ignorar errores de logout de Google
     }
+    // Los datos de Google (avatar, nombre) se mantienen en SharedPreferences
+    // para que persistan al volver a iniciar sesión con la misma cuenta
     await logout();
   }
 }

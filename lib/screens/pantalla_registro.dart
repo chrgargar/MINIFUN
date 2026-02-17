@@ -26,6 +26,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Estado de envío para evitar doble submit
+  bool _isSubmitting = false;
+
   // Mensajes de error de validación
   String? _usernameError;
   String? _emailError;
@@ -64,6 +67,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
   // Función que se ejecuta al presionar Crear Cuenta
   Future<void> _crearCuenta() async {
+    // Evitar doble submit
+    if (_isSubmitting) return;
+
     setState(() {
       // Validar campos
       _usernameError = _validarUsuario(_usernameController.text);
@@ -80,6 +86,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     // Registrar usuario en la base de datos
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -91,7 +99,13 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       password: _passwordController.text,
     );
 
-    if (success && mounted) {
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (success) {
+      // Limpiar SnackBars anteriores
+      ScaffoldMessenger.of(context).clearSnackBars();
+
       // Si el usuario proporcionó email, mostrar diálogo de verificación
       final hasEmail = _emailController.text.trim().isNotEmpty;
 
@@ -133,7 +147,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
         );
       }
-    } else if (mounted) {
+    } else {
       // Mostrar error del provider
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -446,21 +460,30 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _crearCuenta,
+                      onPressed: _isSubmitting ? null : _crearCuenta,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ColoresApp.negro,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
-                        AppStrings.get('create_account', currentLang),
-                        style: TextStyle(
-                          color: ColoresApp.blanco,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: _isSubmitting
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: ColoresApp.blanco,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              AppStrings.get('create_account', currentLang),
+                              style: TextStyle(
+                                color: ColoresApp.blanco,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
                   ),
 
