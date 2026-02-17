@@ -655,16 +655,16 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Obtener foto de perfil de Google como Base64
-      String? avatarBase64;
+      // Obtener datos guardados previamente (por si el usuario los personalizó)
       final prefs = await SharedPreferences.getInstance();
       final savedAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+      final savedName = prefs.getString(ApiConstants.storageKeyGoogleUserName);
 
+      // Foto: usar la guardada si existe, si no descargar de Google
+      String? avatarBase64;
       if (savedAvatar != null) {
-        // Usar avatar guardado previamente (el usuario lo cambió)
         avatarBase64 = savedAvatar;
       } else if (googleUser.photoUrl != null) {
-        // Descargar foto de Google y convertir a Base64
         try {
           final photoResponse = await http.get(Uri.parse(googleUser.photoUrl!));
           if (photoResponse.statusCode == 200) {
@@ -677,10 +677,15 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
+      // Nombre: usar el guardado si existe, si no usar el de Google
+      final username = (savedName != null && savedName.isNotEmpty)
+          ? savedName
+          : (googleUser.displayName ?? 'Usuario Google');
+
       // Crear usuario local con datos de Google
       _currentUser = UserModel(
         id: googleUser.id.hashCode,
-        username: googleUser.displayName ?? 'Usuario Google',
+        username: username,
         email: googleUser.email,
         passwordHash: '',
         isGuest: false,
@@ -692,11 +697,13 @@ class AuthProvider extends ChangeNotifier {
         avatarBase64: avatarBase64,
       );
 
-      // Guardar sesión
+      // Guardar sesión (solo guardar nombre de Google si no hay uno personalizado)
       await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
       await prefs.setString(ApiConstants.storageKeyGoogleUserId, googleUser.id);
       await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, googleUser.email);
-      await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
+      if (savedName == null || savedName.isEmpty) {
+        await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
+      }
 
       appLogger.authEvent('Login con Google exitoso', metadata: {'userId': _currentUser!.id});
 
