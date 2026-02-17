@@ -1,3 +1,4 @@
+
 # MINIFUN
 
 MiniFun surge de la idea de crear una aplicación para quienes busquen volver a jugar aquellos
@@ -16,18 +17,17 @@ pistas, etc.
 - **Sistema de modalidades:** Normal, Contrarreloj, Supervivencia, Perfecto, Premium.
 - **Multiidioma:** - Español, Inglés, Francés, Portugués, Catalán
 - **Personalización de la interfaz:** Tema (claro/oscuro)
-- **Configuración de sonidos:** Música de fondo, personalizada para cada juego, con la opción de silenciar.
+- **Configuración de sonidos:** Música de fondo con la opción de silenciar.
 - **Clasificación por juegos:** Rachas de días jugados, récords. 
 - **Guías Interactivas:** Instrucciones y controles para cada juego.
 - **Características:**  Sistema de misiones diarias, categorías, temáticas y pistas. 
 
-.......
 ## Juegos Disponibles
 
 ### Snake
 Controla una serpiente para comer alimentos y crecer sin chocar.
 
-**Modalidades:** Normal, Contrarreloj (30s), Supervivencia PRO (obstáculos)
+**Modalidades:** Normal, Contrarreloj, Supervivencia PRO (obstáculos)
 - Velocidad variable, mapas temáticos, modo supervivencia. 
 
 **Caractrísticas:**
@@ -72,6 +72,8 @@ Encuentra palabras ocultas en una cuadrícula de letras.
 | Difícil    |  20x20 |
 
 **Características-Direcciones:** Horizontal, vertical y diagonal
+- Categorías (palabras por temática especializada)
+- Multiidioma (palabras en el idioma seleccionado por el usuario)
 
 ### Buscaminas
 Clásico juego de descubrir casillas sin detonar minas.
@@ -79,9 +81,45 @@ Clásico juego de descubrir casillas sin detonar minas.
 **Modalidades:** Contrarreloj, fácil.
 
 **Características:**
+- Banderas (marca casillas sospechosas)
+- Temporizador (registra tu mejor tiempo)
+- Modo experto (Tableros con mayor dificultad)
 
 
+### Ahorcado
+Adivina la palabra oculta antes de que se complete la figura.
 
+**Modalidades:** Normal, sin pistas y contrarreloj.
+
+**Características:**
+- Categorías (palabras por temática especializada)
+- Multiidioma (palabras en el idioma seleccionado por el usuario)
+- Pistas opcionales (activa o desactiva ayudas según tu nivel)
+
+## Guías interactivas 
+Cada juego incluye una guía integrada con
+- Explicación del objetivo y reglas
+- Controles datallados
+
+
+## Idiomas
+
+| Código |   Idioma    |
+|--------|   --------  |
+|   es   |   Español   |
+|   en   |   Inglés    |
+|   ca   |   Català    |
+
+
+## Sistema de Autenticación
+
+- Login con usuario/email y contraseña
+- Registro de nuevas cuentas
+- Modo invitado con opción de conversión
+- Sistema de racha de días consecutivos
+- Misiones diarias, para ganar puntos
+
+  
 ## Estructura del Proyecto
 
 ```
@@ -112,7 +150,7 @@ assets/
 |  audioplayers        |  6.1.0  | Sistema de audio     |
 |  shared_preferences  |  2.2.2  | Almacenamiento local |
 
-.....
+
 
 ## Instalación
 
@@ -135,7 +173,6 @@ flutter run
 ## Plataformas Soportadas
 
 - Android
-- iOS
 - Web
 - Windows
 - macOS
@@ -150,24 +187,8 @@ El proyecto sigue el patrón **MVC + Provider**:
 - **Controllers** - Providers para estado global
 - **Services** - `AudioService`, `DatabaseService`
 
-## Sistema de Autenticación
-
-- Login con usuario/email y contraseña
-- Registro de nuevas cuentas
-- Modo invitado con opción de conversión
-- Sistema de racha de días consecutivos
-- Misiones diarias, para ganar puntos
 
 
-## Idiomas
-
-| Código |   Idioma    |
-|--------|   --------  |
-|   es   |   Español   |
-|   en   |   Inglés    |
-|   fr   |   Français  |
-|   pt   |   Português |
-|   ca   |   Català    |
 
 ## Paleta de Colores
 
@@ -182,5 +203,4 @@ Verde Snake - `#2E7D32` - Cabeza serpiente
 Christian García 
 Elio Ojeda
 Ashley Barrionuevo 
-
 
