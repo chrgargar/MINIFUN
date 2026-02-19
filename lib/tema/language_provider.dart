@@ -1,9 +1,10 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider para manejar el idioma de la aplicación
 class LanguageProvider extends ChangeNotifier {
-  String _currentLanguage = 'en'; // Idioma por defecto: inglés
+  String _currentLanguage = 'es'; // Idioma por defecto: español
 
   String get currentLanguage => _currentLanguage;
 
@@ -21,33 +22,21 @@ class LanguageProvider extends ChangeNotifier {
   // Cargar idioma guardado o detectar del dispositivo
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Verificar si ya existe un idioma guardado
+
     if (prefs.containsKey('language')) {
-      _currentLanguage = prefs.getString('language') ?? 'en';
+      _currentLanguage = prefs.getString('language') ?? 'es';
     } else {
       // Detectar idioma del dispositivo en la primera instalación
-      _currentLanguage = _detectDeviceLanguage();
+      final deviceLocale = ui.PlatformDispatcher.instance.locale.languageCode;
+      if (availableLanguages.containsKey(deviceLocale)) {
+        _currentLanguage = deviceLocale;
+      } else {
+        _currentLanguage = 'es'; // Fallback a español
+      }
       // Guardar el idioma detectado
       await prefs.setString('language', _currentLanguage);
     }
-    
     notifyListeners();
-  }
-
-  /// Detecta el idioma del dispositivo y lo mapea a los idiomas disponibles
-  /// Si el idioma no está disponible, devuelve inglés como idioma por defecto
-  String _detectDeviceLanguage() {
-    // Obtener el código de idioma del dispositivo
-    final String deviceLanguageCode = WidgetsBinding.instance.window.locale.languageCode;
-    
-    // Verificar si el idioma del dispositivo está disponible
-    if (availableLanguages.containsKey(deviceLanguageCode)) {
-      return deviceLanguageCode;
-    }
-    
-    // Si no está disponible, devolver inglés como fallback
-    return 'en';
   }
 
   // Cambiar idioma
@@ -61,5 +50,5 @@ class LanguageProvider extends ChangeNotifier {
   }
 
   // Obtener nombre del idioma actual
-  String get currentLanguageName => availableLanguages[_currentLanguage] ?? 'English';
+  String get currentLanguageName => availableLanguages[_currentLanguage] ?? 'Español';
 }

@@ -10,6 +10,7 @@ class AppStrings {
       // General
       'settings': 'Ajustes',
       'close': 'Cerrar',
+      'cancel': 'Cancelar',
       'play': 'Jugar',
       'guide': 'Guía',
       'back': 'Volver',
@@ -38,6 +39,7 @@ class AppStrings {
       'streak': 'Racha',
       'consecutive_days': 'Días jugando consecutivos',
       'days': 'días',
+      'guest_name': 'Invitado',
       'play_as_guest': 'Jugar como invitado',
       'continue_without_account': 'Continuar sin cuenta',
       'switch_account': 'Cambiar de cuenta',
@@ -142,6 +144,12 @@ class AppStrings {
       'gallery': 'Galería',
       'save_changes': 'Guardar cambios',
       'profile_updated': 'Perfil actualizado',
+      'verify_email_title': 'Verifica tu email',
+      'verify_email_message': 'Te hemos enviado un correo de verificación al nuevo email. Revisa tu bandeja de entrada (y la carpeta de spam) para verificarlo.',
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': '¿Estás seguro de que quieres eliminar tu foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permiso de cámara denegado. Actívalo en los ajustes del dispositivo.',
 
       // Guías
       'guide_of': 'Guía de',
@@ -266,6 +274,7 @@ class AppStrings {
       // General
       'settings': 'Settings',
       'close': 'Close',
+      'cancel': 'Cancel',
       'play': 'Play',
       'guide': 'Guide',
       'back': 'Back',
@@ -294,6 +303,7 @@ class AppStrings {
       'streak': 'Streak',
       'consecutive_days': 'Consecutive days playing',
       'days': 'days',
+      'guest_name': 'Guest',
       'play_as_guest': 'Play as guest',
       'continue_without_account': 'Continue without account',
       'switch_account': 'Switch account',
@@ -398,6 +408,12 @@ class AppStrings {
       'gallery': 'Gallery',
       'save_changes': 'Save changes',
       'profile_updated': 'Profile updated',
+      'verify_email_title': 'Verify your email',
+      'verify_email_message': 'We have sent a verification email to your new address. Check your inbox (and spam folder) to verify it.',
+      'delete_photo': 'Delete photo',
+      'delete_photo_confirm': 'Are you sure you want to delete your profile photo?',
+      'photo_deleted': 'Profile photo deleted',
+      'camera_permission_denied': 'Camera permission denied. Enable it in device settings.',
 
       // Guides
       'guide_of': 'Guide for',
@@ -531,6 +547,7 @@ class AppStrings {
       // General
       'settings': 'Ajustos',
       'close': 'Tancar',
+      'cancel': 'Cancel·lar',
       'play': 'Jugar',
       'guide': 'Guia',
       'back': 'Tornar',
@@ -559,6 +576,7 @@ class AppStrings {
       'streak': 'Ratxa',
       'consecutive_days': 'Dies jugant consecutius',
       'days': 'dies',
+      'guest_name': 'Convidat',
       'play_as_guest': 'Jugar com a convidat',
       'continue_without_account': 'Continuar sense compte',
       'switch_account': 'Canviar de compte',
@@ -663,6 +681,12 @@ class AppStrings {
       'gallery': 'Galeria',
       'save_changes': 'Guardar canvis',
       'profile_updated': 'Perfil actualitzat',
+      'verify_email_title': 'Verifica el teu email',
+      'verify_email_message': "T'hem enviat un correu de verificació al nou email. Revisa la teua safata d'entrada (i la carpeta de spam) per verificar-lo.",
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': 'Estàs segur que vols eliminar la teua foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permís de càmera denegat. Activa\'l als ajustos del dispositiu.',
 
       // Guies
       'guide_of': 'Guia de',

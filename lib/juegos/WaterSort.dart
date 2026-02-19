@@ -461,8 +461,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
                         ],
                         controles: GuiasJuegos.getWaterSortControles(currentLang),
                         size: 40,
-                        onOpen: () => setState(() => isPaused = true),
-                        onClose: () => setState(() => isPaused = false),
+                        onOpen: () { if (!isPaused) _togglePause(); },
+                        onClose: () { if (isPaused) _togglePause(); },
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(

@@ -39,32 +39,96 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 75,
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (pickedFile == null) {
+        // El usuario canceló o el permiso fue denegado
+        return;
+      }
+
+      final bytes = await File(pickedFile.path).readAsBytes();
+      final extension = pickedFile.path.split('.').last.toLowerCase();
+      final mimeType = extension == 'png' ? 'png' : 'jpeg';
+      final base64String = 'data:image/$mimeType;base64,${base64Encode(bytes)}';
+
+      if (!mounted) return;
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final success = await authProvider.updateAvatar(base64String);
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.get('profile_updated', currentLang)),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? 'Error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // Permiso denegado u otro error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('camera_permission_denied', currentLang)),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deletePhoto() async {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppStrings.get('delete_photo', currentLang)),
+        content: Text(AppStrings.get('delete_photo_confirm', currentLang)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppStrings.get('cancel', currentLang)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              AppStrings.get('delete_photo', currentLang),
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
 
-    if (pickedFile == null) return;
-
-    final bytes = await File(pickedFile.path).readAsBytes();
-    final extension = pickedFile.path.split('.').last.toLowerCase();
-    final mimeType = extension == 'png' ? 'png' : 'jpeg';
-    final base64String = 'data:image/$mimeType;base64,${base64Encode(bytes)}';
-
-    if (!mounted) return;
+    if (confirmed != true || !mounted) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.updateAvatar(base64String);
+    final success = await authProvider.deleteAvatar();
 
     if (!mounted) return;
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppStrings.get('profile_updated', Provider.of<LanguageProvider>(context, listen: false).currentLanguage)),
+          content: Text(AppStrings.get('photo_deleted', currentLang)),
           backgroundColor: Colors.green,
         ),
       );
@@ -80,6 +144,8 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
 
   void _showImageSourceSheet() {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final hasAvatar = Provider.of<AuthProvider>(context, listen: false).currentUser?.avatarBase64 != null;
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -102,6 +168,18 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
+              if (hasAvatar)
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text(
+                    AppStrings.get('delete_photo', currentLang),
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deletePhoto();
+                  },
+                ),
             ],
           ),
         );
@@ -142,12 +220,40 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
 
     if (success) {
       setState(() => _isEditingProfile = false);
+      final lang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppStrings.get('profile_updated', Provider.of<LanguageProvider>(context, listen: false).currentLanguage)),
+          content: Text(AppStrings.get('profile_updated', lang)),
           backgroundColor: Colors.green,
         ),
       );
+
+      // Si cambió el email, avisar que se envió verificación
+      if (newEmail != null && newEmail.isNotEmpty) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.email_outlined, color: Color(0xFF7B3FF2)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(AppStrings.get('verify_email_title', lang))),
+              ],
+            ),
+            content: Text(AppStrings.get('verify_email_message', lang)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  AppStrings.get('understood', lang),
+                  style: TextStyle(color: Color(0xFF7B3FF2)),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

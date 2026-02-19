@@ -693,8 +693,8 @@ class _SnakeGameState extends State<SnakeGame> {
                           AppStrings.get('snake_inst_4', currentLang),
                         ],
                         controles: GuiasJuegos.getSnakeControles(currentLang),
-                        onOpen: () => setState(() => isPaused = true),
-                        onClose: () => setState(() => isPaused = false),
+                        onOpen: () { if (!isPaused) togglePause(); },
+                        onClose: () { if (isPaused) togglePause(); },
                       ),
                       const SizedBox(width: 12),
                       Container(
