@@ -224,8 +224,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           controller.toggleFlag(row, col); // add
           flagsPlaced = controller.countFlags();
                   } else {
+          final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Límite máximo de banderas alcanzado!')),
+            SnackBar(content: Text(AppStrings.get('max_flags_reached', currentLang))),
           );
         }
       }
@@ -268,8 +269,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       
       _revealCell(pick.x, pick.y);
     } else {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay casillas seguras disponibles para pista')),
+        SnackBar(content: Text(AppStrings.get('no_safe_cells_for_hint', currentLang))),
       );
     }
   }

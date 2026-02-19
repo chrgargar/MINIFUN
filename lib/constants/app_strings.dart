@@ -119,6 +119,20 @@ class AppStrings {
       // Pantalla principal
       'missions': 'MISIONES',
       'get_pro': 'Adquiere MINIFUN PRO por',
+      'pro_price': '€4.99',
+
+      // Nombres de juegos
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Sopa de Letras',
+      'game_hangman': 'Ahorcado',
+      'game_minesweeper': 'Buscaminas',
+      'game_sudoku': 'Sudoku',
+
+      // Verificación de email
+      'verify_email': 'Verifica tu email',
+      'verify_email_desc': 'Te hemos enviado un correo de verificación. Revisa tu bandeja de entrada (y la carpeta de spam) para activar tu cuenta.',
+      'understood': 'Entendido',
 
       // Perfil
       'profile': 'Perfil',
@@ -207,6 +221,10 @@ class AppStrings {
       'control_undo_desc': 'Deshace el último movimiento realizado',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivel desde el principio',
+
+      // Mensajes de error y notificaciones
+      'max_flags_reached': '¡Límite máximo de banderas alcanzado!',
+      'no_safe_cells_for_hint': 'No hay casillas seguras disponibles para pista',
 
       // Pausa
       'paused': 'PAUSA',
@@ -357,6 +375,20 @@ class AppStrings {
       // Main screen
       'missions': 'MISSIONS',
       'get_pro': 'Get MINIFUN PRO for',
+      'pro_price': '€4.99',
+
+      // Game names
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Word Search',
+      'game_hangman': 'Hangman',
+      'game_minesweeper': 'Minesweeper',
+      'game_sudoku': 'Sudoku',
+
+      // Email verification
+      'verify_email': 'Verify your email',
+      'verify_email_desc': 'We\'ve sent you a verification email. Check your inbox (and spam folder) to activate your account.',
+      'understood': 'Got it',
 
       // Profile
       'profile': 'Profile',
@@ -454,6 +486,10 @@ class AppStrings {
       'control_undo_desc': 'Undoes the last move made',
       'control_restart': 'Restart',
       'control_restart_desc': 'Restarts the level from the beginning',
+
+      // Error and notification messages
+      'max_flags_reached': 'Maximum flag limit reached!',
+      'no_safe_cells_for_hint': 'No safe cells available for hint',
 
       // Pause
       'paused': 'PAUSED',
@@ -604,6 +640,20 @@ class AppStrings {
       // Pantalla principal
       'missions': 'MISSIONS',
       'get_pro': 'Adquirix MINIFUN PRO per',
+      'pro_price': '€4.99',
+
+      // Noms de jocs
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Busca de Paraules',
+      'game_hangman': 'Penjat',
+      'game_minesweeper': 'Buscamines',
+      'game_sudoku': 'Sudoku',
+
+      // Verificació de correu electrònic
+      'verify_email': 'Verifica el teu correu electrònic',
+      'verify_email_desc': 'T\'hem enviat un correu de verificació. Revisa la teua bústia d\'entrada (i la carpeta de spam) per activar el teu compte.',
+      'understood': 'Entés',
 
       // Perfil
       'profile': 'Perfil',
@@ -680,6 +730,10 @@ class AppStrings {
       'control_undo_desc': 'Desfà l\'últim moviment realitzat',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivell des del principi',
+
+      // Missatges d'error i notificacions
+      'max_flags_reached': '¡Límit màxim de banderes alcançat!',
+      'no_safe_cells_for_hint': 'No hi ha caselles segures disponibles per a pista',
 
       // Guies Sopa de Letras
       'wordsearch_objective': 'Troba totes les paraules ocultes en la quadrícula',

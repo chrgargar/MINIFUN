@@ -202,7 +202,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  '€4.99',
+                                  AppStrings.get('pro_price', currentLang),
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -227,13 +227,13 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                           mainAxisSpacing: cellSpacing,
                           crossAxisSpacing: cellSpacing,
                           childAspectRatio: (constraints.maxWidth / 2 - gridPadding) / cellHeight,
-                          children: const [
-                            TarjetasJuegos(title: 'Snake', imagePath: 'assets/imagenes/sssnake.png'),
-                            TarjetasJuegos(title: 'WaterSort', imagePath: 'assets/imagenes/watersort.png'),
-                            TarjetasJuegos(title: 'Sopa de Letras', imagePath: 'assets/imagenes/sopadeletras.png'),
-                            TarjetasJuegos(title: 'Ahorcado', imagePath: 'assets/imagenes/ahorcado.png'),
-                            TarjetasJuegos(title: 'Buscaminas', imagePath: 'assets/imagenes/buscaminas.png'),
-                            TarjetasJuegos(title: 'Sudoku', imagePath: 'assets/imagenes/sudoku.png'),
+                          children: [
+                            TarjetasJuegos(title: AppStrings.get('game_snake', currentLang), imagePath: 'assets/imagenes/sssnake.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_watersort', currentLang), imagePath: 'assets/imagenes/watersort.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_word_search', currentLang), imagePath: 'assets/imagenes/sopadeletras.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_hangman', currentLang), imagePath: 'assets/imagenes/ahorcado.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_minesweeper', currentLang), imagePath: 'assets/imagenes/buscaminas.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_sudoku', currentLang), imagePath: 'assets/imagenes/sudoku.png'),
                           ],
                         ),
                       ),

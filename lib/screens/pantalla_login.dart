@@ -111,9 +111,10 @@ class _PantallaLoginState extends State<PantallaLogin> {
         MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
       );
     } else if (mounted) {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_login', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );
@@ -123,6 +124,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
   // Entrar como invitado
   Future<void> _jugarComoInvitado() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     final success = await authProvider.continueAsGuest();
 
@@ -134,7 +136,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al crear sesión de invitado'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_guest', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );

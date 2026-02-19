@@ -82,6 +82,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
     // Registrar usuario en la base de datos
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     final success = await authProvider.register(
       username: _usernameController.text.trim(),
@@ -105,19 +106,17 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
               children: [
                 Icon(Icons.email_outlined, color: ColoresApp.moradoLogin),
                 const SizedBox(width: 8),
-                const Text('Verifica tu email'),
+                Text(AppStrings.get('verify_email', currentLang)),
               ],
             ),
-            content: const Text(
-              'Te hemos enviado un correo de verificación. '
-              'Revisa tu bandeja de entrada (y la carpeta de spam) '
-              'para activar tu cuenta.',
+            content: Text(
+              AppStrings.get('verify_email_desc', currentLang),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Entendido',
+                  AppStrings.get('understood', currentLang),
                   style: TextStyle(color: ColoresApp.moradoLogin),
                 ),
               ),
@@ -135,9 +134,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       }
     } else if (mounted) {
       // Mostrar error del provider
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al registrarse'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_register', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );
