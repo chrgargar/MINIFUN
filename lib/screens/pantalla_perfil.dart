@@ -220,12 +220,40 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
 
     if (success) {
       setState(() => _isEditingProfile = false);
+      final lang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppStrings.get('profile_updated', Provider.of<LanguageProvider>(context, listen: false).currentLanguage)),
+          content: Text(AppStrings.get('profile_updated', lang)),
           backgroundColor: Colors.green,
         ),
       );
+
+      // Si cambió el email, avisar que se envió verificación
+      if (newEmail != null && newEmail.isNotEmpty) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.email_outlined, color: Color(0xFF7B3FF2)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(AppStrings.get('verify_email_title', lang))),
+              ],
+            ),
+            content: Text(AppStrings.get('verify_email_message', lang)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  AppStrings.get('understood', lang),
+                  style: TextStyle(color: Color(0xFF7B3FF2)),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
