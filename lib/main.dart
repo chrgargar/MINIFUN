@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/pantalla_login.dart';
@@ -14,6 +15,12 @@ import 'constants/api_constants.dart';
 void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Bloquear orientación a vertical (portrait)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // Inicializar el logger
   appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);

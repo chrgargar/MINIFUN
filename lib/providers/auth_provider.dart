@@ -54,7 +54,7 @@ class AuthProvider extends ChangeNotifier {
           if (response['success'] == true) {
             final userData = response['data']['user'] as Map<String, dynamic>;
 
-            _currentUser = _createUserFromServerData(userData);
+            _currentUser = await _createUserFromServerData(userData);
             appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id});
           } else {
             appLogger.warning('Token inválido, limpiando sesión');
@@ -122,7 +122,7 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString(ApiConstants.storageKeyAuthToken, newToken);
         await prefs.setString(ApiConstants.storageKeyRefreshToken, newRefreshToken);
 
-        _currentUser = _createUserFromServerData(userData);
+        _currentUser = await _createUserFromServerData(userData);
         appLogger.authEvent('Token renovado automáticamente', metadata: {'userId': _currentUser!.id});
         return true;
       }
@@ -139,25 +139,30 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove(ApiConstants.storageKeyAuthToken);
     await prefs.remove(ApiConstants.storageKeyRefreshToken);
     await prefs.remove(ApiConstants.storageKeyUserId);
+    // No borrar avatar local (storageKeyUserAvatar) para que persista al re-loguearse
     // No borrar datos de Google para que persistan entre sesiones
     // Se borran solo en logoutGoogle() cuando el usuario cierra sesión explícitamente
   }
 
   /// Crear UserModel desde datos del servidor
   ///
-  /// Centraliza la lógica de parseo para evitar duplicación
-  UserModel _createUserFromServerData(Map<String, dynamic> userData) {
+  /// Centraliza la lógica de parseo para evitar duplicación.
+  /// El avatar se carga desde SharedPreferences, no del servidor.
+  Future<UserModel> _createUserFromServerData(Map<String, dynamic> userData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final localAvatar = prefs.getString(ApiConstants.storageKeyUserAvatar);
+
     return UserModel(
       id: userData['id'] as int,
       username: userData['username'] as String,
       email: userData['email'] as String?,
-      passwordHash: '', // No almacenamos el hash en el cliente por seguridad
+      passwordHash: '',
       isGuest: false,
       isPremium: userData['is_premium'] as bool? ?? false,
       createdAt: DateTime.parse(userData['created_at'] as String),
       lastLogin: DateTime.parse(userData['last_login'] as String),
       streakDays: userData['streak_days'] as int? ?? 0,
-      avatarBase64: userData['avatar_base64'] as String?,
+      avatarBase64: localAvatar,
     );
   }
 
@@ -176,7 +181,7 @@ class AuthProvider extends ChangeNotifier {
 
           if (response['success'] == true) {
             final userData = response['data']['user'] as Map<String, dynamic>;
-            _currentUser = _createUserFromServerData(userData);
+            _currentUser = await _createUserFromServerData(userData);
           } else {
             await _clearSession(prefs);
           }
@@ -235,7 +240,7 @@ class AuthProvider extends ChangeNotifier {
         final refreshToken = response['data']['refreshToken'] as String;
         final userData = response['data']['user'] as Map<String, dynamic>;
 
-        _currentUser = _createUserFromServerData(userData);
+        _currentUser = await _createUserFromServerData(userData);
 
         // Guardar token JWT, refresh token y sesión
         final prefs = await SharedPreferences.getInstance();
@@ -295,7 +300,7 @@ class AuthProvider extends ChangeNotifier {
         final refreshToken = response['data']['refreshToken'] as String;
         final userData = response['data']['user'] as Map<String, dynamic>;
 
-        _currentUser = _createUserFromServerData(userData);
+        _currentUser = await _createUserFromServerData(userData);
 
         // Guardar token JWT, refresh token y sesión
         final prefs = await SharedPreferences.getInstance();
@@ -464,7 +469,7 @@ class AuthProvider extends ChangeNotifier {
 
       if (response['success'] == true) {
         final userData = response['data']['user'] as Map<String, dynamic>;
-        _currentUser = _createUserFromServerData(userData);
+        _currentUser = await _createUserFromServerData(userData);
 
         appLogger.authEvent('Perfil actualizado', metadata: {'userId': _currentUser!.id});
 
@@ -501,56 +506,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Para usuarios de Google, guardar avatar localmente
-      if (isGoogleUser) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(ApiConstants.storageKeyGoogleUserAvatar, base64Image);
-        _currentUser = _currentUser!.copyWith(avatarBase64: base64Image);
-        appLogger.authEvent('Avatar actualizado localmente (Google)', metadata: {'userId': _currentUser!.id});
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+      final storageKey = isGoogleUser
+          ? ApiConstants.storageKeyGoogleUserAvatar
+          : ApiConstants.storageKeyUserAvatar;
 
-      if (token == null) {
-        _errorMessage = 'Sesión no válida';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      await prefs.setString(storageKey, base64Image);
+      _currentUser = _currentUser!.copyWith(avatarBase64: base64Image);
+      appLogger.authEvent('Avatar actualizado localmente', metadata: {'userId': _currentUser!.id});
 
-      final response = await ApiService.updateAvatar(
-        token: token,
-        base64Image: base64Image,
-      );
-
-      if (response['success'] == true) {
-        final userData = response['data']['user'] as Map<String, dynamic>;
-        _currentUser = _createUserFromServerData(userData);
-
-        appLogger.authEvent('Avatar actualizado', metadata: {'userId': _currentUser!.id});
-
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response['message'] ?? 'Error al actualizar avatar';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } on ApiException catch (e) {
-      _errorMessage = e.userFriendlyMessage;
-      appLogger.error('Error actualizando avatar', e);
       _isLoading = false;
       notifyListeners();
-      return false;
+      return true;
     } catch (e) {
       _errorMessage = 'Error al actualizar avatar';
-      appLogger.error('Error inesperado actualizando avatar', e);
+      appLogger.error('Error actualizando avatar', e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -566,47 +536,18 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Para usuarios de Google, borrar avatar localmente
-      if (isGoogleUser) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(ApiConstants.storageKeyGoogleUserAvatar);
-        _currentUser = _currentUser!.copyWith(clearAvatar: true);
-        appLogger.authEvent('Avatar eliminado localmente (Google)');
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+      final storageKey = isGoogleUser
+          ? ApiConstants.storageKeyGoogleUserAvatar
+          : ApiConstants.storageKeyUserAvatar;
 
-      if (token == null) {
-        _errorMessage = 'Sesión no válida';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      await prefs.remove(storageKey);
+      _currentUser = _currentUser!.copyWith(clearAvatar: true);
+      appLogger.authEvent('Avatar eliminado localmente', metadata: {'userId': _currentUser!.id});
 
-      final response = await ApiService.deleteAvatar(token: token);
-
-      if (response['success'] == true) {
-        final userData = response['data']['user'] as Map<String, dynamic>;
-        _currentUser = _createUserFromServerData(userData);
-        appLogger.authEvent('Avatar eliminado');
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response['message'] ?? 'Error al eliminar avatar';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } on ApiException catch (e) {
-      _errorMessage = e.userFriendlyMessage;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return true;
     } catch (e) {
       _errorMessage = 'Error al eliminar avatar';
       _isLoading = false;
