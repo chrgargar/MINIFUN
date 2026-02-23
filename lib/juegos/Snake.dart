@@ -9,7 +9,8 @@ import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
-import '../services/audio_service.dart';
+import '../providers/auth_provider.dart';
+import '../providers/mission_provider.dart';
 import '../constants/snake_constants.dart';
 
 class SnakeGame extends StatefulWidget {
@@ -358,6 +359,18 @@ class _SnakeGameState extends State<SnakeGame> {
         _playSound('obstaculo.mp3'); // Sonido de obstáculo
       } else {
         _playSound('gameover.mp3'); // Sonido de game over normal
+      }
+
+      // Notificar actividad para misiones
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (!authProvider.isGuest && authProvider.currentUser != null) {
+        final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+        final userId = authProvider.currentUser!.id;
+        
+        // Notificar partida jugada
+        missionProvider.notifyActivity(userId!, gameType: 'snake', activityType: MissionType.playGames);
+        // Notificar puntuación alcanzada
+        missionProvider.notifyActivity(userId, gameType: 'snake', activityType: MissionType.reachScore, value: score);
       }
 
       final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;

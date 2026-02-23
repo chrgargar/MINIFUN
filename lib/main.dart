@@ -1,17 +1,29 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/pantalla_login.dart';
 import 'tema/selectorTema.dart';
 import 'tema/audio_settings.dart';
 import 'tema/language_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/mission_provider.dart';
+import 'utils/app_logger.dart';
+import 'constants/api_constants.dart';
 
 // Función principal que se ejecuta al iniciar la app
 void main() async {
   // Asegurar que los widgets de Flutter estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Database initialization removed - DATABASE DEACTIVATED
+  // Inicializar el logger
+  appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
+
+  // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
 
   runApp(
     // MultiProvider permite compartir múltiples estados en toda la app
@@ -21,6 +33,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => AudioSettings()),
         ChangeNotifierProvider(create: (context) => LanguageProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => MissionProvider()),
       ],
       child: const MyApp(),
     ),

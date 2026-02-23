@@ -1,8 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/auth_provider.dart';
+import '../providers/mission_provider.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
+import '../widgets/boton_guia.dart';
+import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
@@ -38,7 +43,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   // Para animaciones
   AnimationController? _pourAnimationController;
-  Animation<double>? _pourAnimation;
+  Animation<double>? _pourAnimation; // ignore: unused_field
   int? pouringFromTube;
   int? pouringToTube;
   bool isPouring = false;
@@ -49,10 +54,14 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   // Estado de pausa
   bool isPaused = false;
 
+  // Control de diálogos
+  bool _isDialogOpen = false;
+
   @override
   void initState() {
     super.initState();
-    _initGame();
+    _loadSavedLevel();
+    _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
@@ -67,20 +76,51 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     );
   }
 
+  Future<void> _loadSavedLevel() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Solo cargar nivel si NO es un invitado
+    if (!authProvider.isGuest) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLevel = prefs.getInt('watersort_level_${widget.difficulty}') ?? 1;
+      setState(() {
+        level = savedLevel;
+      });
+    } else {
+      setState(() {
+        level = 1; // Los invitados siempre empiezan en nivel 1
+      });
+    }
+    _initGame();
+  }
+
+  Future<void> _saveLevel() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Solo guardar nivel si NO es un invitado
+    if (!authProvider.isGuest) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('watersort_level_${widget.difficulty}', level);
+    }
+  }
+
   @override
   void dispose() {
     _pourAnimationController?.dispose();
+    AudioService.stopLoop();
     try {
       Provider.of<AudioSettings>(context, listen: false).removeListener(_onAudioSettingsChanged);
     } catch (e) {}
     super.dispose();
   }
 
-  void _onAudioSettingsChanged() {}
+  void _onAudioSettingsChanged() {
+    _updateMusicVolume();
+  }
 
-  Future<void> _playSound(String sound) async {
+  void _updateMusicVolume() {
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    await AudioService.playSound('Sonidos/$sound', audioSettings.sfxVolume);
+    AudioService.setLoopVolume(audioSettings.musicVolume);
   }
 
   void _startBackgroundMusic() {
@@ -118,10 +158,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       timeLeft = (baseTime - timeReduction).clamp(60, baseTime);
       _startTimer();
     }
-
-    if (widget.isMinMovesMode) {
-      // En modo mínimos movimientos se guarda el objetivo
-    }
   }
 
   void _startTimer() {
@@ -131,7 +167,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           timeLeft--;
           if (timeLeft <= 0) {
             gameOver = true;
-            _playSound('gameover.mp3');
           }
         });
         if (!gameOver && !gameWon) {
@@ -199,7 +234,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         moves = moves > 0 ? moves - 1 : 0;
         selectedTube = null;
       });
-      _playSound('click.mp3');
     }
   }
 
@@ -211,7 +245,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         // Seleccionar tubo si tiene contenido
         if (tubes[index].isNotEmpty) {
           selectedTube = index;
-          _playSound('click.mp3');
         }
       } else if (selectedTube == index) {
         // Deseleccionar
@@ -224,7 +257,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           // Si no se puede verter, seleccionar el nuevo tubo si tiene contenido
           if (tubes[index].isNotEmpty) {
             selectedTube = index;
-            _playSound('click.mp3');
           } else {
             selectedTube = null;
           }
@@ -249,9 +281,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       pouringToTube = to;
     });
 
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/move.mp3', audioSettings.musicVolume);
-
     await _pourAnimationController!.forward();
 
     setState(() {
@@ -272,14 +301,25 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     });
 
     _pourAnimationController!.reset();
-    _playSound('pour.mp3');
-
+    
     // Verificar victoria
     if (_checkWin()) {
       setState(() {
         gameWon = true;
       });
-      _playSound('win.mp3');
+
+      // Notificar actividad para misiones
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (!authProvider.isGuest && authProvider.currentUser != null) {
+        final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+        final userId = authProvider.currentUser!.id;
+        
+        // Notificar nivel completado
+        missionProvider.notifyActivity(userId!, gameType: 'watersort', activityType: MissionType.completeLevels);
+        // Notificar partida jugada
+        missionProvider.notifyActivity(userId, gameType: 'watersort', activityType: MissionType.playGames);
+      }
+
       _showWinDialog();
     }
   }
@@ -294,115 +334,42 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showWinDialog() {
-    AudioService.stopLoop();
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/food.mp3', audioSettings.musicVolume); // Victory sound
-
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    _isDialogOpen = true;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF2D1B3D)
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: ColoresApp.blanco,
         title: Text(
           '🎉 ${AppStrings.get('congratulations', currentLang)}',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              AppStrings.get('level_completed', currentLang),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${AppStrings.get('moves', currentLang)}: $moves',
-              style: TextStyle(fontSize: 16, color: ColoresApp.moradoPrincipal),
-            ),
-            if (widget.isTimeAttackMode)
-              Text(
-                '${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}',
-                style: TextStyle(fontSize: 16, color: ColoresApp.verdeExito),
-              ),
-          ],
+        content: Text(
+          '${AppStrings.get('level_completed', currentLang)}\n${AppStrings.get('moves', currentLang)}: $moves${widget.isTimeAttackMode ? '\n${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}' : ''}',
+          style: TextStyle(color: ColoresApp.negro),
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
+              _isDialogOpen = false;
               setState(() {
                 level++;
+                _saveLevel();
                 _initGame();
               });
             },
-            child: Text(AppStrings.get('next_level', currentLang)),
+            child: Text(AppStrings.get('next_level', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
           ),
           TextButton(
             onPressed: () {
+              _isDialogOpen = false;
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: Text(AppStrings.get('exit', currentLang)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGameOverDialog() {
-    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF2D1B3D)
-            : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          '⏱️ ${AppStrings.get('time_up', currentLang)}',
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              AppStrings.get('level_failed', currentLang),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${AppStrings.get('moves_made', currentLang)}: $moves',
-              style: TextStyle(fontSize: 16, color: ColoresApp.moradoPrincipal),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _initGame();
-              });
-            },
-            child: Text(AppStrings.get('retry', currentLang)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(AppStrings.get('exit', currentLang)),
+            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
           ),
         ],
       ),
@@ -449,36 +416,55 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
             Positioned(
               top: 16,
               right: 16,
-              child: Row(
-                children: [
-                  GamePauseButton(
-                    isPaused: isPaused,
-                    onPressed: _togglePause,
-                    size: 40,
-                  ),
-                  const SizedBox(width: 8),
-                  GameRestartButton(
-                    onPressed: _restart,
-                    size: 40,
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: ColoresApp.rojoError,
-                        shape: BoxShape.circle,
+              child: Builder(
+                builder: (context) {
+                  final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+                  return Row(
+                    children: [
+                      GamePauseButton(
+                        isPaused: isPaused,
+                        onPressed: _togglePause,
+                        size: 40,
                       ),
-                      child: Icon(
-                        Icons.close,
-                        color: ColoresApp.blanco,
-                        size: 24,
+                      const SizedBox(width: 8),
+                      GameRestartButton(
+                        onPressed: _restart,
+                        size: 40,
                       ),
-                    ),
-                  ),
-                ],
+                      const SizedBox(width: 8),
+                      BotonGuia(
+                        gameTitle: 'Water Sort',
+                        gameImagePath: 'assets/imagenes/watersort.png',
+                        objetivo: AppStrings.get('watersort_objective', currentLang),
+                        instrucciones: [
+                          AppStrings.get('watersort_inst_1', currentLang),
+                          AppStrings.get('watersort_inst_2', currentLang),
+                          AppStrings.get('watersort_inst_3', currentLang),
+                          AppStrings.get('watersort_inst_4', currentLang),
+                        ],
+                        controles: GuiasJuegos.getWaterSortControles(currentLang),
+                        onOpen: () { if (!isPaused) _togglePause(); },
+                        onClose: () { if (isPaused) _togglePause(); },
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: ColoresApp.rojoError,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          color: ColoresApp.blanco,
+                          iconSize: 24,
+                          padding: EdgeInsets.zero,
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
@@ -749,23 +735,26 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: isEnabled
-              ? ColoresApp.moradoPrincipal
-              : (isDark ? ColoresApp.gris800 : ColoresApp.gris300),
-          borderRadius: BorderRadius.circular(25),
+              ? (isDark ? ColoresApp.moradoPrincipal.withOpacity(0.2) : ColoresApp.moradoPrincipal.withOpacity(0.1))
+              : (isDark ? ColoresApp.gris800 : ColoresApp.gris200),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: isEnabled ? ColoresApp.moradoPrincipal : Colors.transparent,
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              color: isEnabled ? ColoresApp.blanco : ColoresApp.gris400,
-              size: 20,
+              color: isEnabled ? ColoresApp.moradoPrincipal : ColoresApp.gris500,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isEnabled ? ColoresApp.blanco : ColoresApp.gris400,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
+                color: isEnabled ? ColoresApp.moradoPrincipal : ColoresApp.gris500,
               ),
             ),
           ],
@@ -775,16 +764,54 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   Widget _buildGameOverOverlay(bool isDark) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (gameOver && !gameWon) {
-        _showGameOverDialog();
-      }
-    });
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Container(
-      color: Colors.black54,
-      child: const Center(
-        child: CircularProgressIndicator(),
+      color: Colors.black.withOpacity(0.7),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '⏱️ ${AppStrings.get('time_up', currentLang)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${AppStrings.get('level_failed', currentLang)}',
+              style: const TextStyle(color: Colors.white70, fontSize: 18),
+            ),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: _restart,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColoresApp.moradoPrincipal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  ),
+                  child: Text(AppStrings.get('retry', currentLang)),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  ),
+                  child: Text(AppStrings.get('exit', currentLang)),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

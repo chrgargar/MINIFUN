@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/tarjetas_juegos.dart';
@@ -6,6 +7,9 @@ import '../tema/language_provider.dart';
 import '../tema/audio_settings.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
+import '../providers/auth_provider.dart';
+import '../providers/mission_provider.dart';
+import 'pantalla_perfil.dart';
 
 // Pantalla principal
 class PantallaPrincipal extends StatefulWidget {
@@ -22,6 +26,10 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
     _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null && !authProvider.isGuest) {
+        Provider.of<MissionProvider>(context, listen: false).init(authProvider.currentUser!.id);
+      }
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
     });
   }
@@ -59,15 +67,96 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
         automaticallyImplyLeading: false, // Sin botón de retroceso
         backgroundColor: Colors.transparent, // Fondo transparente para ver la imagen
 
-        // Título de la app
-        title: const Text(
-          'MINIFUN',
-          style: TextStyle(
-            color: Color(0xFF7B3FF2), // Color morado
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2, // Espaciado entre letras del titulo
-          ),
+        // Avatar del usuario en la esquina superior izquierda
+        leading: Consumer<AuthProvider>(
+          builder: (context, authProvider, child) {
+            final user = authProvider.currentUser;
+            return GestureDetector(
+              onTap: () {
+                if (user != null && !user.isGuest) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PantallaPerfil()),
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFF7B3FF2).withValues(alpha: 0.2),
+                  backgroundImage: user?.avatarBase64 != null
+                      ? MemoryImage(base64Decode(user!.avatarBase64!.split(',').last))
+                      : null,
+                  child: user?.avatarBase64 == null
+                      ? const Icon(Icons.person, color: Color(0xFF7B3FF2), size: 20)
+                      : null,
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Título con nombre del usuario y racha
+        title: Consumer2<AuthProvider, MissionProvider>(
+          builder: (context, authProvider, missionProvider, child) {
+            final user = authProvider.currentUser;
+            final username = user?.username;
+            final isGuest = authProvider.isGuest;
+            
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'MINIFUN',
+                      style: TextStyle(
+                        color: Color(0xFF7B3FF2),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    if (!isGuest && missionProvider.streak > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('🔥', style: TextStyle(fontSize: 14)),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${missionProvider.streak}',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (username != null)
+                  Text(
+                    username,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
         centerTitle: true, // Para centrarlo
 
@@ -189,71 +278,119 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                       // Sección de misiones
                       SizedBox(
                         height: missionsHeight,
-                        child: Column(
-                          children: [
-                            // Título MISIONES
-                            Container(
-                              width: double.infinity,
-                              height: missionsHeight * 0.4,
-                              padding: EdgeInsets.all(missionsHeight * 0.08),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF2D1B3D)
-                                    : const Color(0xFFF3E5F5),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  AppStrings.get('missions', currentLang),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: const Color(0xFF7B3FF2),
-                                    fontSize: (missionsHeight * 0.15).clamp(14.0, 18.0),
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 2,
-                                  ),
+                        child: Consumer2<AuthProvider, MissionProvider>(
+                          builder: (context, auth, missionProv, child) {
+                            if (auth.isGuest) {
+                              return Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF2D1B3D) : const Color(0xFFF3E5F5),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ),
-                            ),
-
-                            SizedBox(height: missionsHeight * 0.12),
-
-                            // Barra de progreso
-                            Container(
-                              width: double.infinity,
-                              height: missionsHeight * 0.35,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  FractionallySizedBox(
-                                    widthFactor: 0.75,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF7B3FF2),
-                                        borderRadius: BorderRadius.circular(23),
-                                      ),
-                                    ),
-                                  ),
-                                  Center(
-                                    child: Text(
-                                      '3/4',
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.lock, color: Color(0xFF7B3FF2), size: 24),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Inicia sesión para jugar misiones y ganar rachas',
+                                      textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: const Color(0xFF7B3FF2),
-                                        fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
+                                        fontSize: (missionsHeight * 0.12).clamp(12.0, 14.0),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            final completed = missionProv.completedMissionsCount;
+                            final total = missionProv.dailyMissions.length;
+                            final percentage = missionProv.progressPercentage;
+
+                            return Column(
+                              children: [
+                                // Título MISIONES
+                                Container(
+                                  width: double.infinity,
+                                  height: missionsHeight * 0.45,
+                                  padding: EdgeInsets.symmetric(horizontal: missionsHeight * 0.1, vertical: missionsHeight * 0.05),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF2D1B3D) : const Color(0xFFF3E5F5),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        AppStrings.get('missions', currentLang),
+                                        style: TextStyle(
+                                          color: const Color(0xFF7B3FF2),
+                                          fontSize: (missionsHeight * 0.12).clamp(14.0, 16.0),
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                      if (total > 0)
+                                        Text(
+                                          missionProv.dailyMissions.firstWhere((m) => !m.isCompleted, orElse: () => missionProv.dailyMissions.last).title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                            fontSize: (missionsHeight * 0.1).clamp(10.0, 12.0),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+
+                                SizedBox(height: missionsHeight * 0.1),
+
+                                // Barra de progreso
+                                Container(
+                                  width: double.infinity,
+                                  height: missionsHeight * 0.4,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          return AnimatedContainer(
+                                            duration: const Duration(milliseconds: 500),
+                                            width: constraints.maxWidth * percentage,
+                                            decoration: BoxDecoration(
+                                              color: percentage == 1.0 ? Colors.green : const Color(0xFF7B3FF2),
+                                              borderRadius: BorderRadius.circular(23),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      Center(
+                                        child: Text(
+                                          '$completed/$total',
+                                          style: TextStyle(
+                                            color: percentage > 0.5 ? Colors.white : const Color(0xFF7B3FF2),
+                                            fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
