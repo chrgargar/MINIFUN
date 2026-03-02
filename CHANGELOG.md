@@ -1,3 +1,13 @@
+## 7.0.0 (2026-02-23)
+### Agregado
+- Tomar el idioma del dispositivo.
+- La app ahora solicita permisos para acceder a la foto de perfil.
+- Guardar niveles.
+- Giro de pantalla bloqueado.
+- Mensaje de verificacion ya no usa texto plano.
+- Misiones por testear en la rama de elio.
+
+
 ## 6.0.0 (2026-02-09)
 ### Agregado
 - Sopa de Letras:
