@@ -61,6 +61,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
         elevation: 0, // Sin sombra
         automaticallyImplyLeading: false, // Sin botón de retroceso
         backgroundColor: Colors.transparent, // Fondo transparente para ver la imagen
+        toolbarHeight: 72,
 
         // Avatar del usuario en la esquina superior izquierda
         leading: Consumer<AuthProvider>(

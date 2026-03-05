@@ -439,6 +439,128 @@ class _SudokuGameState extends State<SudokuGame> {
     );
   }
 
+  Widget _buildHeader(bool isDark) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    final sw = MediaQuery.of(context).size.width;
+    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
+    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
+    final hPad = (sw * 0.028).clamp(8.0, 14.0);
+    final gap = (sw * 0.016).clamp(4.0, 8.0);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
+      child: Row(
+        children: [
+          // Tiempo
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+            decoration: BoxDecoration(
+              color: widget.isTimeAttackMode && timeLeft <= 30
+                  ? ColoresApp.rojoError.withOpacity(0.2)
+                  : ColoresApp.moradoPrincipal.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
+                  size: fontSize,
+                  color: widget.isTimeAttackMode && timeLeft <= 30
+                      ? ColoresApp.rojoError
+                      : ColoresApp.moradoPrincipal,
+                ),
+                SizedBox(width: gap * 0.6),
+                Text(
+                  widget.isTimeAttackMode
+                      ? _formatTime(timeLeft)
+                      : _formatTime(elapsedSeconds),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    color: widget.isTimeAttackMode && timeLeft <= 30
+                        ? ColoresApp.rojoError
+                        : ColoresApp.moradoPrincipal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(width: gap),
+
+          // Progreso
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+            decoration: BoxDecoration(
+              color: ColoresApp.moradoPrincipal.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$cellsFilled/$totalEmptyCells',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: ColoresApp.moradoPrincipal,
+              ),
+            ),
+          ),
+
+          const Spacer(),
+
+          // Botones de control
+          GamePauseButton(
+            isPaused: isPaused,
+            onPressed: _togglePause,
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          GameRestartButton(
+            onPressed: _restartGame,
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          BotonGuia(
+            gameTitle: 'Sudoku',
+            gameImagePath: 'assets/imagenes/sudoku.png',
+            objetivo: AppStrings.get('sudoku_objective', currentLang),
+            instrucciones: [
+              AppStrings.get('sudoku_inst_1', currentLang),
+              AppStrings.get('sudoku_inst_2', currentLang),
+              AppStrings.get('sudoku_inst_3', currentLang),
+              AppStrings.get('sudoku_inst_4', currentLang),
+              AppStrings.get('sudoku_inst_5', currentLang),
+              AppStrings.get('sudoku_inst_6', currentLang),
+              AppStrings.get('sudoku_inst_7', currentLang),
+              AppStrings.get('sudoku_inst_8', currentLang),
+              AppStrings.get('sudoku_inst_9', currentLang),
+            ],
+            controles: GuiasJuegos.getSudokuControles(currentLang),
+            size: btnSize,
+            onOpen: () { if (!isPaused) _togglePause(); },
+            onClose: () { if (isPaused) _togglePause(); },
+          ),
+          SizedBox(width: gap),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: btnSize,
+              height: btnSize,
+              decoration: BoxDecoration(
+                color: ColoresApp.rojoError,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close,
+                color: ColoresApp.blanco,
+                size: btnSize * 0.55,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -452,115 +574,7 @@ class _SudokuGameState extends State<SudokuGame> {
             child: Column(
               children: [
                 // Header con información
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Botones de control (pausa, reiniciar, guía, cerrar)
-                      Row(
-                        children: [
-                          GamePauseButton(
-                            isPaused: isPaused,
-                            onPressed: _togglePause,
-                            size: 40,
-                          ),
-                          const SizedBox(width: 8),
-                          GameRestartButton(
-                            onPressed: _restartGame,
-                            size: 40,
-                          ),
-                          const SizedBox(width: 8),
-                          BotonGuia(
-                            gameTitle: 'Sudoku',
-                            gameImagePath: 'assets/imagenes/sudoku.png',
-                            objetivo: AppStrings.get('sudoku_objective', currentLang),
-                            instrucciones: [
-                              AppStrings.get('sudoku_inst_1', currentLang),
-                              AppStrings.get('sudoku_inst_2', currentLang),
-                              AppStrings.get('sudoku_inst_3', currentLang),
-                              AppStrings.get('sudoku_inst_4', currentLang),
-                              AppStrings.get('sudoku_inst_5', currentLang),
-                              AppStrings.get('sudoku_inst_6', currentLang),
-                              AppStrings.get('sudoku_inst_7', currentLang),
-                              AppStrings.get('sudoku_inst_8', currentLang),
-                              AppStrings.get('sudoku_inst_9', currentLang),
-                            ],
-                            controles: GuiasJuegos.getSudokuControles(currentLang),
-                            size: 40,
-                            onOpen: () { if (!isPaused) _togglePause(); },
-                            onClose: () { if (isPaused) _togglePause(); },
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: ColoresApp.rojoError,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.close,
-                                color: ColoresApp.blanco,
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Tiempo
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: widget.isTimeAttackMode && timeLeft <= 30
-                              ? ColoresApp.rojoError
-                              : ColoresApp.moradoPrincipal,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
-                              color: ColoresApp.blanco,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.isTimeAttackMode
-                                  ? _formatTime(timeLeft)
-                                  : _formatTime(elapsedSeconds),
-                              style: TextStyle(
-                                color: ColoresApp.blanco,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Progreso
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7B3FF2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$cellsFilled/$totalEmptyCells',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildHeader(isDark),
 
                 // Tablero de Sudoku
                 Expanded(

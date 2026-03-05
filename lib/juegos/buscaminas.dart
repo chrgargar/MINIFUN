@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../widgets/game_control_buttons.dart';
 import '../widgets/boton_guia.dart';
 import '../data/guias_juegos.dart';
 import '../tema/audio_settings.dart';
@@ -444,6 +445,144 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     }
   }
 
+  Widget _buildHeader() {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    final sw = MediaQuery.of(context).size.width;
+    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
+    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
+    final hPad = (sw * 0.028).clamp(8.0, 14.0);
+    final gap = (sw * 0.016).clamp(4.0, 8.0);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
+      child: Row(
+        children: [
+          // Tiempo
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+            decoration: BoxDecoration(
+              color: isContrareloj
+                  ? ColoresApp.rojoError.withValues(alpha: 0.2)
+                  : ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isContrareloj ? Icons.timer : Icons.access_time,
+                  size: fontSize,
+                  color: isContrareloj ? ColoresApp.rojoError : ColoresApp.moradoPrincipal,
+                ),
+                SizedBox(width: gap * 0.6),
+                Text(
+                  isContrareloj ? '${timeLeft}s' : '${timeElapsed}s',
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    color: isContrareloj ? ColoresApp.rojoError : ColoresApp.moradoPrincipal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(width: gap),
+
+          // Tamaño del tablero
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+            decoration: BoxDecoration(
+              color: ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$rows x $cols',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: ColoresApp.moradoPrincipal,
+              ),
+            ),
+          ),
+
+          // Banderas (si aplica)
+          if (!isSinBanderas) ...[
+            SizedBox(width: gap),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+              decoration: BoxDecoration(
+                color: ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.flag, size: fontSize, color: ColoresApp.moradoPrincipal),
+                  SizedBox(width: gap * 0.6),
+                  Text(
+                    '${controller.countFlags()}/$mineCount',
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.bold,
+                      color: ColoresApp.moradoPrincipal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const Spacer(),
+
+          // Botones de control
+          GamePauseButton(
+            isPaused: isPaused,
+            onPressed: _showPauseDialog,
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          GameRestartButton(
+            onPressed: _initializeGame,
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          BotonGuia(
+            gameTitle: 'Buscaminas',
+            gameImagePath: 'assets/imagenes/buscaminas.png',
+            objetivo: AppStrings.get('minesweeper_objective', currentLang),
+            instrucciones: [
+              AppStrings.get('minesweeper_inst_1', currentLang),
+              AppStrings.get('minesweeper_inst_2', currentLang),
+              AppStrings.get('minesweeper_inst_3', currentLang),
+              AppStrings.get('minesweeper_inst_4', currentLang),
+              AppStrings.get('minesweeper_inst_5', currentLang),
+            ],
+            controles: GuiasJuegos.getBuscaminasControles(currentLang),
+            size: btnSize,
+            onOpen: () => setState(() => isPaused = true),
+            onClose: () => setState(() => isPaused = false),
+          ),
+          SizedBox(width: gap),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: btnSize,
+              height: btnSize,
+              decoration: BoxDecoration(
+                color: ColoresApp.rojoError,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close,
+                color: ColoresApp.blanco,
+                size: btnSize * 0.55,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -451,94 +590,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // LEFT: Time and tile count
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      isContrareloj
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: ColoresApp.rojoError.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text('${timeLeft}s', style: TextStyle(color: ColoresApp.blanco, fontSize: 22, fontWeight: FontWeight.bold)),
-                            )
-                          : Text('${timeElapsed}s', style: TextStyle(color: ColoresApp.blanco, fontSize: 22, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
-                      Text('$rows x $cols', style: TextStyle(color: ColoresApp.blanco, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  // RIGHT: Flags counter, flag button, guide button, and close button
-                  Column(
-                    children: [
-                      Builder(
-                        builder: (context) {
-                          final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
-                          return Row(
-                            children: [
-                              if (!isSinBanderas)
-                                Row(
-                                  children: [
-                                    Text('${controller.countFlags()}/$mineCount', style: TextStyle(color: ColoresApp.blanco, fontSize: 20, fontWeight: FontWeight.bold)),
-                                    const SizedBox(width: 8),
-                                    Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: 24),
-                                  ],
-                                ),
-                              const SizedBox(width: 8),
-                              BotonGuia(
-                                gameTitle: 'Buscaminas',
-                                gameImagePath: 'assets/imagenes/buscaminas.png',
-                                objetivo: AppStrings.get('minesweeper_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('minesweeper_inst_1', currentLang),
-                                  AppStrings.get('minesweeper_inst_2', currentLang),
-                                  AppStrings.get('minesweeper_inst_3', currentLang),
-                                  AppStrings.get('minesweeper_inst_4', currentLang),
-                                  AppStrings.get('minesweeper_inst_5', currentLang),
-                                ],
-                                controles: GuiasJuegos.getBuscaminasControles(currentLang),
-                                size: 40,
-                                onOpen: () => setState(() => isPaused = true),
-                                onClose: () => setState(() => isPaused = false),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.pause),
-                                color: ColoresApp.blanco,
-                                iconSize: 28,
-                                onPressed: _showPauseDialog,
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                color: ColoresApp.blanco,
-                                iconSize: 28,
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      if (!isSinBanderas)
-                        FloatingActionButton(
-                          heroTag: 'flagMode',
-                          onPressed: _toggleFlaggingMode,
-                          backgroundColor: isFlaggingMode ? ColoresApp.moradoPrincipal : ColoresApp.gris100,
-                          child: Icon(isFlaggingMode ? Icons.clear : Icons.flag, color: isFlaggingMode ? ColoresApp.blanco : ColoresApp.moradoPrincipal, size: 28),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
+            _buildHeader(),
+
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -654,6 +707,16 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                     backgroundColor: ColoresApp.moradoPrincipal,
                     child: const Icon(Icons.refresh, color: Colors.white),
                   ),
+                  if (!isSinBanderas) ...[
+                    const SizedBox(width: 20),
+                    FloatingActionButton(
+                      heroTag: 'flagMode',
+                      mini: true,
+                      onPressed: _toggleFlaggingMode,
+                      backgroundColor: isFlaggingMode ? ColoresApp.moradoPrincipal : ColoresApp.gris100,
+                      child: Icon(isFlaggingMode ? Icons.clear : Icons.flag, color: isFlaggingMode ? ColoresApp.blanco : ColoresApp.moradoPrincipal, size: 28),
+                    ),
+                  ],
                 ],
               ),
             ),

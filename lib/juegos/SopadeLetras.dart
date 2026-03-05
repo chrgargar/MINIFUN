@@ -521,6 +521,132 @@ class _WordSearchGameState extends State<WordSearchGame> {
     );
   }
 
+  Widget _buildHeader(bool isDark) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    final sw = MediaQuery.of(context).size.width;
+    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
+    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
+    final hPad = (sw * 0.028).clamp(8.0, 14.0);
+    final gap = (sw * 0.016).clamp(4.0, 8.0);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
+      child: Row(
+        children: [
+          // Puntuación
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+            decoration: BoxDecoration(
+              color: ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Score: $score',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: ColoresApp.moradoPrincipal,
+              ),
+            ),
+          ),
+
+          // Tiempo (si aplica)
+          if (widget.isTimeAttackMode) ...[
+            SizedBox(width: gap),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+              decoration: BoxDecoration(
+                color: timeLeft < 60
+                    ? ColoresApp.rojoError.withValues(alpha: 0.2)
+                    : ColoresApp.verdeExito.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.timer,
+                    size: fontSize,
+                    color: timeLeft < 60 ? ColoresApp.rojoError : ColoresApp.verdeExito,
+                  ),
+                  SizedBox(width: gap * 0.6),
+                  Text(
+                    '${timeLeft ~/ 60}:${(timeLeft % 60).toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.bold,
+                      color: timeLeft < 60 ? ColoresApp.rojoError : ColoresApp.verdeExito,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const Spacer(),
+
+          // Botones de control
+          GamePauseButton(
+            isPaused: isPaused,
+            onPressed: _togglePause,
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          GameRestartButton(
+            onPressed: () {
+              setState(() {
+                _initializeGame();
+                elapsedSeconds = 0;
+                timeLeft = ConstantesSopaLetras.duracionContrarreloj;
+                score = 0;
+                isGameOver = false;
+                isVictory = false;
+                isPaused = false;
+                if (widget.isTimeAttackMode) {
+                  _startTimer();
+                }
+              });
+            },
+            size: btnSize,
+          ),
+          SizedBox(width: gap),
+          BotonGuia(
+            gameTitle: 'Sopa de Letras',
+            gameImagePath: 'assets/imagenes/sopadeletras.png',
+            objetivo: AppStrings.get('wordsearch_objective', currentLang),
+            instrucciones: [
+              AppStrings.get('wordsearch_inst_1', currentLang),
+              AppStrings.get('wordsearch_inst_2', currentLang),
+              AppStrings.get('wordsearch_inst_3', currentLang),
+              AppStrings.get('wordsearch_inst_4', currentLang),
+              AppStrings.get('wordsearch_inst_5', currentLang),
+            ],
+            controles: GuiasJuegos.getWordSearchControles(currentLang),
+            size: btnSize,
+            onOpen: () { if (!isPaused) _togglePause(); },
+            onClose: () { if (isPaused) _togglePause(); },
+          ),
+          SizedBox(width: gap),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: btnSize,
+              height: btnSize,
+              decoration: BoxDecoration(
+                color: ColoresApp.rojoError,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close,
+                color: ColoresApp.blanco,
+                size: btnSize * 0.55,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -532,104 +658,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
             Column(
               children: [
                 // Header con controles
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'Sopa de Letras',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Builder(
-                        builder: (context) {
-                          final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
-                          return Row(
-                            children: [
-                              GameControlBar(
-                                isPaused: isPaused,
-                                onPausePressed: _togglePause,
-                                onRestartPressed: () {
-                                  setState(() {
-                                    _initializeGame();
-                                    elapsedSeconds = 0;
-                                    timeLeft = ConstantesSopaLetras.duracionContrarreloj;
-                                    score = 0;
-                                    isGameOver = false;
-                                    isVictory = false;
-                                    isPaused = false;
-                                    if (widget.isTimeAttackMode) {
-                                      _startTimer();
-                                    }
-                                  });
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              BotonGuia(
-                                gameTitle: 'Sopa de Letras',
-                                gameImagePath: 'assets/imagenes/sopadeletras.png',
-                                objetivo: AppStrings.get('wordsearch_objective', currentLang),
-                                instrucciones: [
-                                  AppStrings.get('wordsearch_inst_1', currentLang),
-                                  AppStrings.get('wordsearch_inst_2', currentLang),
-                                  AppStrings.get('wordsearch_inst_3', currentLang),
-                                  AppStrings.get('wordsearch_inst_4', currentLang),
-                                  AppStrings.get('wordsearch_inst_5', currentLang),
-                                ],
-                                controles: GuiasJuegos.getWordSearchControles(currentLang),
-                                size: 40,
-                                onOpen: () { if (!isPaused) _togglePause(); },
-                                onClose: () { if (isPaused) _togglePause(); },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Información del juego
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Puntuación: $score',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      if (widget.isTimeAttackMode)
-                        Text(
-                          'Tiempo: ${timeLeft ~/ 60}:${(timeLeft % 60).toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: timeLeft < 60 ? Colors.red : (isDark ? Colors.white : Colors.black),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                _buildHeader(isDark),
 
                 // Lista de palabras
                 Container(

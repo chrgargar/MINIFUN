@@ -334,60 +334,75 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   }
 
   Widget _buildHeader(bool isDark) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    final sw = MediaQuery.of(context).size.width;
+    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
+    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
+    final hPad = (sw * 0.028).clamp(8.0, 14.0);
+    final gap = (sw * 0.016).clamp(4.0, 8.0);
+
     String title = 'Ahorcado';
     if (widget.isSpeedMode) title = 'Ahorcado - Velocidad';
     if (widget.isSurvivalMode) title = 'Ahorcado - Supervivencia';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
+            icon: Icon(Icons.arrow_back, size: btnSize * 0.6),
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(minWidth: btnSize, minHeight: btnSize),
           ),
-          Flexible(
+          Expanded(
             child: Text(
               title,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: fontSize,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : Colors.black,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Builder(
-            builder: (context) {
-              final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
-              return Row(
-                children: [
-                  GameControlBar(
-                    isPaused: isPaused,
-                    onPausePressed: _togglePause,
-                    onRestartPressed: _restartGame,
-                  ),
-                  const SizedBox(width: 8),
-                  BotonGuia(
-                    gameTitle: 'Ahorcado',
-                    gameImagePath: 'assets/imagenes/ahorcado.png',
-                    objetivo: AppStrings.get('hangman_objective', currentLang),
-                    instrucciones: [
-                      AppStrings.get('hangman_inst_1', currentLang),
-                      AppStrings.get('hangman_inst_2', currentLang),
-                      AppStrings.get('hangman_inst_3', currentLang),
-                      AppStrings.get('hangman_inst_4', currentLang),
-                      AppStrings.get('hangman_inst_5', currentLang),
-                    ],
-                    controles: GuiasJuegos.getHangmanControles(currentLang),
-                    size: 40,
-                    onOpen: () { if (!isPaused) _togglePause(); },
-                    onClose: () { if (isPaused) _togglePause(); },
-                  ),
-                ],
-              );
-            },
+          GameControlBar(
+            isPaused: isPaused,
+            onPausePressed: _togglePause,
+            onRestartPressed: _restartGame,
+            buttonSize: btnSize,
+            spacing: gap,
+          ),
+          SizedBox(width: gap),
+          BotonGuia(
+            gameTitle: 'Ahorcado',
+            gameImagePath: 'assets/imagenes/ahorcado.png',
+            objetivo: AppStrings.get('hangman_objective', currentLang),
+            instrucciones: [
+              AppStrings.get('hangman_inst_1', currentLang),
+              AppStrings.get('hangman_inst_2', currentLang),
+              AppStrings.get('hangman_inst_3', currentLang),
+              AppStrings.get('hangman_inst_4', currentLang),
+              AppStrings.get('hangman_inst_5', currentLang),
+            ],
+            controles: GuiasJuegos.getHangmanControles(currentLang),
+            size: btnSize,
+            onOpen: () { if (!isPaused) _togglePause(); },
+            onClose: () { if (isPaused) _togglePause(); },
+          ),
+          SizedBox(width: gap),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: btnSize,
+              height: btnSize,
+              decoration: BoxDecoration(
+                color: ColoresApp.rojoError,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.close, color: ColoresApp.blanco, size: btnSize * 0.55),
+            ),
           ),
         ],
       ),

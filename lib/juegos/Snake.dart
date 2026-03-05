@@ -515,6 +515,12 @@ class _SnakeGameState extends State<SnakeGame> {
 
   @override
   Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+    final btnSize = (sw * 0.09).clamp(28.0, 42.0);
+    final scoreFontSize = (sw * 0.042).clamp(13.0, 20.0);
+    final hPad = (sw * 0.028).clamp(8.0, 14.0);
+    final gap = (sw * 0.024).clamp(6.0, 12.0);
+
     return Scaffold(
       backgroundColor: ColoresApp.negro,
       body: SafeArea(
@@ -591,13 +597,13 @@ class _SnakeGameState extends State<SnakeGame> {
             ),
             // Score en la parte superior izquierda
             Positioned(
-              top: 16,
-              left: 16,
+              top: hPad,
+              left: hPad,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
                     decoration: BoxDecoration(
                       color: ColoresApp.moradoPrincipal.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(20),
@@ -613,16 +619,15 @@ class _SnakeGameState extends State<SnakeGame> {
                       'Score: $score',
                       style: TextStyle(
                         color: ColoresApp.blanco,
-                        fontSize: 20,
+                        fontSize: scoreFontSize,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  // Mostrar temporizador solo en modo contrarreloj
                   if (widget.isTimeAttackMode) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: gap * 0.6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
                       decoration: BoxDecoration(
                         color: timeLeft <= ConstantesSnake.limiteTiempoComida
                             ? ColoresApp.rojoError.withOpacity(0.9)
@@ -640,13 +645,13 @@ class _SnakeGameState extends State<SnakeGame> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.timer, color: ColoresApp.blanco, size: 20),
-                          const SizedBox(width: 6),
+                          Icon(Icons.timer, color: ColoresApp.blanco, size: scoreFontSize),
+                          SizedBox(width: gap * 0.5),
                           Text(
                             '${timeLeft}s',
                             style: TextStyle(
                               color: ColoresApp.blanco,
-                              fontSize: 20,
+                              fontSize: scoreFontSize,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -659,8 +664,8 @@ class _SnakeGameState extends State<SnakeGame> {
             ),
             // Botones de control en la parte superior derecha
             Positioned(
-              top: 16,
-              right: 16,
+              top: hPad,
+              right: hPad,
               child: Builder(
                 builder: (context) {
                   final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
@@ -669,19 +674,17 @@ class _SnakeGameState extends State<SnakeGame> {
                       GamePauseButton(
                         isPaused: isPaused,
                         onPressed: togglePause,
-                        size: 45,
+                        size: btnSize,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: gap),
                       GameRestartButton(
                         onPressed: () {
-                          if (isPaused) {
-                            isPaused = false;
-                          }
+                          if (isPaused) isPaused = false;
                           startGame();
                         },
-                        size: 45,
+                        size: btnSize,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: gap),
                       BotonGuia(
                         gameTitle: 'Snake',
                         gameImagePath: 'assets/imagenes/sssnake.png',
@@ -694,27 +697,28 @@ class _SnakeGameState extends State<SnakeGame> {
                           AppStrings.get('snake_inst_5', currentLang),
                         ],
                         controles: GuiasJuegos.getSnakeControles(currentLang),
+                        size: btnSize,
                         onOpen: () { if (!isPaused) togglePause(); },
                         onClose: () { if (isPaused) togglePause(); },
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: ColoresApp.rojoError.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: ColoresApp.rojoError.withValues(alpha: 0.5),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.close),
-                          color: ColoresApp.blanco,
-                          iconSize: 24,
-                          onPressed: () => Navigator.pop(context),
+                      SizedBox(width: gap),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: btnSize,
+                          height: btnSize,
+                          decoration: BoxDecoration(
+                            color: ColoresApp.rojoError.withValues(alpha: 0.9),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: ColoresApp.rojoError.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(Icons.close, color: ColoresApp.blanco, size: btnSize * 0.55),
                         ),
                       ),
                     ],
