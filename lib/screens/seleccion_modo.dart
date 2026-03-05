@@ -17,12 +17,14 @@ import '../constants/ahorcado_constants.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
-  final String gameTitle; // Título del juego seleccionado
-  final String gameImagePath; // Ruta de la imagen del juego
+  final String gameTitle;    // Título localizado (solo para mostrar)
+  final String gameKey;      // Clave interna no localizada para enrutamiento
+  final String gameImagePath;
 
   const SeleccionModo({
     super.key,
     required this.gameTitle,
+    required this.gameKey,
     required this.gameImagePath,
   });
 
@@ -128,18 +130,18 @@ class SeleccionModo extends StatelessWidget {
                           text: AppStrings.get('play', currentLang),
                           color: const Color(0xFF7B3FF2),
                           onTap: () {
-                            if (gameTitle == 'Snake') {
+                            if (gameKey == 'Snake') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (context) => const SnakeGame()),
                               );
                             } else {
-                              // Redirigir a pantalla de selección de dificultad para todos los demás juegos
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => DifficultySelectionScreen(
                                     gameTitle: gameTitle,
+                                    gameKey: gameKey,
                                     gameImagePath: gameImagePath,
                                   ),
                                 ),
@@ -153,50 +155,50 @@ class SeleccionModo extends StatelessWidget {
                         // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.)
                         _buildModeButton(
                           height: buttonHeight,
-                          icon: gameTitle == 'Snake' ? '💀' : (gameTitle == 'Buscaminas' ? '💣' : (gameTitle == 'WaterSort' ? '🧪' : (gameTitle == 'Ahorcado' ? '💀' : '💎'))),
-                          text: gameTitle == 'Snake'
+                          icon: gameKey == 'Snake' ? '💀' : (gameKey == 'Buscaminas' ? '💣' : (gameKey == 'WaterSort' ? '🧪' : (gameKey == 'Ahorcado' ? '💀' : '💎'))),
+                          text: gameKey == 'Snake'
                               ? AppStrings.get('survival_pro', currentLang)
-                              : (gameTitle == 'Buscaminas'
+                              : (gameKey == 'Buscaminas'
                                   ? 'Experto'
-                                  : (gameTitle == 'WaterSort'
+                                  : (gameKey == 'WaterSort'
                                       ? AppStrings.get('hard_pro', currentLang)
-                                      : (gameTitle == 'Ahorcado'
+                                      : (gameKey == 'Ahorcado'
                                           ? AppStrings.get('hangman_survival', currentLang)
                                           : AppStrings.get('perfect_pro', currentLang)))),
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
-                            if (gameTitle == 'Snake') {
+                            if (gameKey == 'Snake') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SnakeGame(isSurvivalMode: true),
                                 ),
                               );
-                            } else if (gameTitle == 'Sudoku') {
+                            } else if (gameKey == 'Sudoku') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SudokuGame(isPerfectMode: true),
                                 ),
                               );
-                            } else if (gameTitle == 'WaterSort') {
+                            } else if (gameKey == 'WaterSort') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const WaterSortGame(difficulty: 'dificil'),
                                 ),
                               );
-                            } else if (gameTitle == 'Buscaminas') {
+                            } else if (gameKey == 'Buscaminas') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => BuscaminasGame.dificil,
                                 ),
                               );
-                            } else if (gameTitle == 'Sopa de Letras') {
+                            } else if (gameKey == 'Sopa de Letras') {
                               _showThemeSelectionDialog(context, 'dificil');
-                            } else if (gameTitle == 'Ahorcado') {
+                            } else if (gameKey == 'Ahorcado') {
                               _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
                             }
                           },
@@ -205,7 +207,7 @@ class SeleccionModo extends StatelessWidget {
                         SizedBox(height: spacing),
 
                         // 3. Modalidades (Contrarreloj, Velocidad, Sin Banderas, etc.)
-                        if (gameTitle == 'Snake') ...[
+                        if (gameKey == 'Snake') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
@@ -238,7 +240,7 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                         ],
 
-                        if (gameTitle == 'Buscaminas') ...[
+                        if (gameKey == 'Buscaminas') ...[
                            _buildModeButton(
                             height: buttonHeight,
                             icon: '⏱️',
@@ -272,7 +274,7 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                         ],
 
-                        if (gameTitle == 'Sudoku') ...[
+                        if (gameKey == 'Sudoku') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '⏱️',
@@ -290,7 +292,7 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                         ],
 
-                        if (gameTitle == 'WaterSort') ...[
+                        if (gameKey == 'WaterSort') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '⏱️',
@@ -308,7 +310,7 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                         ],
 
-                        if (gameTitle == 'Sopa de Letras') ...[
+                        if (gameKey == 'Sopa de Letras') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '⏱️',
@@ -321,7 +323,7 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                         ],
 
-                        if (gameTitle == 'Ahorcado') ...[
+                        if (gameKey == 'Ahorcado') ...[
                           _buildModeButton(
                             height: buttonHeight,
                             icon: '🚀',
@@ -363,7 +365,7 @@ class SeleccionModo extends StatelessWidget {
     List<String> instrucciones;
     List<ControlItem> controles;
 
-    switch (gameTitle) {
+    switch (gameKey) {
       case 'Snake':
         objetivo = AppStrings.get('snake_objective', currentLang);
         instrucciones = [

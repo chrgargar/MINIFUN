@@ -281,6 +281,23 @@ class AppStrings {
       'control_flag_desc': 'Mantén pulsado o activa el modo bandera para marcar minas',
       'control_hint': 'Pista',
       'control_hint_desc': 'Revela una casilla segura aleatoria',
+
+      // Descripciones de dificultad
+      'diff_minesweeper_easy': '10x10 - 15 minas',
+      'diff_minesweeper_medium': '16x16 - 40 minas',
+      'diff_minesweeper_hard': '24x24 - 99 minas',
+      'diff_sudoku_easy': 'Muchas celdas rellenas.',
+      'diff_sudoku_medium': 'Desafío equilibrado.',
+      'diff_sudoku_hard': 'Muy pocas pistas.',
+      'diff_watersort_easy': 'Nivel de entrada.',
+      'diff_watersort_medium': 'Más colores y tubos.',
+      'diff_watersort_hard': 'Máxima complejidad.',
+      'diff_wordsearch_easy': '10x10 - Palabras cortas.',
+      'diff_wordsearch_medium': '15x15 - Desafío estándar.',
+      'diff_wordsearch_hard': '20x20 - Palabras complejas.',
+      'diff_hangman_easy': '8 intentos - Palabras comunes.',
+      'diff_hangman_medium': '6 intentos - Nivel medio.',
+      'diff_hangman_hard': '4 intentos - Palabras difíciles.',
     },
 
     // ENGLISH
@@ -555,6 +572,23 @@ class AppStrings {
       'control_flag_desc': 'Long press or enable flag mode to mark mines',
       'control_hint': 'Hint',
       'control_hint_desc': 'Reveals a random safe square',
+
+      // Difficulty descriptions
+      'diff_minesweeper_easy': '10x10 - 15 mines',
+      'diff_minesweeper_medium': '16x16 - 40 mines',
+      'diff_minesweeper_hard': '24x24 - 99 mines',
+      'diff_sudoku_easy': 'Many cells filled.',
+      'diff_sudoku_medium': 'Balanced challenge.',
+      'diff_sudoku_hard': 'Very few hints.',
+      'diff_watersort_easy': 'Entry level.',
+      'diff_watersort_medium': 'More colors and tubes.',
+      'diff_watersort_hard': 'Maximum complexity.',
+      'diff_wordsearch_easy': '10x10 - Short words.',
+      'diff_wordsearch_medium': '15x15 - Standard challenge.',
+      'diff_wordsearch_hard': '20x20 - Complex words.',
+      'diff_hangman_easy': '8 attempts - Common words.',
+      'diff_hangman_medium': '6 attempts - Medium level.',
+      'diff_hangman_hard': '4 attempts - Hard words.',
     },
 
     // CATALÀ
@@ -818,6 +852,23 @@ class AppStrings {
       'control_flag_desc': 'Mantingues premut o activa el mode bandera per a marcar mines',
       'control_hint': 'Pista',
       'control_hint_desc': 'Revela una casella segura aleatòria',
+
+      // Descripcions de dificultat
+      'diff_minesweeper_easy': '10x10 - 15 mines',
+      'diff_minesweeper_medium': '16x16 - 40 mines',
+      'diff_minesweeper_hard': '24x24 - 99 mines',
+      'diff_sudoku_easy': 'Moltes cel·les omplertes.',
+      'diff_sudoku_medium': 'Repte equilibrat.',
+      'diff_sudoku_hard': 'Molt poques pistes.',
+      'diff_watersort_easy': 'Nivell d\'entrada.',
+      'diff_watersort_medium': 'Més colors i tubs.',
+      'diff_watersort_hard': 'Màxima complexitat.',
+      'diff_wordsearch_easy': '10x10 - Paraules curtes.',
+      'diff_wordsearch_medium': '15x15 - Repte estàndard.',
+      'diff_wordsearch_hard': '20x20 - Paraules complexes.',
+      'diff_hangman_easy': '8 intents - Paraules comunes.',
+      'diff_hangman_medium': '6 intents - Nivell mig.',
+      'diff_hangman_hard': '4 intents - Paraules difícils.',
     },
   };
 }

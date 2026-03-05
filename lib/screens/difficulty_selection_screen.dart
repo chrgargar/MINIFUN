@@ -13,12 +13,14 @@ import '../constants/sopa_de_letras_constants.dart';
 import '../constants/ahorcado_constants.dart';
 
 class DifficultySelectionScreen extends StatelessWidget {
-  final String gameTitle;
+  final String gameTitle;    // Título localizado (solo para mostrar)
+  final String gameKey;      // Clave interna no localizada para enrutamiento
   final String gameImagePath;
 
   const DifficultySelectionScreen({
     super.key,
     required this.gameTitle,
+    required this.gameKey,
     required this.gameImagePath,
   });
 
@@ -116,7 +118,7 @@ class DifficultySelectionScreen extends StatelessWidget {
                         ),
                         
                         // Botón Extra (PRO / Experto) si aplica
-                        if (gameTitle == 'Buscaminas') ...[
+                        if (gameKey == 'Buscaminas') ...[
                           SizedBox(height: spacing),
                           _buildDifficultyButton(
                             context: context,
@@ -140,28 +142,20 @@ class DifficultySelectionScreen extends StatelessWidget {
   }
 
   String _getDifficultyDescription(BuildContext context, String difficulty) {
-    // Aquí puedes personalizar según el juego
-    switch (gameTitle) {
+    final lang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final suffix = difficulty == 'facil' ? 'easy' : difficulty == 'medio' ? 'medium' : 'hard';
+
+    switch (gameKey) {
       case 'Buscaminas':
-        if (difficulty == 'facil') return '10x10 - 15 minas';
-        if (difficulty == 'medio') return '16x16 - 40 minas';
-        return '24x24 - 99 minas';
+        return AppStrings.get('diff_minesweeper_$suffix', lang);
       case 'Sudoku':
-        if (difficulty == 'facil') return 'Muchas celdas rellenas.';
-        if (difficulty == 'medio') return 'Desafío equilibrado.';
-        return 'Muy pocas pistas.';
+        return AppStrings.get('diff_sudoku_$suffix', lang);
       case 'WaterSort':
-        if (difficulty == 'facil') return 'Nivel de entrada.';
-        if (difficulty == 'medio') return 'Más colores y tubos.';
-        return 'Máxima complejidad.';
+        return AppStrings.get('diff_watersort_$suffix', lang);
       case 'Sopa de Letras':
-        if (difficulty == 'facil') return '10x10 - Palabras cortas.';
-        if (difficulty == 'medio') return '15x15 - Desafío estándar.';
-        return '20x20 - Palabras complejas.';
+        return AppStrings.get('diff_wordsearch_$suffix', lang);
       case 'Ahorcado':
-        if (difficulty == 'facil') return '8 intentos - Palabras comunes.';
-        if (difficulty == 'medio') return '6 intentos - Nivel medio.';
-        return '4 intentos - Palabras difíciles.';
+        return AppStrings.get('diff_hangman_$suffix', lang);
       default:
         return '';
     }
@@ -234,17 +228,17 @@ class DifficultySelectionScreen extends StatelessWidget {
   }
 
   void _onDifficultySelected(BuildContext context, String difficulty) {
-    if (gameTitle == 'Sudoku') {
+    if (gameKey == 'Sudoku') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SudokuGame(difficulty: difficulty)),
       );
-    } else if (gameTitle == 'WaterSort') {
+    } else if (gameKey == 'WaterSort') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => WaterSortGame(difficulty: difficulty)),
       );
-    } else if (gameTitle == 'Buscaminas') {
+    } else if (gameKey == 'Buscaminas') {
       if (difficulty == 'facil') {
         Navigator.push(context, MaterialPageRoute(builder: (context) => BuscaminasGame.facil));
       } else if (difficulty == 'medio') {
@@ -254,9 +248,9 @@ class DifficultySelectionScreen extends StatelessWidget {
       } else if (difficulty == 'extremo') {
         Navigator.push(context, MaterialPageRoute(builder: (context) => BuscaminasGame.extremo));
       }
-    } else if (gameTitle == 'Sopa de Letras') {
+    } else if (gameKey == 'Sopa de Letras') {
       _showThemeSelectionDialog(context, difficulty);
-    } else if (gameTitle == 'Ahorcado') {
+    } else if (gameKey == 'Ahorcado') {
       _showHangmanThemeDialog(context, difficulty);
     }
   }

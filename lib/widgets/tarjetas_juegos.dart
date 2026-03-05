@@ -3,13 +3,15 @@ import '../screens/seleccion_modo.dart';
 
 // Widget reutilizable para mostrar tarjeta de juego
 class TarjetasJuegos extends StatelessWidget {
-  final String title; // Título del juego
+  final String title; // Título del juego (localizado, solo para mostrar)
+  final String gameKey; // Clave interna no localizada para enrutamiento
   final String? imagePath; // Ruta de la imagen opcional
 
   const TarjetasJuegos({
     super.key,
-    required this.title, // El título es obligatorio
-    this.imagePath, // La imagen es opcional
+    required this.title,
+    required this.gameKey,
+    this.imagePath,
   });
 
   @override
@@ -28,6 +30,7 @@ class TarjetasJuegos extends StatelessWidget {
                 MaterialPageRoute(
                   builder: (context) => SeleccionModo(
                     gameTitle: title,
+                    gameKey: gameKey,
                     gameImagePath: imagePath ?? '',
                   ),
                 ),
