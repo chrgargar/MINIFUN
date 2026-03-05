@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,10 +19,23 @@ class LanguageProvider extends ChangeNotifier {
     _loadLanguage();
   }
 
-  // Cargar idioma guardado
+  // Cargar idioma guardado o detectar del dispositivo
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    _currentLanguage = prefs.getString('language') ?? 'es';
+
+    if (prefs.containsKey('language')) {
+      _currentLanguage = prefs.getString('language') ?? 'es';
+    } else {
+      // Detectar idioma del dispositivo en la primera instalación
+      final deviceLocale = ui.PlatformDispatcher.instance.locale.languageCode;
+      if (availableLanguages.containsKey(deviceLocale)) {
+        _currentLanguage = deviceLocale;
+      } else {
+        _currentLanguage = 'es'; // Fallback a español
+      }
+      // Guardar el idioma detectado
+      await prefs.setString('language', _currentLanguage);
+    }
     notifyListeners();
   }
 

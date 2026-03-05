@@ -28,10 +28,22 @@ class VentanaAjustes {
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 600),
                 padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                child: ScrollbarTheme(
+                  data: const ScrollbarThemeData(
+                    minThumbLength: 20,
+                    mainAxisMargin: 50,
+                    crossAxisMargin: -10,
+                  ),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    thickness: 6,
+                    radius: const Radius.circular(10),
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                       // Título del diálogo
                       Text(
                         AppStrings.get('settings', currentLang),
@@ -63,23 +75,10 @@ class VentanaAjustes {
                       const Divider(height: 32),
 
                       // Opción: Control de volumen de música
-                      _buildVolumeSlider(
+                      _buildMusicVolumeSlider(
                         context: dialogContext,
                         audioSettings: audioSettings,
-                        icon: Icons.music_note,
                         title: AppStrings.get('music_volume', currentLang),
-                        volumeType: 'music',
-                      ),
-
-                      const Divider(height: 32),
-
-                      // Opción: Control de volumen de efectos
-                      _buildVolumeSlider(
-                        context: dialogContext,
-                        audioSettings: audioSettings,
-                        icon: Icons.volume_up,
-                        title: AppStrings.get('effects_volume', currentLang),
-                        volumeType: 'sfx',
                       ),
 
                       const Divider(height: 32),
@@ -96,7 +95,7 @@ class VentanaAjustes {
                       // Opción: Racha de días
                       _buildStreakOption(
                         context: dialogContext,
-                        streakDays: 0, // Placeholder
+                        streakDays: Provider.of<AuthProvider>(context, listen: false).currentUser?.streakDays ?? 0,
                         currentLang: currentLang,
                       ),
 
@@ -115,7 +114,9 @@ class VentanaAjustes {
                           await authProvider.logout();
 
                           // Crear sesión de invitado
-                          final success = await authProvider.continueAsGuest();
+                          final success = await authProvider.continueAsGuest(
+                            guestName: AppStrings.get('guest_name', currentLang),
+                          );
 
                           if (success && dialogContext.mounted) {
                             // Cerrar el diálogo
@@ -192,14 +193,17 @@ class VentanaAjustes {
                           ),
                         ),
                       ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      );
+    },
     );
   }
 
@@ -433,21 +437,17 @@ class VentanaAjustes {
     );
   }
 
-  // Widget para control de volumen con slider
-  static Widget _buildVolumeSlider({
+  // Widget para control de volumen de música con slider
+  static Widget _buildMusicVolumeSlider({
     required BuildContext context,
     required AudioSettings audioSettings,
-    required IconData icon,
     required String title,
-    required String volumeType, // 'music' o 'sfx'
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer<AudioSettings>(
       builder: (context, audio, child) {
-        final currentVolume = volumeType == 'music'
-            ? audio.rawMusicVolume
-            : audio.rawSfxVolume;
+        final currentVolume = audio.rawMusicVolume;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
@@ -462,9 +462,9 @@ class VentanaAjustes {
                       color: const Color(0xFF7B3FF2).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      icon,
-                      color: const Color(0xFF7B3FF2),
+                    child: const Icon(
+                      Icons.music_note,
+                      color: Color(0xFF7B3FF2),
                       size: 24,
                     ),
                   ),
@@ -509,11 +509,7 @@ class VentanaAjustes {
                   max: 1.0,
                   divisions: 20,
                   onChanged: (value) {
-                    if (volumeType == 'music') {
-                      audio.setMusicVolume(value);
-                    } else {
-                      audio.setSfxVolume(value);
-                    }
+                    audio.setMusicVolume(value);
                   },
                 ),
               ),

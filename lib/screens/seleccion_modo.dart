@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/boton_ajustes.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../data/guias_juegos.dart';
@@ -82,10 +81,10 @@ class SeleccionModo extends StatelessWidget {
                     height: titleHeight,
                     child: Center(
                       child: Text(
-                        gameTitle.toUpperCase(),
+                        AppStrings.get('select_mode', currentLang),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: (titleHeight * 0.45).clamp(20.0, 32.0),
+                          fontSize: (titleHeight * 0.35).clamp(18.0, 26.0),
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : Colors.black,
                           height: 1.2,
@@ -98,17 +97,17 @@ class SeleccionModo extends StatelessWidget {
                   SizedBox(
                     height: imageHeight,
                     child: Center(
-                      child: Hero(
-                        tag: gameTitle,
-                        child: Container(
-                          width: constraints.maxWidth * 0.6,
-                          height: imageHeight * 0.9,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                      child: Container(
+                        width: imageSize,
+                        height: imageSize,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: ClipOval(
                           child: Image.asset(
                             gameImagePath,
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
@@ -167,13 +166,6 @@ class SeleccionModo extends StatelessWidget {
                           color: const Color.fromARGB(255, 255, 239, 98),
                           textColor: Colors.black,
                           onTap: () {
-                            // Verificar si es invitado
-                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                            if (authProvider.isGuest) {
-                              _showBuyProDialog(context);
-                              return;
-                            }
-
                             if (gameTitle == 'Snake') {
                               Navigator.push(
                                 context,
@@ -573,77 +565,5 @@ class SeleccionModo extends StatelessWidget {
         );
       }
     });
-  }
-  void _showBuyProDialog(BuildContext context) {
-    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.all(20),
-          title: Column(
-            children: [
-              const Icon(
-                Icons.star_rounded,
-                size: 60,
-                color: Colors.amber,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'MINIFUN PRO',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${AppStrings.get('get_pro', currentLang)} 4.99€',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                currentLang == 'es' 
-                    ? 'Desbloquea todos los modos expertos, elimina la publicidad y accede a contenido exclusivo.' 
-                    : (currentLang == 'ca' 
-                        ? 'Desbloqueja tots els modes experts, elimina la publicitat i accedeix a contingut exclusiu.' 
-                        : 'Unlock all expert modes, remove ads, and access exclusive content.'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                AppStrings.get('close', currentLang),
-                style: const TextStyle(fontSize: 16),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B3FF2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                // TODO: Implement Purchase flow
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                '4.99€',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

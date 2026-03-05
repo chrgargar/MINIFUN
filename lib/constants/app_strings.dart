@@ -4,12 +4,13 @@ class AppStrings {
     return _translations[language]?[key] ?? _translations['es']?[key] ?? key;
   }
 
-  static const Map<String, Map<String, String>> _translations = {
+  static final Map<String, Map<String, String>> _translations = {
     // ESPAÑOL
     'es': {
       // General
       'settings': 'Ajustes',
       'close': 'Cerrar',
+      'cancel': 'Cancelar',
       'play': 'Jugar',
       'guide': 'Guía',
       'back': 'Volver',
@@ -21,6 +22,10 @@ class AppStrings {
       'next_level': 'Siguiente Nivel',
       'undo': 'Deshacer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultad',
+      'easy': 'Fácil',
+      'medium': 'Medio',
+      'hard': 'Difícil',
 
       // Ajustes
       'dark_theme': 'Tema oscuro',
@@ -34,6 +39,7 @@ class AppStrings {
       'streak': 'Racha',
       'consecutive_days': 'Días jugando consecutivos',
       'days': 'días',
+      'guest_name': 'Invitado',
       'play_as_guest': 'Jugar como invitado',
       'continue_without_account': 'Continuar sin cuenta',
       'switch_account': 'Cambiar de cuenta',
@@ -50,9 +56,9 @@ class AppStrings {
       'time_attack': 'Contrarreloj',
       'perfect': 'Perfecto',
       'speed': 'Velocidad',
-      'survival_pro': 'Supervivencia',
-      'perfect_pro': 'Perfecto',
-      'hard_pro': 'Difícil',
+      'survival_pro': 'Supervivencia\nPRO',
+      'perfect_pro': 'Perfecto\nPRO',
+      'hard_pro': 'Difícil\nPRO',
 
       // Game Over
       'congratulations': '¡Felicidades!',
@@ -105,9 +111,45 @@ class AppStrings {
       'email_placeholder': 'correoelectrónico@dominio.com',
       'error_register': 'Error al registrarse',
 
+      // Recuperar contraseña
+      'recover_password': 'Recuperar contraseña',
+      'recover_password_subtitle': 'Introduce tu email y te enviaremos un enlace para restablecer tu contraseña',
+      'send_link': 'Enviar enlace',
+      'email_sent': 'Si el email existe, recibirás un enlace de recuperación',
+      'back_to_login': 'Volver al inicio de sesión',
+
       // Pantalla principal
       'missions': 'MISIONES',
       'get_pro': 'Adquiere MINIFUN PRO por',
+      'pro_price': '€4.99',
+
+      // Nombres de juegos
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Sopa de Letras',
+      'game_hangman': 'Ahorcado',
+      'game_minesweeper': 'Buscaminas',
+      'game_sudoku': 'Sudoku',
+
+      // Verificación de email
+      'verify_email': 'Verifica tu email',
+      'verify_email_desc': 'Te hemos enviado un correo de verificación. Revisa tu bandeja de entrada (y la carpeta de spam) para activar tu cuenta.',
+      'understood': 'Entendido',
+
+      // Perfil
+      'profile': 'Perfil',
+      'edit_profile': 'Editar perfil',
+      'change_photo': 'Cambiar foto',
+      'camera': 'Cámara',
+      'gallery': 'Galería',
+      'save_changes': 'Guardar cambios',
+      'profile_updated': 'Perfil actualizado',
+      'verify_email_title': 'Verifica tu email',
+      'verify_email_message': 'Te hemos enviado un correo de verificación al nuevo email. Revisa tu bandeja de entrada (y la carpeta de spam) para verificarlo.',
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': '¿Estás seguro de que quieres eliminar tu foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permiso de cámara denegado. Actívalo en los ajustes del dispositivo.',
 
       // Guías
       'guide_of': 'Guía de',
@@ -170,6 +212,8 @@ class AppStrings {
       'theme_peliculas': 'Películas',
       'theme_musica': 'Música',
       'theme_historia': 'Historia',
+      'bonus_word_found': '¡PALABRA EXTRA ENCONTRADA!',
+      'bonus_points': '+50 puntos',
 
       // Guías Water Sort
       'watersort_objective': 'Organizar los líquidos de colores en tubos separados hasta que cada tubo contenga únicamente un solo color.',
@@ -185,6 +229,10 @@ class AppStrings {
       'control_undo_desc': 'Deshace el último movimiento realizado',
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivel desde el principio',
+
+      // Mensajes de error y notificaciones
+      'max_flags_reached': '¡Límite máximo de banderas alcanzado!',
+      'no_safe_cells_for_hint': 'No hay casillas seguras disponibles para pista',
 
       // Pausa
       'paused': 'PAUSA',
@@ -204,18 +252,21 @@ class AppStrings {
       'theme_paises': 'Países',
       'theme_comida': 'Comida',
       'hangman_speed': 'Velocidad',
-      'hangman_survival': 'Supervivencia',
+      'hangman_survival': 'Supervivencia\nPRO',
 
       // Buscaminas
       'minesweeper_objective': 'Descubre todas las casillas sin minas. Los números indican cuántas minas hay alrededor.',
       'minesweeper_inst_1': 'Toca una casilla para revelarla',
       'minesweeper_inst_2': 'Los números indican minas adyacentes',
-      'minesweeper_inst_3': 'Usa banderas para marcar las minas',
+      'minesweeper_inst_3': 'Mantén presionada una casilla para poner una bandera',
       'minesweeper_inst_4': 'Si tocas una mina, pierdes',
+      'minesweeper_inst_5': 'También puedes usar el botón de bandera para activarlas sin mantener presionado',
       'control_reveal': 'Revelar',
       'control_reveal_desc': 'Toca una casilla para revelar su contenido',
       'control_flag': 'Bandera',
       'control_flag_desc': 'Mantén pulsado o activa el modo bandera para marcar minas',
+      'control_hint': 'Pista',
+      'control_hint_desc': 'Revela una casilla segura aleatoria',
     },
 
     // ENGLISH
@@ -223,6 +274,7 @@ class AppStrings {
       // General
       'settings': 'Settings',
       'close': 'Close',
+      'cancel': 'Cancel',
       'play': 'Play',
       'guide': 'Guide',
       'back': 'Back',
@@ -234,6 +286,10 @@ class AppStrings {
       'next_level': 'Next Level',
       'undo': 'Undo',
       'or': 'or',
+      'select_difficulty': 'Select Difficulty',
+      'easy': 'Easy',
+      'medium': 'Medium',
+      'hard': 'Hard',
 
       // Settings
       'dark_theme': 'Dark theme',
@@ -247,6 +303,7 @@ class AppStrings {
       'streak': 'Streak',
       'consecutive_days': 'Consecutive days playing',
       'days': 'days',
+      'guest_name': 'Guest',
       'play_as_guest': 'Play as guest',
       'continue_without_account': 'Continue without account',
       'switch_account': 'Switch account',
@@ -263,9 +320,9 @@ class AppStrings {
       'time_attack': 'Time Attack',
       'perfect': 'Perfect',
       'speed': 'Speed',
-      'survival_pro': 'Survival',
-      'perfect_pro': 'Perfect',
-      'hard_pro': 'Hard',
+      'survival_pro': 'Survival\nPRO',
+      'perfect_pro': 'Perfect\nPRO',
+      'hard_pro': 'Hard\nPRO',
 
       // Game Over
       'congratulations': 'Congratulations!',
@@ -318,9 +375,45 @@ class AppStrings {
       'email_placeholder': 'email@domain.com',
       'error_register': 'Error registering',
 
+      // Password recovery
+      'recover_password': 'Recover password',
+      'recover_password_subtitle': 'Enter your email and we will send you a link to reset your password',
+      'send_link': 'Send link',
+      'email_sent': 'If the email exists, you will receive a recovery link',
+      'back_to_login': 'Back to login',
+
       // Main screen
       'missions': 'MISSIONS',
       'get_pro': 'Get MINIFUN PRO for',
+      'pro_price': '€4.99',
+
+      // Game names
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Word Search',
+      'game_hangman': 'Hangman',
+      'game_minesweeper': 'Minesweeper',
+      'game_sudoku': 'Sudoku',
+
+      // Email verification
+      'verify_email': 'Verify your email',
+      'verify_email_desc': 'We\'ve sent you a verification email. Check your inbox (and spam folder) to activate your account.',
+      'understood': 'Got it',
+
+      // Profile
+      'profile': 'Profile',
+      'edit_profile': 'Edit profile',
+      'change_photo': 'Change photo',
+      'camera': 'Camera',
+      'gallery': 'Gallery',
+      'save_changes': 'Save changes',
+      'profile_updated': 'Profile updated',
+      'verify_email_title': 'Verify your email',
+      'verify_email_message': 'We have sent a verification email to your new address. Check your inbox (and spam folder) to verify it.',
+      'delete_photo': 'Delete photo',
+      'delete_photo_confirm': 'Are you sure you want to delete your profile photo?',
+      'photo_deleted': 'Profile photo deleted',
+      'camera_permission_denied': 'Camera permission denied. Enable it in device settings.',
 
       // Guides
       'guide_of': 'Guide for',
@@ -389,6 +482,8 @@ class AppStrings {
       'theme_peliculas': 'Movies',
       'theme_musica': 'Music',
       'theme_historia': 'History',
+      'bonus_word_found': 'BONUS WORD FOUND!',
+      'bonus_points': '+50 points',
 
       // Water Sort Guides
       'watersort_objective': 'Sort the colored water into tubes until each tube contains only one color.',
@@ -408,6 +503,10 @@ class AppStrings {
       'control_restart': 'Restart',
       'control_restart_desc': 'Restarts the level from the beginning',
 
+      // Error and notification messages
+      'max_flags_reached': 'Maximum flag limit reached!',
+      'no_safe_cells_for_hint': 'No safe cells available for hint',
+
       // Pause
       'paused': 'PAUSED',
       'game_paused': 'Game Paused',
@@ -426,18 +525,21 @@ class AppStrings {
       'theme_paises': 'Countries',
       'theme_comida': 'Food',
       'hangman_speed': 'Speed',
-      'hangman_survival': 'Survival',
+      'hangman_survival': 'Survival\nPRO',
 
       // Minesweeper
       'minesweeper_objective': 'Reveal all squares without mines. Numbers indicate how many mines are nearby.',
       'minesweeper_inst_1': 'Tap a square to reveal it',
       'minesweeper_inst_2': 'Numbers indicate adjacent mines',
-      'minesweeper_inst_3': 'Use flags to mark mines',
+      'minesweeper_inst_3': 'Hold down a square to place a flag',
       'minesweeper_inst_4': 'If you tap a mine, you lose',
+      'minesweeper_inst_5': 'You can also use the flag button to toggle flag mode',
       'control_reveal': 'Reveal',
       'control_reveal_desc': 'Tap a square to reveal its content',
       'control_flag': 'Flag',
       'control_flag_desc': 'Long press or enable flag mode to mark mines',
+      'control_hint': 'Hint',
+      'control_hint_desc': 'Reveals a random safe square',
     },
 
     // CATALÀ
@@ -445,6 +547,7 @@ class AppStrings {
       // General
       'settings': 'Ajustos',
       'close': 'Tancar',
+      'cancel': 'Cancel·lar',
       'play': 'Jugar',
       'guide': 'Guia',
       'back': 'Tornar',
@@ -456,6 +559,10 @@ class AppStrings {
       'next_level': 'Següent Nivell',
       'undo': 'Desfer',
       'or': 'o',
+      'select_difficulty': 'Selecciona Dificultat',
+      'easy': 'Fàcil',
+      'medium': 'Mig',
+      'hard': 'Difícil',
 
       // Ajustos
       'dark_theme': 'Tema fosc',
@@ -469,6 +576,7 @@ class AppStrings {
       'streak': 'Ratxa',
       'consecutive_days': 'Dies jugant consecutius',
       'days': 'dies',
+      'guest_name': 'Convidat',
       'play_as_guest': 'Jugar com a convidat',
       'continue_without_account': 'Continuar sense compte',
       'switch_account': 'Canviar de compte',
@@ -485,9 +593,9 @@ class AppStrings {
       'time_attack': 'Contrarellotge',
       'perfect': 'Perfecte',
       'speed': 'Velocitat',
-      'survival_pro': 'Supervivència',
-      'perfect_pro': 'Perfecte',
-      'hard_pro': 'Difícil',
+      'survival_pro': 'Supervivència\nPRO',
+      'perfect_pro': 'Perfecte\nPRO',
+      'hard_pro': 'Difícil\nPRO',
 
       // Game Over
       'congratulations': 'Felicitats!',
@@ -540,9 +648,45 @@ class AppStrings {
       'email_placeholder': 'correuelectronic@domini.com',
       'error_register': 'Error al registrar-se',
 
+      // Recuperar contrasenya
+      'recover_password': 'Recuperar contrasenya',
+      'recover_password_subtitle': 'Introdueix el teu email i t\'enviarem un enllaç per a restablir la teua contrasenya',
+      'send_link': 'Enviar enllaç',
+      'email_sent': 'Si l\'email existeix, rebràs un enllaç de recuperació',
+      'back_to_login': 'Tornar a l\'inici de sessió',
+
       // Pantalla principal
       'missions': 'MISSIONS',
       'get_pro': 'Adquirix MINIFUN PRO per',
+      'pro_price': '€4.99',
+
+      // Noms de jocs
+      'game_snake': 'Snake',
+      'game_watersort': 'WaterSort',
+      'game_word_search': 'Busca de Paraules',
+      'game_hangman': 'Penjat',
+      'game_minesweeper': 'Buscamines',
+      'game_sudoku': 'Sudoku',
+
+      // Verificació de correu electrònic
+      'verify_email': 'Verifica el teu correu electrònic',
+      'verify_email_desc': 'T\'hem enviat un correu de verificació. Revisa la teua bústia d\'entrada (i la carpeta de spam) per activar el teu compte.',
+      'understood': 'Entés',
+
+      // Perfil
+      'profile': 'Perfil',
+      'edit_profile': 'Editar perfil',
+      'change_photo': 'Canviar foto',
+      'camera': 'Càmera',
+      'gallery': 'Galeria',
+      'save_changes': 'Guardar canvis',
+      'profile_updated': 'Perfil actualitzat',
+      'verify_email_title': 'Verifica el teu email',
+      'verify_email_message': "T'hem enviat un correu de verificació al nou email. Revisa la teua safata d'entrada (i la carpeta de spam) per verificar-lo.",
+      'delete_photo': 'Eliminar foto',
+      'delete_photo_confirm': 'Estàs segur que vols eliminar la teua foto de perfil?',
+      'photo_deleted': 'Foto de perfil eliminada',
+      'camera_permission_denied': 'Permís de càmera denegat. Activa\'l als ajustos del dispositiu.',
 
       // Guies
       'guide_of': 'Guia de',
@@ -611,6 +755,20 @@ class AppStrings {
       'control_restart': 'Reiniciar',
       'control_restart_desc': 'Reinicia el nivell des del principi',
 
+      // Missatges d'error i notificacions
+      'max_flags_reached': '¡Límit màxim de banderes alcançat!',
+      'no_safe_cells_for_hint': 'No hi ha caselles segures disponibles per a pista',
+
+      // Guies Sopa de Letras
+      'wordsearch_objective': 'Troba totes les paraules ocultes en la quadrícula',
+      'wordsearch_inst_1': 'Toca la primera lletra d\'una paraula',
+      'wordsearch_inst_2': 'Arrossega el dit fins a l\'última lletra de la paraula',
+      'wordsearch_inst_3': 'Les paraules poden estar en horitzontal, vertical o diagonal',
+      'wordsearch_inst_4': 'Les paraules poden estar al derecho o al revés',
+      'wordsearch_inst_5': 'Les paraules trobades es traçaran de la llista',
+      'bonus_word_found': '¡PARAULA EXTRA TROBADA!',
+      'bonus_points': '+50 punts',
+
       // Pausa
       'paused': 'PAUSA',
       'game_paused': 'Joc en Pausa',
@@ -629,18 +787,21 @@ class AppStrings {
       'theme_paises': 'Països',
       'theme_comida': 'Menjar',
       'hangman_speed': 'Velocitat',
-      'hangman_survival': 'Supervivència',
+      'hangman_survival': 'Supervivència\nPRO',
 
       // Buscamines
       'minesweeper_objective': 'Descobreix totes les caselles sense mines. Els números indiquen quantes mines hi ha al voltant.',
       'minesweeper_inst_1': 'Toca una casella per a revelar-la',
       'minesweeper_inst_2': 'Els números indiquen mines adjacents',
-      'minesweeper_inst_3': 'Utilitza banderes per a marcar les mines',
+      'minesweeper_inst_3': 'Mantingues premuda una casella per a posar una bandera',
       'minesweeper_inst_4': 'Si toques una mina, perds',
+      'minesweeper_inst_5': 'També pots utilitzar el botó de bandera per a activar-les sense mantenir premut',
       'control_reveal': 'Revelar',
       'control_reveal_desc': 'Toca una casella per a revelar el seu contingut',
       'control_flag': 'Bandera',
       'control_flag_desc': 'Mantingues premut o activa el mode bandera per a marcar mines',
+      'control_hint': 'Pista',
+      'control_hint_desc': 'Revela una casella segura aleatòria',
     },
   };
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../tema/app_colors.dart';
@@ -123,7 +122,7 @@ class DifficultySelectionScreen extends StatelessWidget {
                             context: context,
                             height: buttonHeight * 0.9,
                             difficulty: 'extremo',
-                            text: 'Extremo',
+                            text: 'Extremo PRO',
                             description: '35x35 - 300 minas',
                             color: const Color(0xFF7B3FF2),
                           ),
@@ -253,12 +252,6 @@ class DifficultySelectionScreen extends StatelessWidget {
       } else if (difficulty == 'dificil') {
         Navigator.push(context, MaterialPageRoute(builder: (context) => BuscaminasGame.dificil));
       } else if (difficulty == 'extremo') {
-        // Check for guest
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (authProvider.isGuest) {
-          _showBuyProDialog(context);
-          return;
-        }
         Navigator.push(context, MaterialPageRoute(builder: (context) => BuscaminasGame.extremo));
       }
     } else if (gameTitle == 'Sopa de Letras') {
@@ -336,77 +329,5 @@ class DifficultySelectionScreen extends StatelessWidget {
         );
       }
     });
-  }
-  void _showBuyProDialog(BuildContext context) {
-    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          contentPadding: const EdgeInsets.all(20),
-          title: Column(
-            children: [
-              const Icon(
-                Icons.star_rounded,
-                size: 60,
-                color: Colors.amber,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'MINIFUN PRO',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${AppStrings.get('get_pro', currentLang)} 4.99€',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                currentLang == 'es' 
-                    ? 'Desbloquea todos los modos expertos, elimina la publicidad y accede a contenido exclusivo.' 
-                    : (currentLang == 'ca' 
-                        ? 'Desbloqueja tots els modes experts, elimina la publicitat i accedeix a contingut exclusiu.' 
-                        : 'Unlock all expert modes, remove ads, and access exclusive content.'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                AppStrings.get('close', currentLang),
-                style: const TextStyle(fontSize: 16),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B3FF2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                // TODO: Implement Purchase flow
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                '4.99€',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

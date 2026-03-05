@@ -39,11 +39,24 @@ class TarjetasJuegos extends StatelessWidget {
             child: imagePath != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(20), // Bordes redondeados
-                    child: Image.asset(
-                      imagePath!, // Muestra la imagen desde assets
-                      fit: BoxFit.cover, // Cubrir todo el espacio
-                      width: double.infinity,
-                      height: double.infinity,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.asset(
+                          imagePath!, // Muestra la imagen desde assets
+                          fit: BoxFit.cover, // Cubrir todo el espacio
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                        // Filtro oscuro para modo oscuro
+                        if (Theme.of(context).brightness == Brightness.dark)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                      ],
                     ),
                   )
                 : Container(

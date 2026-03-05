@@ -26,6 +26,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Estado de envío para evitar doble submit
+  bool _isSubmitting = false;
+
   // Mensajes de error de validación
   String? _usernameError;
   String? _emailError;
@@ -64,6 +67,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
 
   // Función que se ejecuta al presionar Crear Cuenta
   Future<void> _crearCuenta() async {
+    // Evitar doble submit
+    if (_isSubmitting) return;
+
     setState(() {
       // Validar campos
       _usernameError = _validarUsuario(_usernameController.text);
@@ -80,8 +86,11 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       return;
     }
 
+    setState(() => _isSubmitting = true);
+
     // Registrar usuario en la base de datos
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     final success = await authProvider.register(
       username: _usernameController.text.trim(),
@@ -91,17 +100,58 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       password: _passwordController.text,
     );
 
-    if (success && mounted) {
-      // Registro exitoso, navegar a la pantalla principal
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-      );
-    } else if (mounted) {
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (success) {
+      // Limpiar SnackBars anteriores
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      // Si el usuario proporcionó email, mostrar diálogo de verificación
+      final hasEmail = _emailController.text.trim().isNotEmpty;
+
+      if (hasEmail) {
+        // Mostrar diálogo informando sobre la verificación de email
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.email_outlined, color: ColoresApp.moradoLogin),
+                const SizedBox(width: 8),
+                Text(AppStrings.get('verify_email', currentLang)),
+              ],
+            ),
+            content: Text(
+              AppStrings.get('verify_email_desc', currentLang),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  AppStrings.get('understood', currentLang),
+                  style: TextStyle(color: ColoresApp.moradoLogin),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // Navegar a la pantalla principal
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+        );
+      }
+    } else {
       // Mostrar error del provider
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al registrarse'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_register', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );
@@ -410,21 +460,30 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _crearCuenta,
+                      onPressed: _isSubmitting ? null : _crearCuenta,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ColoresApp.negro,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
-                        AppStrings.get('create_account', currentLang),
-                        style: TextStyle(
-                          color: ColoresApp.blanco,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      child: _isSubmitting
+                          ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: ColoresApp.blanco,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              AppStrings.get('create_account', currentLang),
+                              style: TextStyle(
+                                color: ColoresApp.blanco,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                     ),
                   ),
 

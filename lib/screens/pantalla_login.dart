@@ -7,6 +7,7 @@ import '../constants/app_strings.dart';
 import '../utils/validators.dart';
 import 'pantalla_registro.dart';
 import 'pantalla_principal.dart';
+import 'pantalla_recuperar_password.dart';
 
 // Pantalla de inicio de sesión
 class PantallaLogin extends StatefulWidget {
@@ -110,9 +111,10 @@ class _PantallaLoginState extends State<PantallaLogin> {
         MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
       );
     } else if (mounted) {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_login', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );
@@ -122,8 +124,11 @@ class _PantallaLoginState extends State<PantallaLogin> {
   // Entrar como invitado
   Future<void> _jugarComoInvitado() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    final success = await authProvider.continueAsGuest();
+    final success = await authProvider.continueAsGuest(
+      guestName: AppStrings.get('guest_name', currentLang),
+    );
 
     if (success && mounted) {
       Navigator.pushReplacement(
@@ -133,7 +138,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al crear sesión de invitado'),
+          content: Text(authProvider.errorMessage ?? AppStrings.get('error_guest', currentLang)),
           backgroundColor: ColoresApp.rojoError,
         ),
       );
@@ -328,7 +333,14 @@ class _PantallaLoginState extends State<PantallaLogin> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton(
-                          onPressed: () {}, // Lo que hará al pulsarlo
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PantallaRecuperarPassword(),
+                              ),
+                            );
+                          },
                           child: Text(
                             AppStrings.get('forgot_password', currentLang),
                             style: TextStyle(
@@ -421,12 +433,23 @@ class _PantallaLoginState extends State<PantallaLogin> {
                         width: double.infinity,
                         height: 50,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            // Ir directo a la página principal
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-                            );
+                          onPressed: () async {
+                            final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                            final success = await authProvider.loginWithGoogle();
+
+                            if (success && mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+                              );
+                            } else if (mounted && authProvider.errorMessage != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(authProvider.errorMessage!),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           },
                           icon: Icon(
                             Icons.g_mobiledata,

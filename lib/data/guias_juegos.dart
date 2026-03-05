@@ -109,11 +109,6 @@ class GuiasJuegos {
         name: AppStrings.get('control_drag', lang),
         description: AppStrings.get('control_drag_desc', lang),
       ),
-      ControlItem(
-        icon: '🧹',
-        name: AppStrings.get('control_clear', lang),
-        description: AppStrings.get('control_clear_desc', lang),
-      ),
     ];
   }
 
@@ -145,6 +140,11 @@ class GuiasJuegos {
         icon: '🚩',
         name: AppStrings.get('control_flag', lang),
         description: AppStrings.get('control_flag_desc', lang),
+      ),
+      ControlItem(
+        icon: '💡',
+        name: AppStrings.get('control_hint', lang),
+        description: AppStrings.get('control_hint_desc', lang),
       ),
       ControlItem(
         icon: '🔄',

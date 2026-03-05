@@ -49,8 +49,7 @@ class UnauthorizedException extends ApiException {
       : super(message ?? 'No autorizado. Inicia sesión nuevamente.', statusCode: 401);
 
   @override
-  String get userFriendlyMessage =>
-      'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+  String get userFriendlyMessage => message;
 }
 
 /// Token expirado
