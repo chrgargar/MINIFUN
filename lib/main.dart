@@ -22,6 +22,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Ocultar barra de estado y barra de navegación (pantalla completa)
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
   // Inicializar el logger
   appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
 
