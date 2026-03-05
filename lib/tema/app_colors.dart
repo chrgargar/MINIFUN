@@ -43,8 +43,10 @@ class ColoresApp {
 
   // Colores de grises
   static Color gris100 = Colors.grey[100]!;
+  static Color gris200 = Colors.grey[200]!;
   static Color gris300 = Colors.grey[300]!;
   static Color gris400 = Colors.grey[400]!;
+  static Color gris500 = Colors.grey[500]!;
   static Color gris600 = Colors.grey[600]!;
   static Color gris800 = Colors.grey[800]!;
 

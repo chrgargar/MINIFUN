@@ -8,6 +8,7 @@ import '../tema/audio_settings.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/mission_provider.dart';
 import 'pantalla_perfil.dart';
 
 // Pantalla principal
@@ -25,6 +26,10 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
     _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        Provider.of<MissionProvider>(context, listen: false).init(authProvider.currentUser!.id);
+      }
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
     });
   }
@@ -273,39 +278,50 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                             SizedBox(height: missionsHeight * 0.12),
 
                             // Barra de progreso
-                            Container(
-                              width: double.infinity,
-                              height: missionsHeight * 0.35,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  FractionallySizedBox(
-                                    widthFactor: 0.75,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF7B3FF2),
-                                        borderRadius: BorderRadius.circular(23),
-                                      ),
+                            Consumer<MissionProvider>(
+                              builder: (context, missionProvider, child) {
+                                if (missionProvider.isLoading) {
+                                  return SizedBox(
+                                    height: missionsHeight * 0.35,
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                
+                                return Container(
+                                  width: double.infinity,
+                                  height: missionsHeight * 0.35,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                                      width: 2,
                                     ),
                                   ),
-                                  Center(
-                                    child: Text(
-                                      '3/4',
-                                      style: TextStyle(
-                                        color: const Color(0xFF7B3FF2),
-                                        fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
-                                        fontWeight: FontWeight.bold,
+                                  child: Stack(
+                                    children: [
+                                      FractionallySizedBox(
+                                        widthFactor: missionProvider.progressPercentage,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF7B3FF2),
+                                            borderRadius: BorderRadius.circular(23),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      Center(
+                                        child: Text(
+                                          '${missionProvider.completedMissionsCount}/${missionProvider.dailyMissions.length}',
+                                          style: TextStyle(
+                                            color: missionProvider.progressPercentage > 0.5 ? Colors.white : const Color(0xFF7B3FF2),
+                                            fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),

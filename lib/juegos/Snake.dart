@@ -12,6 +12,7 @@ import '../constants/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../providers/mission_provider.dart';
 import '../constants/snake_constants.dart';
+import '../services/audio_service.dart';
 
 class SnakeGame extends StatefulWidget {
   final double speedMultiplier; // Multiplicador de velocidad (1.0 = normal, 1.5 = velocidad, etc.)
