@@ -691,6 +691,7 @@ class _SnakeGameState extends State<SnakeGame> {
                           AppStrings.get('snake_inst_2', currentLang),
                           AppStrings.get('snake_inst_3', currentLang),
                           AppStrings.get('snake_inst_4', currentLang),
+                          AppStrings.get('snake_inst_5', currentLang),
                         ],
                         controles: GuiasJuegos.getSnakeControles(currentLang),
                         onOpen: () { if (!isPaused) togglePause(); },

@@ -59,12 +59,25 @@ class _SudokuGameState extends State<SudokuGame> {
   // Notas de borrador para cada celda (modo notas)
   List<List<List<int>>> pencilNotes = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.generate(ConstantesSudoku.tamanoSudoku, (_) => []));
 
+  // Pistas restantes según dificultad
+  int hintsRemaining = 3;
+
   // Estado de pausa
   bool isPaused = false;
+
+  int _hintsForDifficulty() {
+    switch (widget.difficulty) {
+      case 'facil': return 3;
+      case 'medio': return 2;
+      case 'dificil': return 1;
+      default: return 3;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    hintsRemaining = _hintsForDifficulty();
     _generateSudoku();
     _startTimer();
     _startBackgroundMusic();
@@ -198,8 +211,9 @@ class _SudokuGameState extends State<SudokuGame> {
         // Limpiar notas de borrador
         pencilNotes[selectedRow!][selectedCol!].clear();
 
-        // Si ya había un número, decrementar el contador
-        if (board[selectedRow!][selectedCol!] != 0) {
+        // Si ya había un número correcto, decrementar el contador
+        if (board[selectedRow!][selectedCol!] != 0 &&
+            board[selectedRow!][selectedCol!] == solution[selectedRow!][selectedCol!]) {
           cellsFilled--;
         }
 
@@ -261,11 +275,25 @@ class _SudokuGameState extends State<SudokuGame> {
   }
 
   void _showHint() {
+    if (hintsRemaining <= 0) {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('no_hints_remaining', currentLang)),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     // Buscar una celda vacía y mostrar el número correcto
     for (int i = 0; i < ConstantesSudoku.tamanoSudoku; i++) {
       for (int j = 0; j < ConstantesSudoku.tamanoSudoku; j++) {
         if (!isFixed[i][j] && board[i][j] != solution[i][j]) {
           setState(() {
+            hintsRemaining--;
             board[i][j] = solution[i][j];
             isError[i][j] = false;
             if (board[i][j] != ConstantesSudoku.valorCeldaVacia) {
@@ -274,7 +302,7 @@ class _SudokuGameState extends State<SudokuGame> {
             selectedRow = i;
             selectedCol = j;
           });
-          
+
           // Verificar si ganó después de usar la pista
           if (cellsFilled == totalEmptyCells) {
             gameTimer?.cancel();
@@ -373,6 +401,8 @@ class _SudokuGameState extends State<SudokuGame> {
       timeLeft = ConstantesSudoku.duracionContrarreloj;
       selectedRow = null;
       selectedCol = null;
+      hintsRemaining = _hintsForDifficulty();
+      isError = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.filled(ConstantesSudoku.tamanoSudoku, false));
       pencilNotes = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.generate(ConstantesSudoku.tamanoSudoku, (_) => []));
     });
     _startTimer();
@@ -450,6 +480,11 @@ class _SudokuGameState extends State<SudokuGame> {
                               AppStrings.get('sudoku_inst_2', currentLang),
                               AppStrings.get('sudoku_inst_3', currentLang),
                               AppStrings.get('sudoku_inst_4', currentLang),
+                              AppStrings.get('sudoku_inst_5', currentLang),
+                              AppStrings.get('sudoku_inst_6', currentLang),
+                              AppStrings.get('sudoku_inst_7', currentLang),
+                              AppStrings.get('sudoku_inst_8', currentLang),
+                              AppStrings.get('sudoku_inst_9', currentLang),
                             ],
                             controles: GuiasJuegos.getSudokuControles(currentLang),
                             size: 40,
@@ -734,7 +769,10 @@ class _SudokuGameState extends State<SudokuGame> {
                         children: List.generate(ConstantesSudoku.tamanoSudoku, (index) {
                           int number = index + ConstantesSudoku.valorMinimoCelda;
                           return GestureDetector(
-                            onTap: () => _placeNumber(number),
+                            onTap: () {
+                              setState(() { selectedNumber = number; });
+                              _placeNumber(number);
+                            },
                             child: Container(
                               width: 40,
                               height: 40,
@@ -782,11 +820,37 @@ class _SudokuGameState extends State<SudokuGame> {
                           // Botón Pista (no disponible en modo perfecto)
                           if (!widget.isPerfectMode)
                             ElevatedButton.icon(
-                              onPressed: _showHint,
-                              icon: const Icon(Icons.lightbulb, size: 18),
+                              onPressed: hintsRemaining > 0 ? _showHint : _showHint,
+                              icon: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  const Icon(Icons.lightbulb, size: 18),
+                                  Positioned(
+                                    right: -6,
+                                    top: -6,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                      child: Text(
+                                        '$hintsRemaining',
+                                        style: const TextStyle(
+                                          color: Colors.orange,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               label: Text(AppStrings.get('hint', currentLang)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
+                                backgroundColor: hintsRemaining > 0 ? Colors.orange : Colors.grey,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               ),

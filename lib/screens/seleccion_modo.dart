@@ -371,6 +371,7 @@ class SeleccionModo extends StatelessWidget {
           AppStrings.get('snake_inst_2', currentLang),
           AppStrings.get('snake_inst_3', currentLang),
           AppStrings.get('snake_inst_4', currentLang),
+          AppStrings.get('snake_inst_5', currentLang),
         ];
         controles = GuiasJuegos.getSnakeControles(currentLang);
         break;
@@ -381,6 +382,11 @@ class SeleccionModo extends StatelessWidget {
           AppStrings.get('sudoku_inst_2', currentLang),
           AppStrings.get('sudoku_inst_3', currentLang),
           AppStrings.get('sudoku_inst_4', currentLang),
+          AppStrings.get('sudoku_inst_5', currentLang),
+          AppStrings.get('sudoku_inst_6', currentLang),
+          AppStrings.get('sudoku_inst_7', currentLang),
+          AppStrings.get('sudoku_inst_8', currentLang),
+          AppStrings.get('sudoku_inst_9', currentLang),
         ];
         controles = GuiasJuegos.getSudokuControles(currentLang);
         break;
@@ -391,6 +397,9 @@ class SeleccionModo extends StatelessWidget {
           AppStrings.get('watersort_inst_2', currentLang),
           AppStrings.get('watersort_inst_3', currentLang),
           AppStrings.get('watersort_inst_4', currentLang),
+          AppStrings.get('watersort_inst_5', currentLang),
+          AppStrings.get('watersort_inst_6', currentLang),
+          AppStrings.get('watersort_inst_7', currentLang),
         ];
         controles = GuiasJuegos.getWaterSortControles(currentLang);
         break;
@@ -401,6 +410,7 @@ class SeleccionModo extends StatelessWidget {
           AppStrings.get('minesweeper_inst_2', currentLang),
           AppStrings.get('minesweeper_inst_3', currentLang),
           AppStrings.get('minesweeper_inst_4', currentLang),
+          AppStrings.get('minesweeper_inst_5', currentLang),
         ];
         controles = GuiasJuegos.getBuscaminasControles(currentLang);
         break;

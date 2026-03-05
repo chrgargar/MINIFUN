@@ -98,6 +98,7 @@ class AppStrings {
       'continue_with_google': 'Continuar con Google',
       'terms_intro': 'Al hacer clic en continuar, aceptas nuestros ',
       'terms_of_service': 'Términos de servicio',
+      'terms_and_conditions': 'Términos y Condiciones',
       'and': ' y ',
       'privacy_policy': 'Política de privacidad',
       'error_login': 'Error al iniciar sesión',
@@ -173,6 +174,8 @@ class AppStrings {
       'control_left_desc': 'Desliza hacia la izquierda o presiona el botón izquierda',
       'control_right': 'Derecha',
       'control_right_desc': 'Desliza hacia la derecha o presiona el botón derecha',
+      'control_joystick': 'Joystick Virtual',
+      'control_joystick_desc': 'Usa el D-Pad en la esquina inferior derecha',
 
       // Guías Sudoku
       'sudoku_objective': 'Completar la cuadrícula con números del 1 al 9, asegurándote de que no se repitan en:'
@@ -185,10 +188,17 @@ class AppStrings {
       'sudoku_inst_4': 'Los números negros son fijos y no se pueden modificar',
       'sudoku_inst_5': 'Los números morados son los que tú colocas',
       'sudoku_inst_6': 'Si colocas un número incorrecto en modo lápiz, se marcará en rojo',
+      'sudoku_inst_7': 'Usa el modo "Notas" para escribir números candidatos sin penalización',
+      'sudoku_inst_8': 'Los errores en modo lápiz se marcan en rojo automáticamente',
+      'sudoku_inst_9': 'Usa el botón "Pista" si necesitas ayuda (no disponible en modo perfecto)',
+      'control_select_cell': 'Seleccionar casilla',
+      'control_select_cell_desc': 'Toca una casilla vacía para seleccionarla',
       'control_pencil': 'Lápiz',
       'control_pencil_desc': 'Coloca números que serán validados',
       'control_notes': 'Notas',
       'control_notes_desc': 'Escribe los numeros que creas correctos',
+      'control_place_number': 'Colocar número',
+      'control_place_number_desc': 'Toca un número del 1-9 para colocarlo según el modo activo',
       'control_erase': 'Borrar',
       'control_erase_desc': 'Usa el botón de borrar para corregir errores',
       'control_hint': 'Pista',
@@ -221,6 +231,9 @@ class AppStrings {
       'watersort_inst_2': 'Toca otro tubo para verter el líquido seleccionado',
       'watersort_inst_3': 'Solo puedes verter líquido sobre el mismo color o en un tubo vacío',
       'watersort_inst_4': 'Cada tubo puede contener hasta 4 segmentos de líquido',
+      'watersort_inst_5': 'Completa el nivel cuando cada tubo tenga un solo color',
+      'watersort_inst_6': 'Usa el botón "Deshacer" para corregir un movimiento',
+      'watersort_inst_7': 'Los tubos vacíos son útiles para reorganizar los líquidos',
       'control_select': 'Seleccionar',
       'control_select_desc': 'Toca un tubo con líquido para seleccionarlo',
       'control_pour': 'Verter',
@@ -233,6 +246,7 @@ class AppStrings {
       // Mensajes de error y notificaciones
       'max_flags_reached': '¡Límite máximo de banderas alcanzado!',
       'no_safe_cells_for_hint': 'No hay casillas seguras disponibles para pista',
+      'no_hints_remaining': 'No te quedan más pistas disponibles',
 
       // Pausa
       'paused': 'PAUSA',
@@ -506,6 +520,7 @@ class AppStrings {
       // Error and notification messages
       'max_flags_reached': 'Maximum flag limit reached!',
       'no_safe_cells_for_hint': 'No safe cells available for hint',
+      'no_hints_remaining': 'You have no hints remaining',
 
       // Pause
       'paused': 'PAUSED',
@@ -758,6 +773,7 @@ class AppStrings {
       // Missatges d'error i notificacions
       'max_flags_reached': '¡Límit màxim de banderes alcançat!',
       'no_safe_cells_for_hint': 'No hi ha caselles segures disponibles per a pista',
+      'no_hints_remaining': 'No et queden més pistes disponibles',
 
       // Guies Sopa de Letras
       'wordsearch_objective': 'Troba totes les paraules ocultes en la quadrícula',

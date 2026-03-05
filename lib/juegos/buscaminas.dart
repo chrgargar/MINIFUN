@@ -118,6 +118,12 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     AudioService.playLoop('Sonidos/music_buscaminas.mp3', audioSettings.musicVolume);
   }
 
+  int _hintsForDifficulty() {
+    if (rows <= 10) return 3; // facil
+    if (rows <= 16) return 2; // medio
+    return 1;                 // dificil / extremo
+  }
+
   void _initializeGame() {
     controller = BuscaminasController(rows: rows, cols: cols, mineCount: mineCount);
     controller.createBoard();
@@ -135,7 +141,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     }
     _startTimer();
     isFlaggingMode = false;
-    hintsRemaining = 3;
+    hintsRemaining = _hintsForDifficulty();
   }
 
   void _startTimer() {
@@ -246,7 +252,19 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   }
 
   void _useHint() {
-    if (hintsRemaining <= 0 || gameOver || won || isPaused) return;
+    if (gameOver || won || isPaused) return;
+    if (hintsRemaining <= 0) {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('no_hints_remaining', currentLang)),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     // Find all candidate cells (safe, unrevealed, not flagged)
     List<Point<int>> candidates = [];
@@ -482,8 +500,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                                   AppStrings.get('minesweeper_inst_1', currentLang),
                                   AppStrings.get('minesweeper_inst_2', currentLang),
                                   AppStrings.get('minesweeper_inst_3', currentLang),
-                                  AppStrings.get('minesweeper_inst_5', currentLang),
                                   AppStrings.get('minesweeper_inst_4', currentLang),
+                                  AppStrings.get('minesweeper_inst_5', currentLang),
                                 ],
                                 controles: GuiasJuegos.getBuscaminasControles(currentLang),
                                 size: 40,

@@ -35,6 +35,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   String? _passwordError;
   String? _confirmPasswordError;
 
+  // Valor actual del campo contraseña para los indicadores en tiempo real
+  String _passwordValue = '';
+
   @override
   void dispose() {
     // Para liberar recursos de los objetos
@@ -156,6 +159,29 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         ),
       );
     }
+  }
+
+  Widget _buildRequirement(String label, bool met) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Icon(
+            met ? Icons.check : Icons.close,
+            size: 14,
+            color: met ? Colors.green : ColoresApp.rojoError,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: met ? Colors.green : ColoresApp.rojoError,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -358,12 +384,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           ),
                         ),
                         onChanged: (value) {
-                          // Revalidar la contraseña mientras escribe
-                          if (_passwordError != null) {
-                            setState(() {
-                              _passwordError = _validarPassword(value);
-                            });
-                          }
+                          setState(() {
+                            _passwordValue = value;
+                            _passwordError = _validarPassword(value);
+                          });
                           // También revalidar confirmación si ya fue llenada
                           if (_confirmPasswordController.text.isNotEmpty && _confirmPasswordError != null) {
                             setState(() {
@@ -372,16 +396,19 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           }
                         },
                       ),
-                      // Mostrar mensaje de error si existe
-                      if (_passwordError != null)
+                      // Indicadores de requisitos en tiempo real
+                      if (_passwordValue.isNotEmpty || _passwordError != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 8, left: 12),
-                          child: Text(
-                            _passwordError!,
-                            style: TextStyle(
-                              color: ColoresApp.rojoError,
-                              fontSize: 12,
-                            ),
+                          padding: const EdgeInsets.only(top: 8, left: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildRequirement('Mín. 8 caracteres', _passwordValue.length >= 8),
+                              _buildRequirement('Mayúscula', _passwordValue.contains(RegExp(r'[A-Z]'))),
+                              _buildRequirement('Minúscula', _passwordValue.contains(RegExp(r'[a-z]'))),
+                              _buildRequirement('Número', _passwordValue.contains(RegExp(r'[0-9]'))),
+                              _buildRequirement('Símbolo', _passwordValue.contains(RegExp(r'[!@#$%^&*()\-_=+\[\]{};:,.<>?/\\|`~]'))),
+                            ],
                           ),
                         ),
                     ],

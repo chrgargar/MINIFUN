@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../tema/app_colors.dart';
@@ -8,6 +9,8 @@ import '../utils/validators.dart';
 import 'pantalla_registro.dart';
 import 'pantalla_principal.dart';
 import 'pantalla_recuperar_password.dart';
+import 'pantalla_terminos.dart';
+import 'pantalla_privacidad.dart';
 
 // Pantalla de inicio de sesión
 class PantallaLogin extends StatefulWidget {
@@ -30,9 +33,23 @@ class _PantallaLoginState extends State<PantallaLogin> {
   String? _usernameError;
   String? _passwordError;
 
+  // Reconocedores de gestos para los enlaces de términos
+  late final TapGestureRecognizer _termsRecognizer;
+  late final TapGestureRecognizer _privacyRecognizer;
+
   @override
   void initState() {
     super.initState();
+    _termsRecognizer = TapGestureRecognizer()
+      ..onTap = () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PantallaTerminos()),
+          );
+    _privacyRecognizer = TapGestureRecognizer()
+      ..onTap = () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PantallaPrivacidad()),
+          );
     // Usar addPostFrameCallback para ejecutar después del primer frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkExistingSession();
@@ -74,6 +91,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _termsRecognizer.dispose();
+    _privacyRecognizer.dispose();
     super.dispose();
   }
 
@@ -501,12 +520,20 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             TextSpan(text: AppStrings.get('terms_intro', currentLang)),
                             TextSpan(
                               text: AppStrings.get('terms_of_service', currentLang),
-                              style: TextStyle(color: ColoresApp.azulInfo),
+                              recognizer: _termsRecognizer,
+                              style: TextStyle(
+                                color: ColoresApp.azulInfo,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                             TextSpan(text: AppStrings.get('and', currentLang)),
                             TextSpan(
                               text: AppStrings.get('privacy_policy', currentLang),
-                              style: TextStyle(color: ColoresApp.azulInfo),
+                              recognizer: _privacyRecognizer,
+                              style: TextStyle(
+                                color: ColoresApp.azulInfo,
+                                decoration: TextDecoration.underline,
+                              ),
                             ),
                           ],
                         ),
