@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../providers/auth_provider.dart';
+import '../utils/app_logger.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 
@@ -24,6 +25,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
   @override
   void initState() {
     super.initState();
+    appLogger.setCurrentScreen('PantallaPerfil');
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user != null) {
       _usernameController.text = user.username;

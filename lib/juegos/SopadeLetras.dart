@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
@@ -73,6 +74,16 @@ class _WordSearchGameState extends State<WordSearchGame> {
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('SopaDeLetrasGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isTimeAttackMode) mode = 'time_attack';
+    if (widget.isPerfectMode) mode = 'perfect';
+    appLogger.gameEvent('SopaDeLetras', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode});
+
     _initializeGame();
     _startBackgroundMusic();
     if (widget.isTimeAttackMode) {
@@ -426,6 +437,9 @@ class _WordSearchGameState extends State<WordSearchGame> {
   }
 
   void _gameOver(bool victory) {
+    // Log fin de partida
+    appLogger.gameEvent('SopaDeLetras', 'game_end', data: {'won': victory, 'wordsFound': foundWords.length});
+
     isVictory = victory;
     isGameOver = true;
     gameTimer?.cancel();

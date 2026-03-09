@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/boton_guia.dart';
 import '../data/guias_juegos.dart';
@@ -80,6 +81,16 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('BuscaminasGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isContrareloj) mode = 'time_attack';
+    if (widget.isSinBanderas) mode = 'no_flags';
+    appLogger.gameEvent('Buscaminas', 'game_start', data: {'rows': widget.rows, 'cols': widget.cols, 'mines': widget.mineCount, 'mode': mode});
+
     rows = widget.rows;
     cols = widget.cols;
     mineCount = widget.mineCount;
@@ -307,6 +318,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
   // --- Diálogos y _getNumberColor se mantienen sin cambios ---
   void _showGameOverDialog() {
+    // Log fin de partida (derrota)
+    appLogger.gameEvent('Buscaminas', 'game_end', data: {'won': false, 'time': timeElapsed});
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -344,6 +358,9 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   }
 
   void _showWinDialog() {
+    // Log fin de partida (victoria)
+    appLogger.gameEvent('Buscaminas', 'game_end', data: {'won': true, 'time': timeElapsed});
+
     showDialog(
       context: context,
       barrierDismissible: false,

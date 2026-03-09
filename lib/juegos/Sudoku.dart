@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
@@ -77,6 +78,16 @@ class _SudokuGameState extends State<SudokuGame> {
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('SudokuGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isTimeAttackMode) mode = 'time_attack';
+    if (widget.isPerfectMode) mode = 'perfect';
+    appLogger.gameEvent('Sudoku', 'game_start', data: {'difficulty': widget.difficulty, 'mode': mode});
+
     hintsRemaining = _hintsForDifficulty();
     _generateSudoku();
     _startTimer();
@@ -315,6 +326,9 @@ class _SudokuGameState extends State<SudokuGame> {
   }
 
   void _gameOver(bool won) {
+    // Log fin de partida
+    appLogger.gameEvent('Sudoku', 'game_end', data: {'won': won, 'errors': errorsCount, 'time': elapsedSeconds});
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
     String title = won

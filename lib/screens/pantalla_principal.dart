@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/tarjetas_juegos.dart';
 import '../widgets/boton_ajustes.dart';
 import '../tema/language_provider.dart';
@@ -22,6 +23,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
   @override
   void initState() {
     super.initState();
+    appLogger.setCurrentScreen('PantallaPrincipal');
     _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

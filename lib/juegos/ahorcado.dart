@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
@@ -65,6 +66,16 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('AhorcadoGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isSpeedMode) mode = 'speed';
+    if (widget.isSurvivalMode) mode = 'survival';
+    appLogger.gameEvent('Ahorcado', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode});
+
     _initializeGame();
     _startBackgroundMusic();
   }
@@ -250,6 +261,9 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   }
 
   void _gameOver(bool victory) {
+    // Log fin de partida
+    appLogger.gameEvent('Ahorcado', 'game_end', data: {'won': victory, 'errors': errorsCount, 'word': currentWord});
+
     isVictory = victory;
     isGameOver = true;
     letterTimer?.cancel();

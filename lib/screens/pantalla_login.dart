@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/app_logger.dart';
 import '../tema/app_colors.dart';
 import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
@@ -40,6 +41,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
   @override
   void initState() {
     super.initState();
+    appLogger.setCurrentScreen('PantallaLogin');
     _termsRecognizer = TapGestureRecognizer()
       ..onTap = () => Navigator.push(
             context,

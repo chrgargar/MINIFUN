@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/app_logger.dart';
 import '../widgets/virtual_joystick.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
@@ -72,6 +73,16 @@ class _SnakeGameState extends State<SnakeGame> {
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('SnakeGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isTimeAttackMode) mode = 'time_attack';
+    if (widget.isSurvivalMode) mode = 'survival';
+    appLogger.gameEvent('Snake', 'game_start', data: {'mode': mode, 'speed': widget.speedMultiplier});
+
     startGame();
 
     // Escuchar cambios en la configuración de audio
@@ -247,6 +258,9 @@ class _SnakeGameState extends State<SnakeGame> {
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     AudioService.stopLoop();
+
+    // Log fin de partida
+    appLogger.gameEvent('Snake', 'game_end', data: {'score': score, 'length': snake.length});
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 

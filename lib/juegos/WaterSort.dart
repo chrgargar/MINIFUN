@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/app_logger.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
@@ -58,6 +59,16 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+
+    // Rastrear pantalla actual
+    appLogger.setCurrentScreen('WaterSortGame');
+
+    // Log inicio de partida
+    String mode = 'normal';
+    if (widget.isTimeAttackMode) mode = 'time_attack';
+    if (widget.isMinMovesMode) mode = 'min_moves';
+    appLogger.gameEvent('WaterSort', 'game_start', data: {'difficulty': widget.difficulty, 'mode': mode});
+
     _loadSavedLevel();
     _startBackgroundMusic();
 
@@ -305,6 +316,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showWinDialog() {
+    // Log fin de partida (victoria)
+    appLogger.gameEvent('WaterSort', 'game_end', data: {'won': true, 'level': level, 'moves': moves});
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     _isDialogOpen = true;
 
@@ -348,6 +362,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showGameOverDialog() {
+    // Log fin de partida (derrota)
+    appLogger.gameEvent('WaterSort', 'game_end', data: {'won': false, 'level': level, 'moves': moves});
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     _isDialogOpen = true;
 

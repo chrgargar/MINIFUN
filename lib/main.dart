@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +27,7 @@ void main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // Inicializar el logger
-  appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
+  await appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
 
   // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -34,17 +35,34 @@ void main() async {
     databaseFactory = databaseFactoryFfi;
   }
 
-  runApp(
-    // MultiProvider permite compartir múltiples estados en toda la app
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => SelectorTema()),
-        ChangeNotifierProvider(create: (context) => AudioSettings()),
-        ChangeNotifierProvider(create: (context) => LanguageProvider()),
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
-      ],
-      child: const MyApp(),
-    ),
+  // Configurar captura de errores de Flutter
+  FlutterError.onError = (FlutterErrorDetails details) {
+    // Capturar error en el logger
+    appLogger.captureFlutterError(details);
+    // También mostrar en consola en modo debug
+    FlutterError.presentError(details);
+  };
+
+  // Ejecutar la app dentro de una zona que captura errores no manejados
+  runZonedGuarded(
+    () {
+      runApp(
+        // MultiProvider permite compartir múltiples estados en toda la app
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (context) => SelectorTema()),
+            ChangeNotifierProvider(create: (context) => AudioSettings()),
+            ChangeNotifierProvider(create: (context) => LanguageProvider()),
+            ChangeNotifierProvider(create: (context) => AuthProvider()),
+          ],
+          child: const MyApp(),
+        ),
+      );
+    },
+    (error, stackTrace) {
+      // Capturar cualquier error de Dart no manejado
+      appLogger.captureDartError(error, stackTrace);
+    },
   );
 }
 
@@ -59,6 +77,9 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'MINIFUN', // Nombre de la app
           debugShowCheckedModeBanner: false, // Oculta el banner de "DEBUG" en la esquina
+
+          // Observer para rastrear navegación automáticamente
+          navigatorObservers: [LoggerNavigatorObserver()],
 
           // Tema claro
           theme: ThemeData(

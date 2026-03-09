@@ -22,6 +22,12 @@ class _PantallaRecuperarPasswordState extends State<PantallaRecuperarPassword> {
   bool _emailSent = false;
 
   @override
+  void initState() {
+    super.initState();
+    appLogger.setCurrentScreen('PantallaRecuperarPassword');
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     super.dispose();

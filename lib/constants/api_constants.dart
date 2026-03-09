@@ -44,6 +44,9 @@ class ApiConstants {
   /// Endpoint de health check
   static const String health = '/health';
 
+  /// Endpoint de logs
+  static const String logs = '/logs';
+
   // ==================== TIMEOUTS ====================
 
   /// Timeout para requests normales (en segundos)
