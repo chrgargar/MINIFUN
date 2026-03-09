@@ -11,6 +11,7 @@ import '../juegos/ahorcado.dart';
 import '../juegos/buscaminas.dart';
 import '../constants/sopa_de_letras_constants.dart';
 import '../constants/ahorcado_constants.dart';
+import '../providers/auth_provider.dart';
 
 class DifficultySelectionScreen extends StatelessWidget {
   final String gameTitle;    // Título localizado (solo para mostrar)
@@ -120,13 +121,21 @@ class DifficultySelectionScreen extends StatelessWidget {
                         // Botón Extra (PRO / Experto) si aplica
                         if (gameKey == 'Buscaminas') ...[
                           SizedBox(height: spacing),
-                          _buildDifficultyButton(
-                            context: context,
-                            height: buttonHeight * 0.9,
-                            difficulty: 'extremo',
-                            text: 'Extremo PRO',
-                            description: '35x35 - 300 minas',
-                            color: const Color(0xFF7B3FF2),
+                          Consumer<AuthProvider>(
+                            builder: (context, authProvider, child) {
+                              final hasAccess = authProvider.isAdmin || authProvider.isPremium;
+                              return _buildDifficultyButton(
+                                context: context,
+                                height: buttonHeight * 0.9,
+                                difficulty: 'extremo',
+                                text: 'Extremo PRO',
+                                description: '35x35 - 300 minas',
+                                color: hasAccess
+                                    ? const Color(0xFF7B3FF2)
+                                    : const Color.fromARGB(255, 140, 130, 180), // Morado grisáceo
+                                isLocked: !hasAccess,
+                              );
+                            },
                           ),
                         ],
                       ],
@@ -168,9 +177,23 @@ class DifficultySelectionScreen extends StatelessWidget {
     required String text,
     required String description,
     required Color color,
+    bool isLocked = false,
   }) {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
     return GestureDetector(
-      onTap: () => _onDifficultySelected(context, difficulty),
+      onTap: () {
+        if (isLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppStrings.get('pro_mode_locked', currentLang)),
+              backgroundColor: const Color(0xFF7B3FF2),
+            ),
+          );
+          return;
+        }
+        _onDifficultySelected(context, difficulty);
+      },
       child: Container(
         height: height,
         decoration: BoxDecoration(
@@ -196,28 +219,30 @@ class DifficultySelectionScreen extends StatelessWidget {
                   children: [
                     Text(
                       text,
-                                            textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: height * 0.28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isLocked ? Colors.grey[300] : Colors.white,
                       ),
                     ),
                     if (description.isNotEmpty)
                       Text(
                         description,
-                                                textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: height * 0.18,
-                          color: Colors.white.withOpacity(0.9),
+                          color: isLocked
+                              ? Colors.grey[400]!.withOpacity(0.9)
+                              : Colors.white.withOpacity(0.9),
                         ),
                       ),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white,
+              Icon(
+                isLocked ? Icons.lock : Icons.arrow_forward_ios,
+                color: isLocked ? Colors.grey[300] : Colors.white,
                 size: 20,
               ),
             ],

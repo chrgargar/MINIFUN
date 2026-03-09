@@ -30,6 +30,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get isGuest => _currentUser?.isGuest ?? false;
   bool get isPremium => _currentUser?.isPremium ?? false;
+  bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isGoogleUser => _currentUser?.cloudId != null;
 
   /// Inicializar y verificar si hay una sesión guardada
@@ -159,6 +160,7 @@ class AuthProvider extends ChangeNotifier {
       passwordHash: '',
       isGuest: false,
       isPremium: userData['is_premium'] as bool? ?? false,
+      isAdmin: userData['is_admin'] as bool? ?? false,
       createdAt: DateTime.parse(userData['created_at'] as String),
       lastLogin: DateTime.parse(userData['last_login'] as String),
       streakDays: userData['streak_days'] as int? ?? 0,

@@ -86,11 +86,19 @@ class AppLogger {
   }
 
   /// Actualiza el idioma actual
-  void setLanguage(String language) {
-    if (_currentLanguage != language) {
-      final oldLanguage = _currentLanguage;
-      _currentLanguage = language;
-      info('Idioma cambiado', null, null, {'from': oldLanguage, 'to': language});
+  /// [isManualChange] indica si el usuario cambió el idioma manualmente (true) o es inicialización (false)
+  void setLanguage(String language, {bool isManualChange = false}) {
+    final oldLanguage = _currentLanguage;
+    _currentLanguage = language;
+
+    if (isManualChange) {
+      // Cambio manual del usuario
+      if (oldLanguage != language) {
+        info('Idioma cambiado', null, null, {'from': oldLanguage, 'to': language});
+      }
+    } else {
+      // Inicialización - siempre loguear el idioma inicial
+      info('Idioma inicial', null, null, {'language': language});
     }
   }
 

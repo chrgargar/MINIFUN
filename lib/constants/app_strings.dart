@@ -123,6 +123,7 @@ class AppStrings {
       'missions': 'MISIONES',
       'get_pro': 'Adquiere MINIFUN PRO por',
       'pro_price': '€4.99',
+      'pro_mode_locked': 'Obtén MINIFUN PRO para acceder a esta modalidad',
 
       // Nombres de juegos
       'game_snake': 'Snake',
@@ -417,6 +418,7 @@ class AppStrings {
       'missions': 'MISSIONS',
       'get_pro': 'Get MINIFUN PRO for',
       'pro_price': '€4.99',
+      'pro_mode_locked': 'Get MINIFUN PRO to access this mode',
 
       // Game names
       'game_snake': 'Snake',
@@ -708,6 +710,7 @@ class AppStrings {
       'missions': 'MISSIONS',
       'get_pro': 'Adquirix MINIFUN PRO per',
       'pro_price': '€4.99',
+      'pro_mode_locked': 'Obtín MINIFUN PRO per accedir a aquesta modalitat',
 
       // Noms de jocs
       'game_snake': 'Snake',

@@ -99,6 +99,19 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
         title: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
             final username = authProvider.currentUser?.username;
+            final isAdmin = authProvider.isAdmin;
+            final isPremium = authProvider.isPremium;
+
+            // Color del nombre según rol
+            Color usernameColor;
+            if (isAdmin) {
+              usernameColor = const Color(0xFFFF5555); // Rojo admin
+            } else if (isPremium) {
+              usernameColor = const Color(0xFFDDD605); // Amarillo premium
+            } else {
+              usernameColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+            }
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -115,7 +128,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                   Text(
                     username,
                     style: TextStyle(
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      color: usernameColor,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -167,58 +180,73 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                   padding: EdgeInsets.all(gridPadding),
                   child: Column(
                     children: [
-                      // Banner MINIFUN PRO
-                      SizedBox(
-                        height: bannerHeight,
-                        child: Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: constraints.maxWidth * 0.04,
-                            vertical: bannerHeight * 0.15,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color.fromARGB(255, 180, 169, 69) // Amarillo oscurecido
-                                : const Color.fromARGB(255, 255, 239, 98),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  AppStrings.get('get_pro', currentLang),
-                                  style: TextStyle(
-                                    fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
-                                    fontWeight: FontWeight.w500,
-                                    color: isDark ? Colors.white : Colors.black,
-                                  ),
-                                ),
+                      // Banner MINIFUN PRO (oculto para admins y premium)
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          if (authProvider.isAdmin || authProvider.isPremium) {
+                            return const SizedBox.shrink();
+                          }
+                          return SizedBox(
+                            height: bannerHeight,
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: constraints.maxWidth * 0.04,
+                                vertical: bannerHeight * 0.15,
                               ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: bannerHeight * 0.2,
-                                  vertical: bannerHeight * 0.1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7B3FF2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  AppStrings.get('pro_price', currentLang),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
-                                  ),
-                                ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color.fromARGB(255, 180, 169, 69) // Amarillo oscurecido
+                                    : const Color.fromARGB(255, 255, 239, 98),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ],
-                          ),
-                        ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      AppStrings.get('get_pro', currentLang),
+                                      style: TextStyle(
+                                        fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: bannerHeight * 0.2,
+                                      vertical: bannerHeight * 0.1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF7B3FF2),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      AppStrings.get('pro_price', currentLang),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
 
-                      SizedBox(height: cellSpacing),
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          if (authProvider.isAdmin || authProvider.isPremium) {
+                            // Mitad del espacio arriba para centrar
+                            return SizedBox(height: (bannerHeight + cellSpacing) / 2);
+                          }
+                          return SizedBox(height: cellSpacing);
+                        },
+                      ),
 
                       // Grid de juegos
                       SizedBox(
@@ -242,6 +270,16 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                       ),
 
                       SizedBox(height: cellSpacing),
+
+                      // Espacio extra abajo para centrar cuando no hay banner
+                      Consumer<AuthProvider>(
+                        builder: (context, authProvider, child) {
+                          if (authProvider.isAdmin || authProvider.isPremium) {
+                            return SizedBox(height: (bannerHeight + cellSpacing) / 2);
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
 
                       // Sección de misiones
                       SizedBox(

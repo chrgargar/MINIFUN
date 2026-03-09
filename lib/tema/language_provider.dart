@@ -48,8 +48,8 @@ class LanguageProvider extends ChangeNotifier {
       _currentLanguage = languageCode;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('language', languageCode);
-      // Actualizar logger con el nuevo idioma
-      appLogger.setLanguage(languageCode);
+      // Actualizar logger con el nuevo idioma (cambio manual del usuario)
+      appLogger.setLanguage(languageCode, isManualChange: true);
       notifyListeners();
     }
   }

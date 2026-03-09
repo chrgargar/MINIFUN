@@ -14,6 +14,7 @@ import '../tema/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../constants/sopa_de_letras_constants.dart';
 import '../constants/ahorcado_constants.dart';
+import '../providers/auth_provider.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatelessWidget {
@@ -153,54 +154,70 @@ class SeleccionModo extends StatelessWidget {
                         SizedBox(height: spacing),
 
                         // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.)
-                        _buildModeButton(
-                          height: buttonHeight,
-                          icon: gameKey == 'Snake' ? '💀' : (gameKey == 'Buscaminas' ? '💣' : (gameKey == 'WaterSort' ? '🧪' : (gameKey == 'Ahorcado' ? '💀' : '💎'))),
-                          text: gameKey == 'Snake'
-                              ? AppStrings.get('survival_pro', currentLang)
-                              : (gameKey == 'Buscaminas'
-                                  ? 'Experto'
-                                  : (gameKey == 'WaterSort'
-                                      ? AppStrings.get('hard_pro', currentLang)
-                                      : (gameKey == 'Ahorcado'
-                                          ? AppStrings.get('hangman_survival', currentLang)
-                                          : AppStrings.get('perfect_pro', currentLang)))),
-                          color: const Color.fromARGB(255, 255, 239, 98),
-                          textColor: Colors.black,
-                          onTap: () {
-                            if (gameKey == 'Snake') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SnakeGame(isSurvivalMode: true),
-                                ),
-                              );
-                            } else if (gameKey == 'Sudoku') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const SudokuGame(isPerfectMode: true),
-                                ),
-                              );
-                            } else if (gameKey == 'WaterSort') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const WaterSortGame(difficulty: 'dificil'),
-                                ),
-                              );
-                            } else if (gameKey == 'Buscaminas') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BuscaminasGame.dificil,
-                                ),
-                              );
-                            } else if (gameKey == 'Sopa de Letras') {
-                              _showThemeSelectionDialog(context, 'dificil');
-                            } else if (gameKey == 'Ahorcado') {
-                              _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
-                            }
+                        Consumer<AuthProvider>(
+                          builder: (context, authProvider, child) {
+                            final hasAccess = authProvider.isAdmin || authProvider.isPremium;
+                            return _buildModeButton(
+                              height: buttonHeight,
+                              icon: gameKey == 'Snake' ? '💀' : (gameKey == 'Buscaminas' ? '💣' : (gameKey == 'WaterSort' ? '🧪' : (gameKey == 'Ahorcado' ? '💀' : '💎'))),
+                              text: gameKey == 'Snake'
+                                  ? AppStrings.get('survival_pro', currentLang)
+                                  : (gameKey == 'Buscaminas'
+                                      ? 'Experto'
+                                      : (gameKey == 'WaterSort'
+                                          ? AppStrings.get('hard_pro', currentLang)
+                                          : (gameKey == 'Ahorcado'
+                                              ? AppStrings.get('hangman_survival', currentLang)
+                                              : AppStrings.get('perfect_pro', currentLang)))),
+                              color: hasAccess
+                                  ? const Color.fromARGB(255, 255, 239, 98)
+                                  : const Color.fromARGB(255, 180, 175, 130), // Amarillo grisáceo
+                              textColor: hasAccess ? Colors.black : Colors.grey[700]!,
+                              onTap: () {
+                                if (!hasAccess) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(AppStrings.get('pro_mode_locked', currentLang)),
+                                      backgroundColor: const Color(0xFF7B3FF2),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (gameKey == 'Snake') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SnakeGame(isSurvivalMode: true),
+                                    ),
+                                  );
+                                } else if (gameKey == 'Sudoku') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SudokuGame(isPerfectMode: true),
+                                    ),
+                                  );
+                                } else if (gameKey == 'WaterSort') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const WaterSortGame(difficulty: 'dificil'),
+                                    ),
+                                  );
+                                } else if (gameKey == 'Buscaminas') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BuscaminasGame.dificil,
+                                    ),
+                                  );
+                                } else if (gameKey == 'Sopa de Letras') {
+                                  _showThemeSelectionDialog(context, 'dificil', isPerfectMode: true);
+                                } else if (gameKey == 'Ahorcado') {
+                                  _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
+                                }
+                              },
+                            );
                           },
                         ),
 
@@ -256,18 +273,34 @@ class SeleccionModo extends StatelessWidget {
                             },
                           ),
                           SizedBox(height: spacing),
-                          _buildModeButton(
-                            height: buttonHeight,
-                            icon: '🏳️',
-                            text: 'Sin Banderas',
-                            color: const Color.fromARGB(255, 255, 239, 98),
-                            textColor: Colors.black,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const BuscaminasGame(isSinBanderas: true),
-                                ),
+                          Consumer<AuthProvider>(
+                            builder: (context, authProvider, child) {
+                              final hasAccess = authProvider.isAdmin || authProvider.isPremium;
+                              return _buildModeButton(
+                                height: buttonHeight,
+                                icon: '🏳️',
+                                text: 'Sin Banderas',
+                                color: hasAccess
+                                    ? const Color.fromARGB(255, 255, 239, 98)
+                                    : const Color.fromARGB(255, 180, 175, 130),
+                                textColor: hasAccess ? Colors.black : Colors.grey[700]!,
+                                onTap: () {
+                                  if (!hasAccess) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(AppStrings.get('pro_mode_locked', currentLang)),
+                                        backgroundColor: const Color(0xFF7B3FF2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const BuscaminasGame(isSinBanderas: true),
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),

@@ -6,6 +6,7 @@ class UserModel {
   final String passwordHash;
   final bool isGuest;
   final bool isPremium;
+  final bool isAdmin;
   final DateTime createdAt;
   final DateTime lastLogin;
   final int streakDays;
@@ -23,6 +24,7 @@ class UserModel {
     required this.passwordHash,
     this.isGuest = false,
     this.isPremium = false,
+    this.isAdmin = false,
     required this.createdAt,
     required this.lastLogin,
     this.streakDays = 0,
@@ -41,6 +43,7 @@ class UserModel {
       passwordHash: map['password_hash'] as String,
       isGuest: map['is_guest'] == 1,
       isPremium: map['is_premium'] == 1,
+      isAdmin: map['is_admin'] == 1,
       createdAt: DateTime.parse(map['created_at'] as String),
       lastLogin: DateTime.parse(map['last_login'] as String),
       streakDays: map['streak_days'] as int? ?? 0,
@@ -62,6 +65,7 @@ class UserModel {
       'password_hash': passwordHash,
       'is_guest': isGuest ? 1 : 0,
       'is_premium': isPremium ? 1 : 0,
+      'is_admin': isAdmin ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'last_login': lastLogin.toIso8601String(),
       'streak_days': streakDays,
@@ -80,6 +84,7 @@ class UserModel {
     String? passwordHash,
     bool? isGuest,
     bool? isPremium,
+    bool? isAdmin,
     DateTime? createdAt,
     DateTime? lastLogin,
     int? streakDays,
@@ -96,6 +101,7 @@ class UserModel {
       passwordHash: passwordHash ?? this.passwordHash,
       isGuest: isGuest ?? this.isGuest,
       isPremium: isPremium ?? this.isPremium,
+      isAdmin: isAdmin ?? this.isAdmin,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
       streakDays: streakDays ?? this.streakDays,
@@ -120,6 +126,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, username: $username, email: $email, isGuest: $isGuest, isPremium: $isPremium)';
+    return 'UserModel(id: $id, username: $username, email: $email, isGuest: $isGuest, isPremium: $isPremium, isAdmin: $isAdmin)';
   }
 }
