@@ -55,7 +55,7 @@ class AuthProvider extends ChangeNotifier {
             final userData = response['data']['user'] as Map<String, dynamic>;
 
             _currentUser = await _createUserFromServerData(userData);
-            appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id});
+            appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
           } else {
             appLogger.warning('Token inválido, limpiando sesión');
             await _clearSession(prefs);
@@ -90,7 +90,7 @@ class AuthProvider extends ChangeNotifier {
             cloudId: googleUserId,
             avatarBase64: googleAvatar,
           );
-          appLogger.authEvent('Sesión de Google restaurada', metadata: {'userId': _currentUser!.id});
+          appLogger.authEvent('Sesión de Google restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
         }
       }
     } catch (e) {
@@ -248,7 +248,7 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
         await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
 
-        appLogger.authEvent('Registro exitoso', metadata: {'userId': _currentUser!.id});
+        appLogger.authEvent('Registro exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
         _isLoading = false;
         notifyListeners();
@@ -308,7 +308,7 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
         await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
 
-        appLogger.authEvent('Login exitoso', metadata: {'userId': _currentUser!.id});
+        appLogger.authEvent('Login exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
         _isLoading = false;
         notifyListeners();
@@ -646,7 +646,7 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
       }
 
-      appLogger.authEvent('Login con Google exitoso', metadata: {'userId': _currentUser!.id});
+      appLogger.authEvent('Login con Google exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
       _isLoading = false;
       notifyListeners();
