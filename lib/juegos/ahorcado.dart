@@ -2,17 +2,19 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/app_logger.dart';
-import '../widgets/game_control_buttons.dart';
+import '../services/app_logger.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
-import '../data/guias_juegos.dart';
-import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../constants/guias_juegos.dart';
+import '../config/audio_settings.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/ahorcado_constants.dart';
+import '../providers/mission_provider.dart';
+import '../widgets/game_over_dialog.dart';
+import '../widgets/hint_button.dart';
+import '../widgets/game_header.dart';
 
 class AhorcadoGame extends StatefulWidget {
   final String difficulty; // 'facil', 'medio', 'dificil'
@@ -57,6 +59,12 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   // Lista de palabras usadas para no repetir
   List<String> usedWords = [];
 
+  // Sistema de pistas
+  late List<String> currentHints;
+  late int hintsAvailable;
+  int usedHints = 0;
+  String? revealedHint;
+
   // Alfabeto español
   static const List<String> alphabet = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -89,6 +97,9 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     guessedLetters = {};
     errorsCount = 0;
     usedWords = [];
+    usedHints = 0;
+    revealedHint = null;
+    hintsAvailable = ConstantesAhorcado.pistasPorDificultad[widget.difficulty] ?? 2;
     lives = widget.isSurvivalMode ? ConstantesAhorcado.vidasSupervivencia : ConstantesAhorcado.maxIntentos;
     letterTimeLeft = widget.isSpeedMode
         ? ConstantesAhorcado.tiempoPorLetraVelocidad
@@ -122,6 +133,12 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     usedWords.add(currentWord);
     guessedLetters = {};
     errorsCount = 0;
+
+    // Cargar pistas para la palabra actual
+    currentHints = ConstantesAhorcado.pistas[currentWord] ?? ['Sin pista disponible', 'Sin pista disponible', 'Sin pista disponible'];
+    usedHints = 0;
+    revealedHint = null;
+    hintsAvailable = ConstantesAhorcado.pistasPorDificultad[widget.difficulty] ?? 2;
 
     // Reiniciar timer de letra si está en modo velocidad
     if (widget.isSpeedMode) {
@@ -254,6 +271,11 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   }
 
   void _victory() {
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'ahorcado', activityType: MissionType.playGames);
+    missionProvider.notifyActivity(gameType: 'ahorcado', activityType: MissionType.completeLevels);
+
     isVictory = true;
     isGameOver = true;
     letterTimer?.cancel();
@@ -263,6 +285,13 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   void _gameOver(bool victory) {
     // Log fin de partida
     appLogger.gameEvent('Ahorcado', 'game_end', data: {'won': victory, 'errors': errorsCount, 'word': currentWord});
+
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'ahorcado', activityType: MissionType.playGames);
+    if (victory) {
+      missionProvider.notifyActivity(gameType: 'ahorcado', activityType: MissionType.completeLevels);
+    }
 
     isVictory = victory;
     isGameOver = true;
@@ -274,6 +303,50 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     setState(() {
       isPaused = !isPaused;
     });
+  }
+
+  void _showHint() {
+    if (usedHints >= hintsAvailable || usedHints >= currentHints.length) {
+      // No quedan pistas
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('no_hints_left', currentLang)),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      revealedHint = currentHints[usedHints];
+      usedHints++;
+    });
+
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.lightbulb, color: Colors.amber),
+            const SizedBox(width: 8),
+            Text(AppStrings.get('hint', currentLang)),
+          ],
+        ),
+        content: Text(
+          revealedHint!,
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppStrings.get('understood', currentLang)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _restartGame() {
@@ -351,79 +424,40 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
     final sw = MediaQuery.of(context).size.width;
     final btnSize = (sw * 0.09).clamp(28.0, 40.0);
-    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
-    final hPad = (sw * 0.028).clamp(8.0, 14.0);
-    final gap = (sw * 0.016).clamp(4.0, 8.0);
 
-    String title = 'Ahorcado';
-    if (widget.isSpeedMode) title = 'Ahorcado - Velocidad';
-    if (widget.isSurvivalMode) title = 'Ahorcado - Supervivencia';
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(Icons.arrow_back, size: btnSize * 0.6),
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(minWidth: btnSize, minHeight: btnSize),
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          GameControlBar(
-            isPaused: isPaused,
-            onPausePressed: _togglePause,
-            onRestartPressed: _restartGame,
-            buttonSize: btnSize,
-            spacing: gap,
-          ),
-          SizedBox(width: gap),
-          BotonGuia(
-            gameTitle: 'Ahorcado',
-            gameImagePath: 'assets/imagenes/ahorcado.png',
-            objetivo: AppStrings.get('hangman_objective', currentLang),
-            instrucciones: [
-              AppStrings.get('hangman_inst_1', currentLang),
-              AppStrings.get('hangman_inst_2', currentLang),
-              AppStrings.get('hangman_inst_3', currentLang),
-              AppStrings.get('hangman_inst_4', currentLang),
-              AppStrings.get('hangman_inst_5', currentLang),
-            ],
-            controles: GuiasJuegos.getHangmanControles(currentLang),
-            size: btnSize,
-            onOpen: () { if (!isPaused) _togglePause(); },
-            onClose: () { if (isPaused) _togglePause(); },
-          ),
-          SizedBox(width: gap),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: btnSize,
-              height: btnSize,
-              decoration: BoxDecoration(
-                color: ColoresApp.rojoError,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.close, color: ColoresApp.blanco, size: btnSize * 0.55),
-            ),
-          ),
+    return GameHeader(
+      stats: [],
+      isPaused: isPaused,
+      onPause: _togglePause,
+      onRestart: _restartGame,
+      onClose: () => Navigator.pop(context),
+      hintButton: HintButton(
+        hintsRemaining: hintsAvailable - usedHints,
+        onTap: isGameOver ? null : _showHint,
+        size: btnSize,
+      ),
+      guideButton: BotonGuia(
+        gameTitle: 'Ahorcado',
+        gameImagePath: 'assets/imagenes/ahorcado.png',
+        objetivo: AppStrings.get('hangman_objective', currentLang),
+        instrucciones: [
+          AppStrings.get('hangman_inst_1', currentLang),
+          AppStrings.get('hangman_inst_2', currentLang),
+          AppStrings.get('hangman_inst_3', currentLang),
+          AppStrings.get('hangman_inst_4', currentLang),
+          AppStrings.get('hangman_inst_5', currentLang),
         ],
+        controles: GuiasJuegos.getHangmanControles(currentLang),
+        size: btnSize,
+        onOpen: () { if (!isPaused) _togglePause(); },
+        onClose: () { if (isPaused) _togglePause(); },
       ),
     );
   }
 
   Widget _buildInfoBar(bool isDark) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -431,17 +465,32 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
         children: [
           // Puntuación
           Text(
-            'Puntos: $score',
+            '${AppStrings.get('score', currentLang)}: $score',
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.white : Colors.black,
             ),
           ),
 
+          // Indicador de pistas
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline, color: Colors.amber, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                '${hintsAvailable - usedHints}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+
           // Palabras completadas (en modos especiales)
           if (widget.isSurvivalMode || widget.isSpeedMode)
             Text(
-              'Palabras: $wordsCompleted',
+              '${AppStrings.get('words_completed', currentLang)}: $wordsCompleted',
               style: TextStyle(
                 fontSize: 14,
                 color: isDark ? Colors.white : Colors.black,
@@ -594,48 +643,32 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
 
   Widget _buildGameOverOverlay() {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final modeStats = (widget.isSurvivalMode || widget.isSpeedMode)
+        ? '\n${AppStrings.get('words_completed', currentLang)}: $wordsCompleted'
+        : '';
+    final message = isVictory
+        ? '${AppStrings.get('score', currentLang)}: $score$modeStats'
+        : '${AppStrings.get('the_word_was', currentLang)}: $currentWord\n${AppStrings.get('score', currentLang)}: $score$modeStats';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
+      GameOverDialog.show(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          backgroundColor: ColoresApp.blanco,
-          title: Text(
-            isVictory ? "🎉 ${AppStrings.get('congratulations', currentLang)}" : "💀 ${AppStrings.get('game_over', currentLang)}",
-            style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            isVictory
-                ? "${AppStrings.get('score', currentLang)}: $score${(widget.isSurvivalMode || widget.isSpeedMode) ? '\n${AppStrings.get('words_completed', currentLang)}: $wordsCompleted' : ''}"
-                : "${AppStrings.get('the_word_was', currentLang)}: $currentWord\n${AppStrings.get('score', currentLang)}: $score${(widget.isSurvivalMode || widget.isSpeedMode) ? '\n${AppStrings.get('words_completed', currentLang)}: $wordsCompleted' : ''}",
-            style: TextStyle(color: ColoresApp.negro),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _restartGame();
-              },
-              child: Text(AppStrings.get('play_again', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-            ),
-          ],
-        ),
+        isVictory: isVictory,
+        message: message,
+        onRestart: () {
+          Navigator.pop(context);
+          _restartGame();
+        },
+        onExit: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
       );
     });
 
     return Container(
       color: Colors.black54,
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

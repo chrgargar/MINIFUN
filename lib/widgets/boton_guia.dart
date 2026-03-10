@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../tema/app_colors.dart';
+import '../config/app_colors.dart';
 import 'guia_juego_dialog.dart';
 
 /// Botón circular reutilizable para mostrar la guía del juego

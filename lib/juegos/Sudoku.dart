@@ -2,17 +2,20 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/app_logger.dart';
-import '../widgets/game_control_buttons.dart';
+import '../services/app_logger.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
-import '../data/guias_juegos.dart';
-import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../constants/guias_juegos.dart';
+import '../config/audio_settings.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/sudoku_constants.dart';
+import '../providers/mission_provider.dart';
+import '../widgets/game_over_dialog.dart';
+import '../widgets/game_stat_badge.dart';
+import '../widgets/game_header.dart';
 
 class SudokuGame extends StatefulWidget {
   final String difficulty; // 'facil', 'medio', 'dificil'
@@ -329,11 +332,15 @@ class _SudokuGameState extends State<SudokuGame> {
     // Log fin de partida
     appLogger.gameEvent('Sudoku', 'game_end', data: {'won': won, 'errors': errorsCount, 'time': elapsedSeconds});
 
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'sudoku', activityType: MissionType.playGames);
+    if (won) {
+      missionProvider.notifyActivity(gameType: 'sudoku', activityType: MissionType.completeLevels);
+    }
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    String title = won
-        ? AppStrings.get('congratulations', currentLang)
-        : AppStrings.get('game_over', currentLang);
     String message = won
         ? '${AppStrings.get('completed_in', currentLang)} ${_formatTime(elapsedSeconds)}'
         : widget.isPerfectMode
@@ -342,48 +349,27 @@ class _SudokuGameState extends State<SudokuGame> {
                 ? AppStrings.get('time_up', currentLang)
                 : AppStrings.get('try_again', currentLang);
 
-    showDialog(
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.blanco,
-        title: Text(
-          won ? "🎉 $title" : "💀 $title",
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          message,
-          style: TextStyle(color: ColoresApp.negro),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Cerrar diálogo
-              setState(() {
-                _generateSudoku();
-                cellsFilled = 0;
-                errorsCount = 0;
-                elapsedSeconds = 0;
-                timeLeft = ConstantesSudoku.duracionContrarreloj;
-                selectedRow = null;
-                selectedCol = null;
-              });
-              _startTimer();
-            },
-            child: Text(
-              won ? AppStrings.get('play_again', currentLang) : AppStrings.get('retry', currentLang),
-              style: TextStyle(color: ColoresApp.moradoPrincipal),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Cerrar diálogo
-              Navigator.pop(context); // Volver al menú
-            },
-            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: won,
+      message: message,
+      onRestart: () {
+        Navigator.pop(context);
+        setState(() {
+          _generateSudoku();
+          cellsFilled = 0;
+          errorsCount = 0;
+          elapsedSeconds = 0;
+          timeLeft = ConstantesSudoku.duracionContrarreloj;
+          selectedRow = null;
+          selectedCol = null;
+        });
+        _startTimer();
+      },
+      onExit: () {
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -461,124 +447,357 @@ class _SudokuGameState extends State<SudokuGame> {
     final hPad = (sw * 0.028).clamp(8.0, 14.0);
     final gap = (sw * 0.016).clamp(4.0, 8.0);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
-      child: Row(
-        children: [
-          // Tiempo
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+    return GameHeader(
+      stats: [
+        GameStatBadge(
+          text: widget.isTimeAttackMode
+              ? _formatTime(timeLeft)
+              : _formatTime(elapsedSeconds),
+          icon: widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
+          isWarning: widget.isTimeAttackMode && timeLeft <= 30,
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
+        ),
+        GameStatBadge(
+          text: '$cellsFilled/$totalEmptyCells',
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
+        ),
+      ],
+      isPaused: isPaused,
+      onPause: _togglePause,
+      onRestart: _restartGame,
+      onClose: () => Navigator.pop(context),
+      guideButton: BotonGuia(
+        gameTitle: 'Sudoku',
+        gameImagePath: 'assets/imagenes/sudoku.png',
+        objetivo: AppStrings.get('sudoku_objective', currentLang),
+        instrucciones: [
+          AppStrings.get('sudoku_inst_1', currentLang),
+          AppStrings.get('sudoku_inst_2', currentLang),
+          AppStrings.get('sudoku_inst_3', currentLang),
+          AppStrings.get('sudoku_inst_4', currentLang),
+          AppStrings.get('sudoku_inst_5', currentLang),
+          AppStrings.get('sudoku_inst_6', currentLang),
+          AppStrings.get('sudoku_inst_7', currentLang),
+          AppStrings.get('sudoku_inst_8', currentLang),
+          AppStrings.get('sudoku_inst_9', currentLang),
+        ],
+        controles: GuiasJuegos.getSudokuControles(currentLang),
+        size: btnSize,
+        onOpen: () { if (!isPaused) _togglePause(); },
+        onClose: () { if (isPaused) _togglePause(); },
+      ),
+    );
+  }
+
+  Widget _buildBoard(BuildContext context) {
+    return Expanded(
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: widget.isTimeAttackMode && timeLeft <= 30
-                  ? ColoresApp.rojoError.withOpacity(0.2)
-                  : ColoresApp.moradoPrincipal.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: ConstantesSudoku.tamanoSudoku,
+              ),
+              itemCount: ConstantesSudoku.tamanoSudoku * ConstantesSudoku.tamanoSudoku,
+              itemBuilder: (context, index) {
+                int row = index ~/ ConstantesSudoku.tamanoSudoku;
+                int col = index % ConstantesSudoku.tamanoSudoku;
+                return _buildCell(row, col);
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCell(int row, int col) {
+    bool isSelected = selectedRow == row && selectedCol == col;
+    bool isSameRow = selectedRow == row;
+    bool isSameCol = selectedCol == col;
+    bool isSameBox = selectedRow != null &&
+        selectedCol != null &&
+        (selectedRow! ~/ ConstantesSudoku.tamanoCaja) == (row ~/ ConstantesSudoku.tamanoCaja) &&
+        (selectedCol! ~/ ConstantesSudoku.tamanoCaja) == (col ~/ ConstantesSudoku.tamanoCaja);
+
+    Color backgroundColor = ColoresApp.blanco;
+    if (isError[row][col]) {
+      backgroundColor = ColoresApp.colorCeldaError;
+    } else if (isSelected) {
+      backgroundColor = ColoresApp.colorCeldaSeleccionada;
+    } else if (isSameRow || isSameCol || isSameBox) {
+      backgroundColor = ColoresApp.colorCeldaRelacionada;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedRow = row;
+          selectedCol = col;
+        });
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border(
+            top: BorderSide(
+              color: row % 3 == 0 ? Colors.black : Colors.grey[400]!,
+              width: row % 3 == 0 ? 2 : 0.5,
+            ),
+            left: BorderSide(
+              color: col % 3 == 0 ? Colors.black : Colors.grey[400]!,
+              width: col % 3 == 0 ? 2 : 0.5,
+            ),
+            right: BorderSide(
+              color: col == 8 ? Colors.black : Colors.transparent,
+              width: col == 8 ? 2 : 0,
+            ),
+            bottom: BorderSide(
+              color: row == 8 ? Colors.black : Colors.transparent,
+              width: row == 8 ? 2 : 0,
+            ),
+          ),
+        ),
+        child: Center(
+          child: board[row][col] == 0
+              ? (pencilNotes[row][col].isEmpty
+                  ? const SizedBox()
+                  : _buildPencilNotes(pencilNotes[row][col]))
+              : Text(
+                  '${board[row][col]}',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isFixed[row][col]
+                        ? Colors.black
+                        : const Color(0xFF7B3FF2),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeButtons(BuildContext context) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Botón Lápiz
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              isPencilMode = true;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            decoration: BoxDecoration(
+              color: isPencilMode
+                  ? ColoresApp.moradoPrincipal
+                  : ColoresApp.gris300,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
+              ),
+              border: Border.all(
+                color: isPencilMode
+                    ? ColoresApp.moradoPrincipal
+                    : ColoresApp.gris400,
+                width: 2,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
-                  widget.isTimeAttackMode ? Icons.timer : Icons.access_time,
-                  size: fontSize,
-                  color: widget.isTimeAttackMode && timeLeft <= 30
-                      ? ColoresApp.rojoError
-                      : ColoresApp.moradoPrincipal,
+                  Icons.edit,
+                  color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                  size: 20,
                 ),
-                SizedBox(width: gap * 0.6),
+                const SizedBox(width: 8),
                 Text(
-                  widget.isTimeAttackMode
-                      ? _formatTime(timeLeft)
-                      : _formatTime(elapsedSeconds),
+                  AppStrings.get('pencil', currentLang),
                   style: TextStyle(
-                    fontSize: fontSize,
+                    color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: widget.isTimeAttackMode && timeLeft <= 30
-                        ? ColoresApp.rojoError
-                        : ColoresApp.moradoPrincipal,
                   ),
                 ),
               ],
             ),
           ),
-
-          SizedBox(width: gap),
-
-          // Progreso
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
+        ),
+        // Botón Borrador
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              isPencilMode = false;
+            });
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             decoration: BoxDecoration(
-              color: ColoresApp.moradoPrincipal.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '$cellsFilled/$totalEmptyCells',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: ColoresApp.moradoPrincipal,
+              color: !isPencilMode
+                  ? ColoresApp.moradoPrincipal
+                  : ColoresApp.gris300,
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              border: Border.all(
+                color: !isPencilMode
+                    ? ColoresApp.moradoPrincipal
+                    : ColoresApp.gris400,
+                width: 2,
               ),
             ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.border_color,
+                  color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppStrings.get('notes', currentLang),
+                  style: TextStyle(
+                    color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
+        ),
+      ],
+    );
+  }
 
-          const Spacer(),
-
-          // Botones de control
-          GamePauseButton(
-            isPaused: isPaused,
-            onPressed: _togglePause,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          GameRestartButton(
-            onPressed: _restartGame,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          BotonGuia(
-            gameTitle: 'Sudoku',
-            gameImagePath: 'assets/imagenes/sudoku.png',
-            objetivo: AppStrings.get('sudoku_objective', currentLang),
-            instrucciones: [
-              AppStrings.get('sudoku_inst_1', currentLang),
-              AppStrings.get('sudoku_inst_2', currentLang),
-              AppStrings.get('sudoku_inst_3', currentLang),
-              AppStrings.get('sudoku_inst_4', currentLang),
-              AppStrings.get('sudoku_inst_5', currentLang),
-              AppStrings.get('sudoku_inst_6', currentLang),
-              AppStrings.get('sudoku_inst_7', currentLang),
-              AppStrings.get('sudoku_inst_8', currentLang),
-              AppStrings.get('sudoku_inst_9', currentLang),
-            ],
-            controles: GuiasJuegos.getSudokuControles(currentLang),
-            size: btnSize,
-            onOpen: () { if (!isPaused) _togglePause(); },
-            onClose: () { if (isPaused) _togglePause(); },
-          ),
-          SizedBox(width: gap),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: btnSize,
-              height: btnSize,
-              decoration: BoxDecoration(
-                color: ColoresApp.rojoError,
-                shape: BoxShape.circle,
+  Widget _buildNumberPad(BuildContext context) {
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
+    return Column(
+      children: [
+        // Números 1-9
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(ConstantesSudoku.tamanoSudoku, (index) {
+            int number = index + ConstantesSudoku.valorMinimoCelda;
+            return GestureDetector(
+              onTap: () {
+                setState(() { selectedNumber = number; });
+                _placeNumber(number);
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selectedNumber == number
+                      ? ColoresApp.moradoPrincipal
+                      : ColoresApp.gris300,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    '$number',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: selectedNumber == number
+                          ? ColoresApp.blanco
+                          : ColoresApp.negro,
+                    ),
+                  ),
+                ),
               ),
-              child: Icon(
-                Icons.close,
-                color: ColoresApp.blanco,
-                size: btnSize * 0.55,
+            );
+          }),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Botones de acción
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Botón Borrar
+            ElevatedButton.icon(
+              onPressed: _clearCell,
+              icon: const Icon(Icons.backspace, size: 18),
+              label: Text(AppStrings.get('erase', currentLang)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
             ),
-          ),
-        ],
-      ),
+
+            // Botón Pista (no disponible en modo perfecto)
+            if (!widget.isPerfectMode)
+              ElevatedButton.icon(
+                onPressed: hintsRemaining > 0 ? _showHint : _showHint,
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.lightbulb, size: 18),
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                        child: Text(
+                          '$hintsRemaining',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                label: Text(AppStrings.get('hint', currentLang)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: hintsRemaining > 0 ? Colors.orange : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
     return Scaffold(
       backgroundColor: isDark ? ColoresApp.gris800 : ColoresApp.gris100,
@@ -591,103 +810,7 @@ class _SudokuGameState extends State<SudokuGame> {
                 _buildHeader(isDark),
 
                 // Tablero de Sudoku
-                Expanded(
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Container(
-                        margin: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: ConstantesSudoku.tamanoSudoku,
-                          ),
-                          itemCount: ConstantesSudoku.tamanoSudoku * ConstantesSudoku.tamanoSudoku,
-                          itemBuilder: (context, index) {
-                            int row = index ~/ ConstantesSudoku.tamanoSudoku;
-                            int col = index % ConstantesSudoku.tamanoSudoku;
-
-                            bool isSelected = selectedRow == row && selectedCol == col;
-                            bool isSameRow = selectedRow == row;
-                            bool isSameCol = selectedCol == col;
-                            bool isSameBox = selectedRow != null &&
-                                selectedCol != null &&
-                                (selectedRow! ~/ ConstantesSudoku.tamanoCaja) == (row ~/ ConstantesSudoku.tamanoCaja) &&
-                                (selectedCol! ~/ ConstantesSudoku.tamanoCaja) == (col ~/ ConstantesSudoku.tamanoCaja);
-
-                            Color backgroundColor = ColoresApp.blanco;
-                            if (isError[row][col]) {
-                              backgroundColor = ColoresApp.colorCeldaError;
-                            } else if (isSelected) {
-                              backgroundColor = ColoresApp.colorCeldaSeleccionada;
-                            } else if (isSameRow || isSameCol || isSameBox) {
-                              backgroundColor = ColoresApp.colorCeldaRelacionada;
-                            }
-
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedRow = row;
-                                  selectedCol = col;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: backgroundColor,
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: row % 3 == 0 ? Colors.black : Colors.grey[400]!,
-                                      width: row % 3 == 0 ? 2 : 0.5,
-                                    ),
-                                    left: BorderSide(
-                                      color: col % 3 == 0 ? Colors.black : Colors.grey[400]!,
-                                      width: col % 3 == 0 ? 2 : 0.5,
-                                    ),
-                                    right: BorderSide(
-                                      color: col == 8 ? Colors.black : Colors.transparent,
-                                      width: col == 8 ? 2 : 0,
-                                    ),
-                                    bottom: BorderSide(
-                                      color: row == 8 ? Colors.black : Colors.transparent,
-                                      width: row == 8 ? 2 : 0,
-                                    ),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: board[row][col] == 0
-                                      ? (pencilNotes[row][col].isEmpty
-                                          ? const SizedBox()
-                                          : _buildPencilNotes(pencilNotes[row][col]))
-                                      : Text(
-                                          '${board[row][col]}',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: isFixed[row][col]
-                                                ? Colors.black
-                                                : const Color(0xFF7B3FF2),
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                _buildBoard(context),
 
                 // Controles de números
                 Container(
@@ -695,196 +818,12 @@ class _SudokuGameState extends State<SudokuGame> {
                   child: Column(
                     children: [
                       // Botones Lápiz y Borrador
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Botón Lápiz
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isPencilMode = true;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isPencilMode
-                                    ? ColoresApp.moradoPrincipal
-                                    : ColoresApp.gris300,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  bottomLeft: Radius.circular(12),
-                                ),
-                                border: Border.all(
-                                  color: isPencilMode
-                                      ? ColoresApp.moradoPrincipal
-                                      : ColoresApp.gris400,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.edit,
-                                    color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    AppStrings.get('pencil', currentLang),
-                                    style: TextStyle(
-                                      color: isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Botón Borrador
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isPencilMode = false;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: !isPencilMode
-                                    ? ColoresApp.moradoPrincipal
-                                    : ColoresApp.gris300,
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(12),
-                                  bottomRight: Radius.circular(12),
-                                ),
-                                border: Border.all(
-                                  color: !isPencilMode
-                                      ? ColoresApp.moradoPrincipal
-                                      : ColoresApp.gris400,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.border_color,
-                                    color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    AppStrings.get('notes', currentLang),
-                                    style: TextStyle(
-                                      color: !isPencilMode ? ColoresApp.blanco : ColoresApp.negro,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildModeButtons(context),
 
                       const SizedBox(height: 16),
 
-                      // Números 1-9
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(ConstantesSudoku.tamanoSudoku, (index) {
-                          int number = index + ConstantesSudoku.valorMinimoCelda;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() { selectedNumber = number; });
-                              _placeNumber(number);
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: selectedNumber == number
-                                    ? ColoresApp.moradoPrincipal
-                                    : ColoresApp.gris300,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$number',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: selectedNumber == number
-                                        ? ColoresApp.blanco
-                                        : ColoresApp.negro,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Botones de acción
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // Botón Borrar
-                          ElevatedButton.icon(
-                            onPressed: _clearCell,
-                            icon: const Icon(Icons.backspace, size: 18),
-                            label: Text(AppStrings.get('erase', currentLang)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            ),
-                          ),
-
-                          // Botón Pista (no disponible en modo perfecto)
-                          if (!widget.isPerfectMode)
-                            ElevatedButton.icon(
-                              onPressed: hintsRemaining > 0 ? _showHint : _showHint,
-                              icon: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  const Icon(Icons.lightbulb, size: 18),
-                                  Positioned(
-                                    right: -6,
-                                    top: -6,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                                      child: Text(
-                                        '$hintsRemaining',
-                                        style: const TextStyle(
-                                          color: Colors.orange,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              label: Text(AppStrings.get('hint', currentLang)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: hintsRemaining > 0 ? Colors.orange : Colors.grey,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              ),
-                            ),
-                        ],
-                      ),
+                      // Números 1-9 + botones de acción
+                      _buildNumberPad(context),
                     ],
                   ),
                 ),

@@ -2,18 +2,21 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/app_logger.dart';
+import '../services/app_logger.dart';
 import '../widgets/virtual_joystick.dart';
 import '../widgets/game_control_buttons.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
-import '../data/guias_juegos.dart';
-import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../constants/guias_juegos.dart';
+import '../config/audio_settings.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/snake_constants.dart';
+import '../providers/mission_provider.dart';
+import '../widgets/game_over_dialog.dart';
+import '../widgets/game_close_button.dart';
 
 class SnakeGame extends StatefulWidget {
   final double speedMultiplier; // Multiplicador de velocidad (1.0 = normal, 1.5 = velocidad, etc.)
@@ -262,38 +265,28 @@ class _SnakeGameState extends State<SnakeGame> {
     // Log fin de partida
     appLogger.gameEvent('Snake', 'game_end', data: {'score': score, 'length': snake.length});
 
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'snake', activityType: MissionType.playGames);
+    if (score > 0) {
+      missionProvider.notifyActivity(gameType: 'snake', activityType: MissionType.reachScore, value: score);
+    }
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    showDialog(
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.blanco,
-        title: Text(
-          "⏱️ ${AppStrings.get('time_up', currentLang)}",
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          "${AppStrings.get('final_score', currentLang)}: $score",
-          style: TextStyle(color: ColoresApp.negro),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              startGame();
-            },
-            child: Text(AppStrings.get('restart', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: false,
+      customTitle: '⏱️ ${AppStrings.get('time_up', currentLang)}',
+      message: '${AppStrings.get('final_score', currentLang)}: $score',
+      onRestart: () {
+        Navigator.pop(context);
+        startGame();
+      },
+      onExit: () {
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -329,6 +322,64 @@ class _SnakeGameState extends State<SnakeGame> {
     }
   }
 
+  bool _checkCollision(Point<int> newHead) {
+    final bool hitObstacle = widget.isSurvivalMode && obstacles.contains(newHead);
+    return newHead.x < 0 ||
+        newHead.y < 0 ||
+        newHead.x >= columns ||
+        newHead.y >= rows ||
+        snake.contains(newHead) ||
+        hitObstacle;
+  }
+
+  void _handleFoodEaten(Point<int> newHead) {
+    // En modo contrarreloj, agregar tiempo según el tipo de fruta
+    if (widget.isTimeAttackMode) {
+      score++;
+      snake = [newHead, ...snake]; // Crecer normalmente
+      if (isGoldenFood) {
+        timeLeft += ConstantesSnake.bonusComidaDorada;
+      } else {
+        timeLeft += ConstantesSnake.bonusComidaRegular;
+      }
+    }
+
+    // En modo supervivencia, aplicar efectos según tipo de comida
+    else if (widget.isSurvivalMode) {
+      switch (currentFoodType) {
+        case FoodType.apple:
+          // Manzana: +1 tamaño, +ConstantesSnake.puntosManzana puntos
+          score += ConstantesSnake.puntosManzana;
+          applesEaten++;
+          snake = [newHead, ...snake]; // Crecer 1 segmento
+          // Aumentar velocidad cada ConstantesSnake.intervaloAumentoVelocidad manzanas
+          if (applesEaten % ConstantesSnake.intervaloAumentoVelocidad == 0) {
+            _increaseSpeed();
+          }
+          break;
+        case FoodType.strawberry:
+          // Fresa: +3 tamaño, +ConstantesSnake.puntosFresa puntos
+          score += ConstantesSnake.puntosFresa;
+          // Agregar 3 segmentos de golpe
+          snake = [newHead, newHead, newHead, ...snake];
+          break;
+        case FoodType.coin:
+          // Moneda: +0 tamaño, +5 puntos
+          score += 5;
+          // No agregar el nuevo segmento (no crecer)
+          break;
+      }
+    }
+
+    // En modo normal, comportamiento estándar
+    else {
+      score++;
+      snake = [newHead, ...snake]; // Crecer normalmente
+    }
+
+    spawnFood();
+  }
+
   void moveSnake() {
     final head = snake.first;
     Point<int> newHead;
@@ -348,16 +399,7 @@ class _SnakeGameState extends State<SnakeGame> {
         break;
     }
 
-    // Verificar colisión con obstáculos primero (para sonido específico)
-    final bool hitObstacle = widget.isSurvivalMode && obstacles.contains(newHead);
-
-    // Colisión con paredes, consigo mismo u obstáculos
-    if (newHead.x < 0 ||
-        newHead.y < 0 ||
-        newHead.x >= columns ||
-        newHead.y >= rows ||
-        snake.contains(newHead) ||
-        hitObstacle) {
+    if (_checkCollision(newHead)) {
       timer?.cancel();
       gameTimer?.cancel(); // Detener temporizador del modo contrarreloj
       foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
@@ -366,88 +408,33 @@ class _SnakeGameState extends State<SnakeGame> {
       // Detener música de fondo
       AudioService.stopLoop();
 
+      // Notificar misiones
+      final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+      missionProvider.notifyActivity(gameType: 'snake', activityType: MissionType.playGames);
+      if (score > 0) {
+        missionProvider.notifyActivity(gameType: 'snake', activityType: MissionType.reachScore, value: score);
+      }
+
       final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-      showDialog(
+      GameOverDialog.show(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          backgroundColor: ColoresApp.blanco,
-          title: Text(
-            "💀 ${AppStrings.get('game_over', currentLang)}",
-            style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            "${AppStrings.get('score', currentLang)}: $score",
-            style: TextStyle(color: ColoresApp.negro),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                startGame();
-              },
-              child: Text(AppStrings.get('restart', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-            ),
-          ],
-        ),
+        isVictory: false,
+        message: '${AppStrings.get('score', currentLang)}: $score',
+        onRestart: () {
+          Navigator.pop(context);
+          startGame();
+        },
+        onExit: () {
+          Navigator.pop(context);
+          Navigator.pop(context);
+        },
       );
       return;
     }
 
     if (newHead == food) {
-      // En modo contrarreloj, agregar tiempo según el tipo de fruta
-      if (widget.isTimeAttackMode) {
-        score++;
-        snake = [newHead, ...snake]; // Crecer normalmente
-        if (isGoldenFood) {
-          timeLeft += ConstantesSnake.bonusComidaDorada;
-        } else {
-          timeLeft += ConstantesSnake.bonusComidaRegular;
-        }
-      }
-
-      // En modo supervivencia, aplicar efectos según tipo de comida
-      else if (widget.isSurvivalMode) {
-        switch (currentFoodType) {
-          case FoodType.apple:
-            // Manzana: +1 tamaño, +ConstantesSnake.puntosManzana puntos
-            score += ConstantesSnake.puntosManzana;
-            applesEaten++;
-            snake = [newHead, ...snake]; // Crecer 1 segmento
-            // Aumentar velocidad cada ConstantesSnake.intervaloAumentoVelocidad manzanas
-            if (applesEaten % ConstantesSnake.intervaloAumentoVelocidad == 0) {
-              _increaseSpeed();
-            }
-            break;
-          case FoodType.strawberry:
-            // Fresa: +3 tamaño, +ConstantesSnake.puntosFresa puntos
-            score += ConstantesSnake.puntosFresa;
-            // Agregar 3 segmentos de golpe
-            snake = [newHead, newHead, newHead, ...snake];
-            break;
-          case FoodType.coin:
-            // Moneda: +0 tamaño, +5 puntos
-            score += 5;
-            // No agregar el nuevo segmento (no crecer)
-            break;
-        }
-      }
-
-      // En modo normal, comportamiento estándar
-      else {
-        score++;
-        snake = [newHead, ...snake]; // Crecer normalmente
-      }
-
-      spawnFood();
+      _handleFoodEaten(newHead);
     } else {
       snake = [newHead, ...snake];
       snake.removeLast();
@@ -527,236 +514,232 @@ class _SnakeGameState extends State<SnakeGame> {
     return 'assets/imagenes/apple.png';
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildGameBoard(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        if (details.delta.dy < 0) changeDirection(Direction.up);
+        if (details.delta.dy > 0) changeDirection(Direction.down);
+      },
+      onHorizontalDragUpdate: (details) {
+        if (details.delta.dx < 0) changeDirection(Direction.left);
+        if (details.delta.dx > 0) changeDirection(Direction.right);
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calcular el tamaño óptimo para el tablero
+          final screenWidth = constraints.maxWidth;
+          final screenHeight = constraints.maxHeight;
+          final cellSize = min(screenWidth / columns, screenHeight / rows);
+          final boardWidth = columns * cellSize;
+          final boardHeight = rows * cellSize;
+
+          return Stack(
+            children: [
+              // Tablero centrado
+              Center(
+                child: SizedBox(
+                  width: boardWidth,
+                  height: boardHeight,
+                  child: Stack(
+                    children: [
+                      // Tablero y serpiente
+                      CustomPaint(
+                        size: Size(boardWidth, boardHeight),
+                        painter: SnakePainter(
+                          snake,
+                          food,
+                          cellSize,
+                        ),
+                      ),
+                      // Obstáculos (lava)
+                      if (widget.isSurvivalMode)
+                        ...obstacles.map((obstacle) => Positioned(
+                          left: obstacle.x * cellSize,
+                          top: obstacle.y * cellSize,
+                          child: Image.asset(
+                            'assets/imagenes/lava.png',
+                            width: cellSize,
+                            height: cellSize,
+                            fit: BoxFit.cover,
+                          ),
+                        )),
+                      // Imagen de la comida
+                      Positioned(
+                        left: food.x * cellSize,
+                        top: food.y * cellSize,
+                        child: Image.asset(
+                          _getFoodImage(),
+                          width: cellSize,
+                          height: cellSize,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildControls(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
     final btnSize = (sw * 0.09).clamp(28.0, 42.0);
     final scoreFontSize = (sw * 0.042).clamp(13.0, 20.0);
     final hPad = (sw * 0.028).clamp(8.0, 14.0);
     final gap = (sw * 0.024).clamp(6.0, 12.0);
+    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
+    return Stack(
+      children: [
+        // Score en la parte superior izquierda
+        Positioned(
+          top: hPad,
+          left: hPad,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
+                decoration: BoxDecoration(
+                  color: ColoresApp.moradoPrincipal.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ColoresApp.moradoPrincipal.withOpacity(0.5),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Score: $score',
+                  style: TextStyle(
+                    color: ColoresApp.blanco,
+                    fontSize: scoreFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (widget.isTimeAttackMode) ...[
+                SizedBox(height: gap * 0.6),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
+                  decoration: BoxDecoration(
+                    color: timeLeft <= ConstantesSnake.limiteTiempoComida
+                        ? ColoresApp.rojoError.withOpacity(0.9)
+                        : ColoresApp.naranjaAdvertencia.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (timeLeft <= ConstantesSnake.limiteTiempoComida ? ColoresApp.rojoError : ColoresApp.naranjaAdvertencia)
+                            .withOpacity(0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer, color: ColoresApp.blanco, size: scoreFontSize),
+                      SizedBox(width: gap * 0.5),
+                      Text(
+                        '${timeLeft}s',
+                        style: TextStyle(
+                          color: ColoresApp.blanco,
+                          fontSize: scoreFontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        // Botones de control en la parte superior derecha
+        Positioned(
+          top: hPad,
+          right: hPad,
+          child: Row(
+            children: [
+              GamePauseButton(
+                isPaused: isPaused,
+                onPressed: togglePause,
+                size: btnSize,
+              ),
+              SizedBox(width: gap),
+              GameRestartButton(
+                onPressed: () {
+                  if (isPaused) isPaused = false;
+                  startGame();
+                },
+                size: btnSize,
+              ),
+              SizedBox(width: gap),
+              BotonGuia(
+                gameTitle: 'Snake',
+                gameImagePath: 'assets/imagenes/sssnake.png',
+                objetivo: AppStrings.get('snake_objective', currentLang),
+                instrucciones: [
+                  AppStrings.get('snake_inst_1', currentLang),
+                  AppStrings.get('snake_inst_2', currentLang),
+                  AppStrings.get('snake_inst_3', currentLang),
+                  AppStrings.get('snake_inst_4', currentLang),
+                  AppStrings.get('snake_inst_5', currentLang),
+                ],
+                controles: GuiasJuegos.getSnakeControles(currentLang),
+                size: btnSize,
+                onOpen: () { if (!isPaused) togglePause(); },
+                onClose: () { if (isPaused) togglePause(); },
+              ),
+              SizedBox(width: gap),
+              GameCloseButton(
+                onTap: () => Navigator.pop(context),
+                size: btnSize,
+              ),
+            ],
+          ),
+        ),
+        // Joystick virtual centrado en la parte inferior
+        Positioned(
+          bottom: 15,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: VirtualJoystick(
+              size: 150,
+              onUpPressed: () => changeDirection(Direction.up),
+              onDownPressed: () => changeDirection(Direction.down),
+              onLeftPressed: () => changeDirection(Direction.left),
+              onRightPressed: () => changeDirection(Direction.right),
+              buttonColor: ColoresApp.moradoPrincipal,
+              backgroundColor: ColoresApp.negro,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColoresApp.negro,
       body: SafeArea(
         child: Stack(
           children: [
             // Área de juego con controles por gestos (swipe) - Ocupa toda la pantalla
-            GestureDetector(
-              onVerticalDragUpdate: (details) {
-                if (details.delta.dy < 0) changeDirection(Direction.up);
-                if (details.delta.dy > 0) changeDirection(Direction.down);
-              },
-              onHorizontalDragUpdate: (details) {
-                if (details.delta.dx < 0) changeDirection(Direction.left);
-                if (details.delta.dx > 0) changeDirection(Direction.right);
-              },
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Calcular el tamaño óptimo para el tablero
-                  final screenWidth = constraints.maxWidth;
-                  final screenHeight = constraints.maxHeight;
-                  final cellSize = min(screenWidth / columns, screenHeight / rows);
-                  final boardWidth = columns * cellSize;
-                  final boardHeight = rows * cellSize;
+            _buildGameBoard(context),
 
-                  return Stack(
-                    children: [
-                      // Tablero centrado
-                      Center(
-                        child: SizedBox(
-                          width: boardWidth,
-                          height: boardHeight,
-                          child: Stack(
-                            children: [
-                              // Tablero y serpiente
-                              CustomPaint(
-                                size: Size(boardWidth, boardHeight),
-                                painter: SnakePainter(
-                                  snake,
-                                  food,
-                                  cellSize,
-                                ),
-                              ),
-                              // Obstáculos (lava)
-                              if (widget.isSurvivalMode)
-                                ...obstacles.map((obstacle) => Positioned(
-                                  left: obstacle.x * cellSize,
-                                  top: obstacle.y * cellSize,
-                                  child: Image.asset(
-                                    'assets/imagenes/lava.png',
-                                    width: cellSize,
-                                    height: cellSize,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )),
-                              // Imagen de la comida
-                              Positioned(
-                                left: food.x * cellSize,
-                                top: food.y * cellSize,
-                                child: Image.asset(
-                                  _getFoodImage(),
-                                  width: cellSize,
-                                  height: cellSize,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            // Score en la parte superior izquierda
-            Positioned(
-              top: hPad,
-              left: hPad,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.moradoPrincipal.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: ColoresApp.moradoPrincipal.withOpacity(0.5),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'Score: $score',
-                      style: TextStyle(
-                        color: ColoresApp.blanco,
-                        fontSize: scoreFontSize,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (widget.isTimeAttackMode) ...[
-                    SizedBox(height: gap * 0.6),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
-                      decoration: BoxDecoration(
-                        color: timeLeft <= ConstantesSnake.limiteTiempoComida
-                            ? ColoresApp.rojoError.withOpacity(0.9)
-                            : ColoresApp.naranjaAdvertencia.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (timeLeft <= ConstantesSnake.limiteTiempoComida ? ColoresApp.rojoError : ColoresApp.naranjaAdvertencia)
-                                .withOpacity(0.5),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.timer, color: ColoresApp.blanco, size: scoreFontSize),
-                          SizedBox(width: gap * 0.5),
-                          Text(
-                            '${timeLeft}s',
-                            style: TextStyle(
-                              color: ColoresApp.blanco,
-                              fontSize: scoreFontSize,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            // Botones de control en la parte superior derecha
-            Positioned(
-              top: hPad,
-              right: hPad,
-              child: Builder(
-                builder: (context) {
-                  final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
-                  return Row(
-                    children: [
-                      GamePauseButton(
-                        isPaused: isPaused,
-                        onPressed: togglePause,
-                        size: btnSize,
-                      ),
-                      SizedBox(width: gap),
-                      GameRestartButton(
-                        onPressed: () {
-                          if (isPaused) isPaused = false;
-                          startGame();
-                        },
-                        size: btnSize,
-                      ),
-                      SizedBox(width: gap),
-                      BotonGuia(
-                        gameTitle: 'Snake',
-                        gameImagePath: 'assets/imagenes/sssnake.png',
-                        objetivo: AppStrings.get('snake_objective', currentLang),
-                        instrucciones: [
-                          AppStrings.get('snake_inst_1', currentLang),
-                          AppStrings.get('snake_inst_2', currentLang),
-                          AppStrings.get('snake_inst_3', currentLang),
-                          AppStrings.get('snake_inst_4', currentLang),
-                          AppStrings.get('snake_inst_5', currentLang),
-                        ],
-                        controles: GuiasJuegos.getSnakeControles(currentLang),
-                        size: btnSize,
-                        onOpen: () { if (!isPaused) togglePause(); },
-                        onClose: () { if (isPaused) togglePause(); },
-                      ),
-                      SizedBox(width: gap),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: btnSize,
-                          height: btnSize,
-                          decoration: BoxDecoration(
-                            color: ColoresApp.rojoError.withValues(alpha: 0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: ColoresApp.rojoError.withValues(alpha: 0.5),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(Icons.close, color: ColoresApp.blanco, size: btnSize * 0.55),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            // Joystick virtual centrado en la parte inferior
-            Positioned(
-              bottom: 15,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: VirtualJoystick(
-                  size: 150,
-                  onUpPressed: () => changeDirection(Direction.up),
-                  onDownPressed: () => changeDirection(Direction.down),
-                  onLeftPressed: () => changeDirection(Direction.left),
-                  onRightPressed: () => changeDirection(Direction.right),
-                  buttonColor: ColoresApp.moradoPrincipal,
-                  backgroundColor: ColoresApp.negro,
-                ),
-              ),
-            ),
+            // Score, botones de control y joystick
+            _buildControls(context),
+
             // Overlay de pausa
             if (isPaused)
               PauseOverlay(

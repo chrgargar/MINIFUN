@@ -2,16 +2,20 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/app_logger.dart';
-import '../widgets/game_control_buttons.dart';
+import '../services/app_logger.dart';
 import '../widgets/boton_guia.dart';
-import '../data/guias_juegos.dart';
-import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../constants/guias_juegos.dart';
+import '../config/audio_settings.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/buscaminas_con.dart';
+import '../providers/mission_provider.dart';
+import '../widgets/game_over_dialog.dart';
+import '../widgets/game_stat_badge.dart';
+import '../widgets/game_header.dart';
+import '../widgets/hint_button.dart';
 
 // --- Clase BuscaminasGame (Juego) ---
 class BuscaminasGame extends StatefulWidget {
@@ -191,14 +195,6 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     }
   }
 
-  void _placeMines() {
-    // moved to controller
-  }
-
-  void _calculateNumbers() {
-    // moved to controller
-  }
-
   void _revealCell(int row, int col) {
     if (gameOver || won) return;
     // Ensure mines are placed after the first click, never on the first clicked cell
@@ -222,10 +218,6 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     }
 
         _checkWin();
-  }
-
-  void _revealAdjacentCells(int row, int col) {
-    // moved to controller
   }
 
   void _toggleFlag(int row, int col) {
@@ -259,9 +251,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     });
   }
 
-  void _revealAllMines() {
-    controller.revealAllMines();
-  }
+
 
   void _useHint() {
     if (gameOver || won || isPaused) return;
@@ -321,39 +311,25 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     // Log fin de partida (derrota)
     appLogger.gameEvent('Buscaminas', 'game_end', data: {'won': false, 'time': timeElapsed});
 
-    showDialog(
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.playGames);
+    missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.discoverMines, value: cellsRevealed);
+
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.blanco, 
-        title: Text(
-          "💣 Game Over",
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold), 
-        ),
-        content: Text(
-          "Tiempo: ${timeElapsed}s\n¡Tocaste una mina!",
-          style: TextStyle(color: ColoresApp.negro), 
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              Future.delayed(const Duration(milliseconds: 50), () {
-                if (mounted) setState(() => _initializeGame());
-              });
-            },
-            child: Text("Reintentar", style: TextStyle(color: ColoresApp.moradoPrincipal)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text("Salir", style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: false,
+      customTitle: '💣 ${AppStrings.get('game_over', currentLang)}',
+      message: '${AppStrings.get('time_label', currentLang)}: ${timeElapsed}s\n${AppStrings.get('touched_mine', currentLang)}',
+      onRestart: () {
+        Navigator.pop(context);
+        setState(() => _initializeGame());
+      },
+      onExit: () {
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -361,48 +337,37 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     // Log fin de partida (victoria)
     appLogger.gameEvent('Buscaminas', 'game_end', data: {'won': true, 'time': timeElapsed});
 
-    showDialog(
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.playGames);
+    missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.completeLevels);
+    missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.discoverMines, value: cellsRevealed);
+
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final winMessage = isContrareloj
+        ? AppStrings.get('time_attack_completed', currentLang)
+        : AppStrings.get('found_all_mines', currentLang);
+
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: ColoresApp.blanco, 
-        title: Text(
-          "🎉 ¡Victoria!",
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold), 
-        ),
-        content: Text(
-          "Tiempo: ${timeElapsed}s\nDificultad: ${rows}x$cols\n${isContrareloj ? '¡Modo Contrarreloj completado!' : '¡Encontraste todas las minas!'}",
-          style: TextStyle(color: ColoresApp.negro), 
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              Future.delayed(const Duration(milliseconds: 50), () {
-                if (mounted) {
-                  setState(() {
-                    if (isContrareloj || isSinBanderas) {
-                      mineCount = (mineCount * 1.2).toInt().clamp(1, rows * cols - 1);
-                      rows = (rows * 1.15).toInt().clamp(rows, 30);
-                      cols = (cols * 1.15).toInt().clamp(cols, 30);
-                    }
-                    _initializeGame();
-                  });
-                }
-              });
-            },
-            child: Text("Jugar de nuevo", style: TextStyle(color: ColoresApp.moradoPrincipal)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text("Salir", style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: true,
+      customTitle: '🎉 ${AppStrings.get('victory', currentLang)}',
+      message: '${AppStrings.get('time_label', currentLang)}: ${timeElapsed}s\n${AppStrings.get('difficulty_size', currentLang)}: ${rows}x$cols\n$winMessage',
+      onRestart: () {
+        Navigator.pop(context);
+        setState(() {
+          if (isContrareloj || isSinBanderas) {
+            mineCount = (mineCount * 1.2).toInt().clamp(1, rows * cols - 1);
+            rows = (rows * 1.15).toInt().clamp(rows, 30);
+            cols = (cols * 1.15).toInt().clamp(cols, 30);
+          }
+          _initializeGame();
+        });
+      },
+      onExit: () {
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -466,136 +431,45 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
     final sw = MediaQuery.of(context).size.width;
     final btnSize = (sw * 0.09).clamp(28.0, 40.0);
-    final fontSize = (sw * 0.034).clamp(11.0, 15.0);
-    final hPad = (sw * 0.028).clamp(8.0, 14.0);
-    final gap = (sw * 0.016).clamp(4.0, 8.0);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
-      child: Row(
-        children: [
-          // Tiempo
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-            decoration: BoxDecoration(
-              color: isContrareloj
-                  ? ColoresApp.rojoError.withValues(alpha: 0.2)
-                  : ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isContrareloj ? Icons.timer : Icons.access_time,
-                  size: fontSize,
-                  color: isContrareloj ? ColoresApp.rojoError : ColoresApp.moradoPrincipal,
-                ),
-                SizedBox(width: gap * 0.6),
-                Text(
-                  isContrareloj ? '${timeLeft}s' : '${timeElapsed}s',
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                    color: isContrareloj ? ColoresApp.rojoError : ColoresApp.moradoPrincipal,
-                  ),
-                ),
-              ],
-            ),
+    return GameHeader(
+      stats: [
+        GameStatBadge(
+          text: isContrareloj ? '${timeLeft}s' : '${timeElapsed}s',
+          icon: isContrareloj ? Icons.timer : Icons.access_time,
+          isWarning: isContrareloj,
+        ),
+        GameStatBadge(text: '$rows x $cols'),
+        if (!isSinBanderas)
+          GameStatBadge(
+            text: '${controller.countFlags()}/$mineCount',
+            icon: Icons.flag,
           ),
-
-          SizedBox(width: gap),
-
-          // Tamaño del tablero
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-            decoration: BoxDecoration(
-              color: ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '$rows x $cols',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: ColoresApp.moradoPrincipal,
-              ),
-            ),
-          ),
-
-          // Banderas (si aplica)
-          if (!isSinBanderas) ...[
-            SizedBox(width: gap),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-              decoration: BoxDecoration(
-                color: ColoresApp.moradoPrincipal.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.flag, size: fontSize, color: ColoresApp.moradoPrincipal),
-                  SizedBox(width: gap * 0.6),
-                  Text(
-                    '${controller.countFlags()}/$mineCount',
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.bold,
-                      color: ColoresApp.moradoPrincipal,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const Spacer(),
-
-          // Botones de control
-          GamePauseButton(
-            isPaused: isPaused,
-            onPressed: _showPauseDialog,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          GameRestartButton(
-            onPressed: _initializeGame,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          BotonGuia(
-            gameTitle: 'Buscaminas',
-            gameImagePath: 'assets/imagenes/buscaminas.png',
-            objetivo: AppStrings.get('minesweeper_objective', currentLang),
-            instrucciones: [
-              AppStrings.get('minesweeper_inst_1', currentLang),
-              AppStrings.get('minesweeper_inst_2', currentLang),
-              AppStrings.get('minesweeper_inst_3', currentLang),
-              AppStrings.get('minesweeper_inst_4', currentLang),
-              AppStrings.get('minesweeper_inst_5', currentLang),
-            ],
-            controles: GuiasJuegos.getBuscaminasControles(currentLang),
-            size: btnSize,
-            onOpen: () => setState(() => isPaused = true),
-            onClose: () => setState(() => isPaused = false),
-          ),
-          SizedBox(width: gap),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: btnSize,
-              height: btnSize,
-              decoration: BoxDecoration(
-                color: ColoresApp.rojoError,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close,
-                color: ColoresApp.blanco,
-                size: btnSize * 0.55,
-              ),
-            ),
-          ),
+      ],
+      isPaused: isPaused,
+      onPause: _showPauseDialog,
+      onRestart: _initializeGame,
+      onClose: () => Navigator.pop(context),
+      hintButton: HintButton(
+        hintsRemaining: hintsRemaining,
+        onTap: gameOver || won || isPaused ? null : _useHint,
+        size: btnSize,
+      ),
+      guideButton: BotonGuia(
+        gameTitle: 'Buscaminas',
+        gameImagePath: 'assets/imagenes/buscaminas.png',
+        objetivo: AppStrings.get('minesweeper_objective', currentLang),
+        instrucciones: [
+          AppStrings.get('minesweeper_inst_1', currentLang),
+          AppStrings.get('minesweeper_inst_2', currentLang),
+          AppStrings.get('minesweeper_inst_3', currentLang),
+          AppStrings.get('minesweeper_inst_4', currentLang),
+          AppStrings.get('minesweeper_inst_5', currentLang),
         ],
+        controles: GuiasJuegos.getBuscaminasControles(currentLang),
+        size: btnSize,
+        onOpen: () => setState(() => isPaused = true),
+        onClose: () => setState(() => isPaused = false),
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../tema/language_provider.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
-import '../tema/app_colors.dart';
+import '../config/app_colors.dart';
 import '../widgets/boton_ajustes.dart';
 import '../juegos/Sudoku.dart';
 import '../juegos/WaterSort.dart';

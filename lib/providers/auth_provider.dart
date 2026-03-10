@@ -7,8 +7,8 @@ import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../constants/api_constants.dart';
-import '../exceptions/api_exceptions.dart';
-import '../utils/app_logger.dart';
+import '../services/api_exceptions.dart';
+import '../services/app_logger.dart';
 
 /// Provider para gestionar el estado de autenticación de la aplicación
 ///
@@ -44,62 +44,70 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(ApiConstants.storageKeyAuthToken);
-
-      if (token != null) {
-        appLogger.info('Validando sesión existente');
-
-        try {
-          final response = await ApiService.getMe(token);
-
-          if (response['success'] == true) {
-            final userData = response['data']['user'] as Map<String, dynamic>;
-
-            _currentUser = await _createUserFromServerData(userData);
-            appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
-          } else {
-            appLogger.warning('Token inválido, limpiando sesión');
-            await _clearSession(prefs);
-          }
-        } on TokenExpiredException {
-          // Intentar renovar con refresh token
-          final renewed = await _tryRefreshToken(prefs);
-          if (!renewed) {
-            _errorMessage = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
-          }
-        } on ApiException catch (e) {
-          appLogger.error('Error de API validando sesión', e);
-          await _clearSession(prefs);
-        }
-      } else {
-        // Restaurar sesión de Google si existe
-        final googleUserId = prefs.getString(ApiConstants.storageKeyGoogleUserId);
-        if (googleUserId != null) {
-          final googleName = prefs.getString(ApiConstants.storageKeyGoogleUserName) ?? '';
-          final googleEmail = prefs.getString(ApiConstants.storageKeyGoogleUserEmail) ?? '';
-          final googleAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
-          _currentUser = UserModel(
-            id: googleUserId.hashCode,
-            username: googleName.isNotEmpty ? googleName : 'Usuario Google',
-            email: googleEmail,
-            passwordHash: '',
-            isGuest: false,
-            isPremium: false,
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-            streakDays: 0,
-            cloudId: googleUserId,
-            avatarBase64: googleAvatar,
-          );
-          appLogger.authEvent('Sesión de Google restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
-        }
-      }
+      await _restoreSession(prefs);
     } catch (e) {
       appLogger.error('Error al inicializar sesión', e);
       _errorMessage = 'Error al inicializar sesión';
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Restaurar sesión desde SharedPreferences
+  ///
+  /// Verifica si existe un token JWT almacenado e intenta validarlo.
+  /// Si no hay token JWT, intenta restaurar una sesión de Google guardada.
+  Future<void> _restoreSession(SharedPreferences prefs) async {
+    final token = prefs.getString(ApiConstants.storageKeyAuthToken);
+
+    if (token != null) {
+      appLogger.info('Validando sesión existente');
+
+      try {
+        final response = await ApiService.getMe(token);
+
+        if (response['success'] == true) {
+          final userData = response['data']['user'] as Map<String, dynamic>;
+
+          _currentUser = await _createUserFromServerData(userData);
+          appLogger.authEvent('Sesión restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
+        } else {
+          appLogger.warning('Token inválido, limpiando sesión');
+          await _clearSession(prefs);
+        }
+      } on TokenExpiredException {
+        // Intentar renovar con refresh token
+        final renewed = await _tryRefreshToken(prefs);
+        if (!renewed) {
+          _errorMessage = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+        }
+      } on ApiException catch (e) {
+        appLogger.error('Error de API validando sesión', e);
+        await _clearSession(prefs);
+      }
+    } else {
+      // Restaurar sesión de Google si existe
+      final googleUserId = prefs.getString(ApiConstants.storageKeyGoogleUserId);
+      if (googleUserId != null) {
+        final googleName = prefs.getString(ApiConstants.storageKeyGoogleUserName) ?? '';
+        final googleEmail = prefs.getString(ApiConstants.storageKeyGoogleUserEmail) ?? '';
+        final googleAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+        _currentUser = UserModel(
+          id: googleUserId.hashCode,
+          username: googleName.isNotEmpty ? googleName : 'Usuario Google',
+          email: googleEmail,
+          passwordHash: '',
+          isGuest: false,
+          isPremium: false,
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+          streakDays: 0,
+          cloudId: googleUserId,
+          avatarBase64: googleAvatar,
+        );
+        appLogger.authEvent('Sesión de Google restaurada', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
+      }
     }
   }
 
@@ -238,18 +246,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response['success'] == true) {
-        final token = response['data']['token'] as String;
-        final refreshToken = response['data']['refreshToken'] as String;
-        final userData = response['data']['user'] as Map<String, dynamic>;
-
-        _currentUser = await _createUserFromServerData(userData);
-
-        // Guardar token JWT, refresh token y sesión
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(ApiConstants.storageKeyAuthToken, token);
-        await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
-        await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
-
+        await _handleAuthResponse(response['data'] as Map<String, dynamic>);
         appLogger.authEvent('Registro exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
         _isLoading = false;
@@ -277,6 +274,24 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Parsear la respuesta de autenticación (login/register) y guardar la sesión
+  ///
+  /// Extrae el token JWT, refresh token y datos del usuario del response,
+  /// crea el UserModel y persiste los tokens en SharedPreferences.
+  Future<void> _handleAuthResponse(Map<String, dynamic> responseData) async {
+    final token = responseData['token'] as String;
+    final refreshToken = responseData['refreshToken'] as String;
+    final userData = responseData['user'] as Map<String, dynamic>;
+
+    _currentUser = await _createUserFromServerData(userData);
+
+    // Guardar token JWT, refresh token y sesión
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(ApiConstants.storageKeyAuthToken, token);
+    await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
+    await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+  }
+
   /// Iniciar sesión
   ///
   /// Autentica al usuario con el backend usando username/email y contraseña.
@@ -298,18 +313,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response['success'] == true) {
-        final token = response['data']['token'] as String;
-        final refreshToken = response['data']['refreshToken'] as String;
-        final userData = response['data']['user'] as Map<String, dynamic>;
-
-        _currentUser = await _createUserFromServerData(userData);
-
-        // Guardar token JWT, refresh token y sesión
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(ApiConstants.storageKeyAuthToken, token);
-        await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
-        await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
-
+        await _handleAuthResponse(response['data'] as Map<String, dynamic>);
         appLogger.authEvent('Login exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
         _isLoading = false;
@@ -470,11 +474,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response['success'] == true) {
-        final userData = response['data']['user'] as Map<String, dynamic>;
-        _currentUser = await _createUserFromServerData(userData);
-
-        appLogger.authEvent('Perfil actualizado', metadata: {'userId': _currentUser!.id});
-
+        await _handleProfileResponse(response['data'] as Map<String, dynamic>, 'Perfil actualizado');
         _isLoading = false;
         notifyListeners();
         return true;
@@ -497,6 +497,16 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Parsear la respuesta de actualización de perfil y notificar a los listeners
+  ///
+  /// Extrae los datos actualizados del usuario del response, recrea el UserModel
+  /// y registra el evento en el log de la aplicación.
+  Future<void> _handleProfileResponse(Map<String, dynamic> responseData, String successMessage) async {
+    final userData = responseData['user'] as Map<String, dynamic>;
+    _currentUser = await _createUserFromServerData(userData);
+    appLogger.authEvent(successMessage, metadata: {'userId': _currentUser!.id});
   }
 
   /// Actualizar avatar del usuario (Base64)
@@ -608,15 +618,9 @@ class AuthProvider extends ChangeNotifier {
       if (savedAvatar != null) {
         avatarBase64 = savedAvatar;
       } else if (googleUser.photoUrl != null) {
-        try {
-          final photoResponse = await http.get(Uri.parse(googleUser.photoUrl!));
-          if (photoResponse.statusCode == 200) {
-            final base64Data = base64Encode(photoResponse.bodyBytes);
-            avatarBase64 = 'data:image/jpeg;base64,$base64Data';
-            await prefs.setString(ApiConstants.storageKeyGoogleUserAvatar, avatarBase64);
-          }
-        } catch (e) {
-          appLogger.error('Error descargando foto de Google', e);
+        avatarBase64 = await _downloadGoogleAvatar(googleUser.photoUrl!);
+        if (avatarBase64 != null) {
+          await prefs.setString(ApiConstants.storageKeyGoogleUserAvatar, avatarBase64);
         }
       }
 
@@ -641,12 +645,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       // Guardar sesión (solo guardar nombre de Google si no hay uno personalizado)
-      await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
-      await prefs.setString(ApiConstants.storageKeyGoogleUserId, googleUser.id);
-      await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, googleUser.email);
-      if (savedName == null || savedName.isEmpty) {
-        await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
-      }
+      await _saveGoogleSession(googleUser, savedName, prefs);
 
       appLogger.authEvent('Login con Google exitoso', metadata: {'userId': _currentUser!.id, 'language': appLogger.currentLanguage});
 
@@ -659,6 +658,40 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Descargar la foto de perfil de Google y codificarla en Base64
+  ///
+  /// Realiza una petición HTTP para obtener la imagen y la devuelve como
+  /// una cadena data-URI en Base64. Devuelve null si la descarga falla.
+  Future<String?> _downloadGoogleAvatar(String photoUrl) async {
+    try {
+      final photoResponse = await http.get(Uri.parse(photoUrl));
+      if (photoResponse.statusCode == 200) {
+        final base64Data = base64Encode(photoResponse.bodyBytes);
+        return 'data:image/jpeg;base64,$base64Data';
+      }
+    } catch (e) {
+      appLogger.error('Error descargando foto de Google', e);
+    }
+    return null;
+  }
+
+  /// Persistir la sesión de Google en SharedPreferences
+  ///
+  /// Guarda el ID de usuario, email y (si no hay uno personalizado) el nombre
+  /// de la cuenta de Google para restaurar la sesión en próximos arranques.
+  Future<void> _saveGoogleSession(
+    GoogleSignInAccount googleUser,
+    String? savedName,
+    SharedPreferences prefs,
+  ) async {
+    await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+    await prefs.setString(ApiConstants.storageKeyGoogleUserId, googleUser.id);
+    await prefs.setString(ApiConstants.storageKeyGoogleUserEmail, googleUser.email);
+    if (savedName == null || savedName.isEmpty) {
+      await prefs.setString(ApiConstants.storageKeyGoogleUserName, googleUser.displayName ?? '');
     }
   }
 

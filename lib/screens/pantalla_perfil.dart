@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../providers/auth_provider.dart';
-import '../utils/app_logger.dart';
-import '../tema/language_provider.dart';
+import '../services/app_logger.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 
 class PantallaPerfil extends StatefulWidget {

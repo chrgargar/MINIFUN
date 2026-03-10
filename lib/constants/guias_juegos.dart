@@ -65,7 +65,7 @@ class GuiasJuegos {
       ControlItem(
         icon: '💡',
         name: AppStrings.get('control_hint', lang),
-        description: AppStrings.get('control_hint_desc', lang),
+        description: AppStrings.get('control_hint_desc_sudoku', lang),
       ),
     ];
   }
@@ -144,7 +144,7 @@ class GuiasJuegos {
       ControlItem(
         icon: '💡',
         name: AppStrings.get('control_hint', lang),
-        description: AppStrings.get('control_hint_desc', lang),
+        description: AppStrings.get('control_hint_desc_minesweeper', lang),
       ),
       ControlItem(
         icon: '🔄',

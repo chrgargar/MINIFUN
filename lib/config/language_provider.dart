@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/app_logger.dart';
+import '../services/app_logger.dart';
 
 /// Provider para manejar el idioma de la aplicación
 class LanguageProvider extends ChangeNotifier {

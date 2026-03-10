@@ -4,8 +4,8 @@ import 'dart:io';
 import 'dart:async';
 
 import '../constants/api_constants.dart';
-import '../exceptions/api_exceptions.dart';
-import '../utils/app_logger.dart';
+import '../services/api_exceptions.dart';
+import '../services/app_logger.dart';
 
 /// Servicio centralizado para comunicación con el backend API
 ///

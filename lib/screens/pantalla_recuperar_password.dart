@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/api_service.dart';
-import '../utils/validators.dart';
-import '../utils/app_logger.dart';
+import '../services/validators.dart';
+import '../services/app_logger.dart';
 
 /// Pantalla para recuperar la contraseña
 class PantallaRecuperarPassword extends StatefulWidget {

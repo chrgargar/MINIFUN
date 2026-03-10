@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../tema/language_provider.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 
 /// Widget reutilizable para mostrar la guía de un juego

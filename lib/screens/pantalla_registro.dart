@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../utils/app_logger.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../services/app_logger.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
-import '../utils/validators.dart';
+import '../services/validators.dart';
 import 'pantalla_principal.dart';
 
 // Pantalla de registro de nuevos usuarios

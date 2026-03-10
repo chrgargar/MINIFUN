@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../tema/selectorTema.dart';
-import '../tema/audio_settings.dart';
-import '../tema/language_provider.dart';
+import '../config/selectorTema.dart';
+import '../config/audio_settings.dart';
+import '../config/language_provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/pantalla_login.dart';
 import '../constants/app_strings.dart';

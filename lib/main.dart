@@ -5,11 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screens/pantalla_login.dart';
-import 'tema/selectorTema.dart';
-import 'tema/audio_settings.dart';
-import 'tema/language_provider.dart';
+import 'config/selectorTema.dart';
+import 'config/audio_settings.dart';
+import 'config/language_provider.dart';
 import 'providers/auth_provider.dart';
-import 'utils/app_logger.dart';
+import 'providers/mission_provider.dart';
+import 'services/app_logger.dart';
 import 'constants/api_constants.dart';
 
 // Función principal que se ejecuta al iniciar la app
@@ -54,6 +55,7 @@ void main() async {
             ChangeNotifierProvider(create: (context) => AudioSettings()),
             ChangeNotifierProvider(create: (context) => LanguageProvider()),
             ChangeNotifierProvider(create: (context) => AuthProvider()),
+            ChangeNotifierProvider(create: (context) => MissionProvider()),
           ],
           child: const MyApp(),
         ),

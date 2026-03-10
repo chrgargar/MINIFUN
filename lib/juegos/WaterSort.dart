@@ -2,17 +2,20 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/app_logger.dart';
-import '../widgets/game_control_buttons.dart';
+import '../services/app_logger.dart';
 import '../widgets/pause_overlay.dart';
 import '../widgets/boton_guia.dart';
-import '../data/guias_juegos.dart';
-import '../tema/audio_settings.dart';
-import '../tema/app_colors.dart';
-import '../tema/language_provider.dart';
+import '../constants/guias_juegos.dart';
+import '../config/audio_settings.dart';
+import '../config/app_colors.dart';
+import '../config/language_provider.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/water_sort_constants.dart';
+import '../providers/mission_provider.dart';
+import '../widgets/game_over_dialog.dart';
+import '../widgets/game_stat_badge.dart';
+import '../widgets/game_header.dart';
 
 /// Juego Water Sort - Ordena los colores en tubos
 class WaterSortGame extends StatefulWidget {
@@ -42,13 +45,18 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   // Para animaciones
   AnimationController? _pourAnimationController;
-  Animation<double>? _pourAnimation; // ignore: unused_field
   int? pouringFromTube;
   int? pouringToTube;
   bool isPouring = false;
 
   // Historial para deshacer
   List<List<List<Color>>> history = [];
+
+  // Sistema de pistas
+  late int hintsAvailable;
+  int usedHints = 0;
+  int? suggestedFromTube;
+  int? suggestedToTube;
 
   // Estado de pausa
   bool isPaused = false;
@@ -79,9 +87,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     _pourAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _pourAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _pourAnimationController!, curve: Curves.easeInOut),
     );
   }
 
@@ -141,6 +146,11 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     gameWon = false;
     gameOver = false;
     history.clear();
+    usedHints = 0;
+    suggestedFromTube = null;
+    suggestedToTube = null;
+    // Pistas por dificultad: fácil 3, medio 2, difícil 1
+    hintsAvailable = widget.difficulty == 'facil' ? 3 : widget.difficulty == 'medio' ? 2 : 1;
 
     if (widget.isTimeAttackMode) {
       // Reducir tiempo según nivel (mínimo 60 segundos)
@@ -162,9 +172,11 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           timeLeft--;
           if (timeLeft <= 0) {
             gameOver = true;
-                      }
+          }
         });
-        if (!gameOver && !gameWon) {
+        if (gameOver && !gameWon) {
+          _showGameOverDialog();
+        } else if (!gameOver && !gameWon) {
           _startTimer();
         }
       } else if (mounted && widget.isTimeAttackMode && isPaused && !gameWon && !gameOver) {
@@ -230,6 +242,130 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         selectedTube = null;
       });
           }
+  }
+
+  // Returns a record (from, to) of the best hint move, or (null, null) if none found.
+  (int?, int?) _findHintMove() {
+    int? bestFrom;
+    int? bestTo;
+    int bestScore = -1;
+
+    for (int from = 0; from < tubes.length; from++) {
+      if (tubes[from].isEmpty) continue;
+
+      for (int to = 0; to < tubes.length; to++) {
+        if (from == to) continue;
+        if (!_canPour(from, to)) continue;
+
+        // Calcular puntuación del movimiento
+        int score = 0;
+        Color topColor = tubes[from].last;
+
+        // Preferir mover a un tubo vacío si el origen tiene un solo color
+        if (tubes[to].isEmpty) {
+          // Contar cuántos del mismo color hay arriba en el tubo origen
+          int sameColorCount = 0;
+          for (int i = tubes[from].length - 1; i >= 0; i--) {
+            if (tubes[from][i] == topColor) sameColorCount++;
+            else break;
+          }
+          // Si el tubo tiene solo un color, no mover a vacío
+          if (tubes[from].toSet().length == 1) {
+            score = 1;
+          } else {
+            score = 5 + sameColorCount;
+          }
+        } else {
+          // Mover a tubo con el mismo color
+          int sameColorCount = 0;
+          for (int i = tubes[from].length - 1; i >= 0; i--) {
+            if (tubes[from][i] == topColor) sameColorCount++;
+            else break;
+          }
+          score = 10 + sameColorCount;
+
+          // Bonus si completaría un tubo
+          int targetSpace = ConstantesWaterSort.tubeCapacity - tubes[to].length;
+          if (sameColorCount <= targetSpace && tubes[to].toSet().length == 1) {
+            score += 20;
+          }
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestFrom = from;
+          bestTo = to;
+        }
+      }
+    }
+
+    return (bestFrom, bestTo);
+  }
+
+  void _showHint() {
+    if (usedHints >= hintsAvailable) {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('no_hints_left', currentLang)),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final (bestFrom, bestTo) = _findHintMove();
+
+    if (bestFrom != null && bestTo != null) {
+      setState(() {
+        usedHints++;
+        suggestedFromTube = bestFrom;
+        suggestedToTube = bestTo;
+      });
+
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.lightbulb, color: Colors.amber),
+              const SizedBox(width: 8),
+              Text(AppStrings.get('hint', currentLang)),
+            ],
+          ),
+          content: Text(
+            AppStrings.get('hint_next_move', currentLang),
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppStrings.get('understood', currentLang)),
+            ),
+          ],
+        ),
+      );
+
+      // Quitar resaltado después de 5 segundos
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            suggestedFromTube = null;
+            suggestedToTube = null;
+          });
+        }
+      });
+    } else {
+      final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('no_valid_moves', currentLang)),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   void _onTubeTap(int index) {
@@ -319,45 +455,37 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     // Log fin de partida (victoria)
     appLogger.gameEvent('WaterSort', 'game_end', data: {'won': true, 'level': level, 'moves': moves});
 
+    // Notificar misiones
+    final missionProvider = Provider.of<MissionProvider>(context, listen: false);
+    missionProvider.notifyActivity(gameType: 'watersort', activityType: MissionType.completeLevels);
+    missionProvider.notifyActivity(gameType: 'watersort', activityType: MissionType.playGames);
+
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     _isDialogOpen = true;
 
-    showDialog(
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.blanco,
-        title: Text(
-          '🎉 ${AppStrings.get('congratulations', currentLang)}',
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          '${AppStrings.get('level_completed', currentLang)}\n${AppStrings.get('moves', currentLang)}: $moves${widget.isTimeAttackMode ? '\n${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}' : ''}',
-          style: TextStyle(color: ColoresApp.negro),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isDialogOpen = false;
-              setState(() {
-                level++;
-                _saveLevel();
-                _initGame();
-              });
-            },
-            child: Text(AppStrings.get('next_level', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
-          ),
-          TextButton(
-            onPressed: () {
-              _isDialogOpen = false;
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: true,
+      message: '${AppStrings.get('level_completed', currentLang)}\n${AppStrings.get('moves', currentLang)}: $moves${widget.isTimeAttackMode ? '\n${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}' : ''}',
+      onRestart: () {
+        Navigator.pop(context);
+        _isDialogOpen = false;
+        setState(() { _initGame(); });
+      },
+      onExit: () {
+        _isDialogOpen = false;
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
+      onNextLevel: () {
+        Navigator.pop(context);
+        _isDialogOpen = false;
+        setState(() {
+          level++;
+          _saveLevel();
+          _initGame();
+        });
+      },
     );
   }
 
@@ -368,40 +496,21 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     _isDialogOpen = true;
 
-    showDialog(
+    GameOverDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.blanco,
-        title: Text(
-          '⏱️ ${AppStrings.get('time_up', currentLang)}',
-          style: TextStyle(color: ColoresApp.negro, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          '${AppStrings.get('level_failed', currentLang)}\n${AppStrings.get('moves_made', currentLang)}: $moves',
-          style: TextStyle(color: ColoresApp.negro),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isDialogOpen = false;
-              setState(() {
-                _initGame();
-              });
-            },
-            child: Text(AppStrings.get('retry', currentLang), style: TextStyle(color: ColoresApp.moradoPrincipal)),
-          ),
-          TextButton(
-            onPressed: () {
-              _isDialogOpen = false;
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(AppStrings.get('exit', currentLang), style: TextStyle(color: ColoresApp.rojoError)),
-          ),
-        ],
-      ),
+      isVictory: false,
+      customTitle: '⏱️ ${AppStrings.get('time_up', currentLang)}',
+      message: '${AppStrings.get('level_failed', currentLang)}\n${AppStrings.get('moves_made', currentLang)}: $moves',
+      onRestart: () {
+        Navigator.pop(context);
+        _isDialogOpen = false;
+        setState(() { _initGame(); });
+      },
+      onExit: () {
+        _isDialogOpen = false;
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -447,10 +556,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
             ),
 
 
-            // Overlay de Game Over
-            if (gameOver && !gameWon)
-              _buildGameOverOverlay(isDark),
-
             // Overlay de pausa
             if (isPaused)
               PauseOverlay(
@@ -472,134 +577,54 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     final hPad = (sw * 0.028).clamp(8.0, 14.0);
     final gap = (sw * 0.016).clamp(4.0, 8.0);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
-      child: Row(
-        children: [
-          // Nivel
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-            decoration: BoxDecoration(
-              color: ColoresApp.moradoPrincipal.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'Nivel $level',
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: ColoresApp.moradoPrincipal,
-              ),
-            ),
+    return GameHeader(
+      stats: [
+        GameStatBadge(
+          text: '${AppStrings.get('level_label', currentLang)} $level',
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
+        ),
+        GameStatBadge(
+          text: '$moves',
+          icon: Icons.touch_app,
+          color: isDark ? ColoresApp.blanco : ColoresApp.negro,
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
+        ),
+        if (widget.isTimeAttackMode)
+          GameStatBadge(
+            text: _formatTime(timeLeft),
+            icon: Icons.timer,
+            color: ColoresApp.verdeExito,
+            isWarning: timeLeft <= 30,
+            fontSize: fontSize,
+            hPad: hPad,
+            gap: gap,
           ),
-
-          SizedBox(width: gap),
-
-          // Movimientos
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-            decoration: BoxDecoration(
-              color: isDark ? ColoresApp.gris800 : ColoresApp.gris100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.touch_app, size: fontSize, color: isDark ? ColoresApp.blanco : ColoresApp.negro),
-                SizedBox(width: gap * 0.6),
-                Text(
-                  '$moves',
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? ColoresApp.blanco : ColoresApp.negro,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Tiempo (si aplica)
-          if (widget.isTimeAttackMode) ...[
-            SizedBox(width: gap),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.4),
-              decoration: BoxDecoration(
-                color: timeLeft <= 30
-                    ? ColoresApp.rojoError.withOpacity(0.2)
-                    : ColoresApp.verdeExito.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.timer,
-                    size: fontSize,
-                    color: timeLeft <= 30 ? ColoresApp.rojoError : ColoresApp.verdeExito,
-                  ),
-                  SizedBox(width: gap * 0.6),
-                  Text(
-                    _formatTime(timeLeft),
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.bold,
-                      color: timeLeft <= 30 ? ColoresApp.rojoError : ColoresApp.verdeExito,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const Spacer(),
-
-          // Botones de control
-          GamePauseButton(
-            isPaused: isPaused,
-            onPressed: _togglePause,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          GameRestartButton(
-            onPressed: _restart,
-            size: btnSize,
-          ),
-          SizedBox(width: gap),
-          BotonGuia(
-            gameTitle: 'WaterSort',
-            gameImagePath: 'assets/imagenes/watersort.png',
-            objetivo: AppStrings.get('watersort_objective', currentLang),
-            instrucciones: [
-              AppStrings.get('watersort_inst_1', currentLang),
-              AppStrings.get('watersort_inst_2', currentLang),
-              AppStrings.get('watersort_inst_3', currentLang),
-              AppStrings.get('watersort_inst_4', currentLang),
-              AppStrings.get('watersort_inst_5', currentLang),
-              AppStrings.get('watersort_inst_6', currentLang),
-              AppStrings.get('watersort_inst_7', currentLang),
-            ],
-            controles: GuiasJuegos.getWaterSortControles(currentLang),
-            size: btnSize,
-            onOpen: () { if (!isPaused) _togglePause(); },
-            onClose: () { if (isPaused) _togglePause(); },
-          ),
-          SizedBox(width: gap),
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: btnSize,
-              height: btnSize,
-              decoration: BoxDecoration(
-                color: ColoresApp.rojoError,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close,
-                color: ColoresApp.blanco,
-                size: btnSize * 0.55,
-              ),
-            ),
-          ),
+      ],
+      isPaused: isPaused,
+      onPause: _togglePause,
+      onRestart: _restart,
+      onClose: () => Navigator.pop(context),
+      guideButton: BotonGuia(
+        gameTitle: 'WaterSort',
+        gameImagePath: 'assets/imagenes/watersort.png',
+        objetivo: AppStrings.get('watersort_objective', currentLang),
+        instrucciones: [
+          AppStrings.get('watersort_inst_1', currentLang),
+          AppStrings.get('watersort_inst_2', currentLang),
+          AppStrings.get('watersort_inst_3', currentLang),
+          AppStrings.get('watersort_inst_4', currentLang),
+          AppStrings.get('watersort_inst_5', currentLang),
+          AppStrings.get('watersort_inst_6', currentLang),
+          AppStrings.get('watersort_inst_7', currentLang),
         ],
+        controles: GuiasJuegos.getWaterSortControles(currentLang),
+        size: btnSize,
+        onOpen: () { if (!isPaused) _togglePause(); },
+        onClose: () { if (isPaused) _togglePause(); },
       ),
     );
   }
@@ -649,8 +674,37 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     );
   }
 
+  Widget _buildTubeSegment(Color? segmentColor, double segmentHeight, double width, bool isTop, bool isBottom) {
+    return Container(
+      width: width - 12,
+      height: segmentHeight,
+      margin: const EdgeInsets.symmetric(vertical: 1),
+      decoration: BoxDecoration(
+        color: segmentColor ?? Colors.transparent,
+        borderRadius: BorderRadius.vertical(
+          top: isTop ? const Radius.circular(4) : Radius.zero,
+          bottom: isBottom ? const Radius.circular(20) : Radius.zero,
+        ),
+        gradient: segmentColor != null
+            ? LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  segmentColor,
+                  segmentColor.withOpacity(0.8),
+                  segmentColor,
+                ],
+              )
+            : null,
+      ),
+    );
+  }
+
   Widget _buildTube(int index, double width, double height, bool isDark) {
     bool isSelected = selectedTube == index;
+    bool isSuggestedFrom = suggestedFromTube == index;
+    bool isSuggestedTo = suggestedToTube == index;
+    bool isSuggested = isSuggestedFrom || isSuggestedTo;
     List<Color> tube = tubes[index];
     double segmentHeight = (height - 20) / ConstantesWaterSort.tubeCapacity;
 
@@ -673,20 +727,30 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               bottomRight: Radius.circular(25),
             ),
             border: Border.all(
-              color: isSelected
-                  ? ColoresApp.moradoPrincipal
-                  : (isDark ? ColoresApp.gris600 : ColoresApp.gris300),
-              width: isSelected ? 3 : 2,
+              color: isSuggested
+                  ? Colors.amber
+                  : (isSelected
+                      ? ColoresApp.moradoPrincipal
+                      : (isDark ? ColoresApp.gris600 : ColoresApp.gris300)),
+              width: isSuggested ? 4 : (isSelected ? 3 : 2),
             ),
-            boxShadow: isSelected
+            boxShadow: isSuggested
                 ? [
                     BoxShadow(
-                      color: ColoresApp.moradoPrincipal.withOpacity(0.4),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+                      color: Colors.amber.withOpacity(0.6),
+                      blurRadius: 15,
+                      spreadRadius: 3,
                     ),
                   ]
-                : null,
+                : (isSelected
+                    ? [
+                        BoxShadow(
+                          color: ColoresApp.moradoPrincipal.withOpacity(0.4),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null),
           ),
           child: Padding(
             padding: const EdgeInsets.all(4),
@@ -695,33 +759,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               children: List.generate(ConstantesWaterSort.tubeCapacity, (i) {
                 int colorIndex = ConstantesWaterSort.tubeCapacity - 1 - i;
                 Color? segmentColor = colorIndex < tube.length ? tube[colorIndex] : null;
-
                 bool isBottom = i == ConstantesWaterSort.tubeCapacity - 1;
                 bool isTop = colorIndex == tube.length - 1 && tube.isNotEmpty;
-
-                return Container(
-                  width: width - 12,
-                  height: segmentHeight,
-                  margin: const EdgeInsets.symmetric(vertical: 1),
-                  decoration: BoxDecoration(
-                    color: segmentColor ?? Colors.transparent,
-                    borderRadius: BorderRadius.vertical(
-                      top: isTop ? const Radius.circular(4) : Radius.zero,
-                      bottom: isBottom ? const Radius.circular(20) : Radius.zero,
-                    ),
-                    gradient: segmentColor != null
-                        ? LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              segmentColor,
-                              segmentColor.withOpacity(0.8),
-                              segmentColor,
-                            ],
-                          )
-                        : null,
-                  ),
-                );
+                return _buildTubeSegment(segmentColor, segmentHeight, width, isTop, isBottom);
               }),
             ),
           ),
@@ -744,6 +784,33 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
             label: AppStrings.get('undo', currentLang),
             onTap: history.isNotEmpty ? _undo : null,
             isDark: isDark,
+          ),
+
+          // Botón Pista
+          GestureDetector(
+            onTap: gameWon || gameOver || isPaused ? null : _showHint,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: usedHints >= hintsAvailable
+                    ? (isDark ? ColoresApp.gris800 : ColoresApp.gris300)
+                    : Colors.amber,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${AppStrings.get('hint', currentLang)} (${hintsAvailable - usedHints})',
+                    style: TextStyle(
+                      color: usedHints >= hintsAvailable ? ColoresApp.gris400 : Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           // Botón Reiniciar
@@ -797,18 +864,4 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     );
   }
 
-  Widget _buildGameOverOverlay(bool isDark) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (gameOver && !gameWon) {
-        _showGameOverDialog();
-      }
-    });
-
-    return Container(
-      color: Colors.black54,
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
 }

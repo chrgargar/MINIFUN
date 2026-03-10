@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/app_logger.dart';
+import '../services/app_logger.dart';
 import '../widgets/tarjetas_juegos.dart';
 import '../widgets/boton_ajustes.dart';
-import '../tema/language_provider.dart';
-import '../tema/audio_settings.dart';
+import '../config/language_provider.dart';
+import '../config/audio_settings.dart';
 import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../providers/auth_provider.dart';
+import '../providers/mission_provider.dart';
 import 'pantalla_perfil.dart';
 
 // Pantalla principal
@@ -28,6 +29,12 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AudioSettings>(context, listen: false).addListener(_onAudioSettingsChanged);
+
+      // Inicializar misiones si el usuario está autenticado
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        Provider.of<MissionProvider>(context, listen: false).init(authProvider.currentUser!.id);
+      }
     });
   }
 
@@ -47,6 +54,184 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
   void _startBackgroundMusic() {
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
     AudioService.playLoop('Sonidos/music_menu.mp3', audioSettings.musicVolume);
+  }
+
+  void _showMissionsDialog(BuildContext context, MissionProvider missionProvider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Título con racha
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    AppStrings.get('daily_missions', currentLang),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  if (missionProvider.streak > 0) ...[
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.local_fire_department, color: Colors.orange, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${missionProvider.streak} ${AppStrings.get('days', currentLang)}',
+                            style: const TextStyle(
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Lista de misiones
+              ...missionProvider.dailyMissions.map((mission) {
+                final progress = mission.progress / mission.goal;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: mission.isCompleted
+                        ? Colors.green.withOpacity(0.1)
+                        : (isDark ? Colors.grey[800] : Colors.grey[100]),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: mission.isCompleted ? Colors.green : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Icono de estado
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: mission.isCompleted
+                              ? Colors.green
+                              : const Color(0xFF7B3FF2).withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          mission.isCompleted ? Icons.check : _getGameIcon(mission.gameType),
+                          color: mission.isCompleted ? Colors.white : const Color(0xFF7B3FF2),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Título y progreso
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppStrings.get(mission.titleKey, currentLang),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white : Colors.black,
+                                decoration: mission.isCompleted ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Barra de progreso pequeña
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  mission.isCompleted ? Colors.green : const Color(0xFF7B3FF2),
+                                ),
+                                minHeight: 6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Contador
+                      Text(
+                        '${mission.progress}/${mission.goal}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: mission.isCompleted ? Colors.green : const Color(0xFF7B3FF2),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  IconData _getGameIcon(String gameType) {
+    switch (gameType) {
+      case 'snake':
+        return Icons.pest_control;
+      case 'watersort':
+        return Icons.water_drop;
+      case 'sudoku':
+        return Icons.grid_3x3;
+      case 'ahorcado':
+        return Icons.text_fields;
+      case 'buscaminas':
+        return Icons.flag;
+      case 'sopadeletras':
+        return Icons.abc;
+      case 'any':
+        return Icons.games;
+      default:
+        return Icons.star;
+    }
   }
 
   @override
@@ -167,13 +352,13 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
               builder: (context, constraints) {
                 // Distribución porcentual de la altura
                 double availableHeight = constraints.maxHeight;
-                double bannerHeight = availableHeight * 0.08; // 8% para banner PRO
-                double gridHeight = availableHeight * 0.70; // 70% para grid de juegos
-                double missionsHeight = availableHeight * 0.18; // 18% para misiones
+                double bannerHeight = availableHeight * 0.07; // 7% para banner PRO
+                double gridHeight = availableHeight * 0.68; // 68% para grid de juegos
+                double missionsHeight = availableHeight * 0.15; // 15% para misiones
 
                 // Calcular tamaño de cada celda del grid (2x3 = 6 juegos)
                 double gridPadding = constraints.maxWidth * 0.04;
-                double cellSpacing = gridHeight * 0.03;
+                double cellSpacing = gridHeight * 0.025;
                 double cellHeight = (gridHeight - (cellSpacing * 4)) / 3; // 3 filas
 
                 return Padding(
@@ -284,71 +469,89 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                       // Sección de misiones
                       SizedBox(
                         height: missionsHeight,
-                        child: Column(
-                          children: [
-                            // Título MISIONES
-                            Container(
-                              width: double.infinity,
-                              height: missionsHeight * 0.4,
-                              padding: EdgeInsets.all(missionsHeight * 0.08),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF2D1B3D)
-                                    : const Color(0xFFF3E5F5),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  AppStrings.get('missions', currentLang),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: const Color(0xFF7B3FF2),
-                                    fontSize: (missionsHeight * 0.15).clamp(14.0, 18.0),
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            SizedBox(height: missionsHeight * 0.12),
-
-                            // Barra de progreso
-                            Container(
-                              width: double.infinity,
-                              height: missionsHeight * 0.35,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Stack(
-                                children: [
-                                  FractionallySizedBox(
-                                    widthFactor: 0.75,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF7B3FF2),
-                                        borderRadius: BorderRadius.circular(23),
+                        child: Consumer<MissionProvider>(
+                          builder: (context, missionProvider, child) {
+                            return Column(
+                              children: [
+                                // Título MISIONES
+                                GestureDetector(
+                                  onTap: () => _showMissionsDialog(context, missionProvider),
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: missionsHeight * 0.45,
+                                    padding: EdgeInsets.all(missionsHeight * 0.08),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? const Color(0xFF2D1B3D)
+                                          : const Color(0xFFF3E5F5),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        AppStrings.get('missions', currentLang),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: const Color(0xFF7B3FF2),
+                                          fontSize: (missionsHeight * 0.18).clamp(14.0, 18.0),
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                  Center(
-                                    child: Text(
-                                      '3/4',
-                                      style: TextStyle(
-                                        color: const Color(0xFF7B3FF2),
-                                        fontSize: (missionsHeight * 0.18).clamp(16.0, 20.0),
-                                        fontWeight: FontWeight.bold,
+                                ),
+
+                                SizedBox(height: missionsHeight * 0.1),
+
+                                // Barra de progreso
+                                GestureDetector(
+                                  onTap: () => _showMissionsDialog(context, missionProvider),
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: missionsHeight * 0.4,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(25),
+                                      border: Border.all(
+                                        color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+                                        width: 2,
                                       ),
                                     ),
+                                    child: Stack(
+                                      children: [
+                                        FractionallySizedBox(
+                                          widthFactor: missionProvider.isLoading ? 0 : missionProvider.progressPercentage,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF7B3FF2),
+                                              borderRadius: BorderRadius.circular(23),
+                                            ),
+                                          ),
+                                        ),
+                                        Center(
+                                          child: missionProvider.isLoading
+                                              ? const SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                                )
+                                              : Text(
+                                                  '${missionProvider.completedMissionsCount}/${missionProvider.totalMissionsCount}',
+                                                  style: TextStyle(
+                                                    color: missionProvider.progressPercentage > 0.5
+                                                        ? Colors.white
+                                                        : const Color(0xFF7B3FF2),
+                                                    fontSize: (missionsHeight * 0.2).clamp(16.0, 20.0),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
