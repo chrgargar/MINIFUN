@@ -352,7 +352,9 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false, // No permitir volver atrás (evita swipe a login)
+      child: Scaffold(
       extendBodyBehindAppBar: true, // Extender el body detrás del AppBar
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white, // Color de fondo base
 
@@ -675,6 +677,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -199,6 +199,8 @@ const Map<String, String> stringsCa = {
   'control_right_desc': 'Llisca cap a la dreta o pressiona el botó dreta',
   'control_joystick': 'Joystick Virtual',
   'control_joystick_desc': 'Usa el D-Pad en la cantonada inferior dreta',
+  'control_swipe': 'Lliscar',
+  'control_swipe_desc': 'Llisca en qualsevol direcció per moure la serp',
 
   // Guies Sudoku
   'sudoku_objective': 'Completa el tauler 9x9 amb números de l\'1 al 9, sense repetir en files, columnes o subcuadrícules de 3x3.',

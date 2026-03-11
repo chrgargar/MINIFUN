@@ -237,67 +237,52 @@ class _DifficultySelectionScreenState extends State<DifficultySelectionScreen> {
   }) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    return GestureDetector(
-      onTap: () {
-        if (isLocked) {
-          _showProLockedSnackBar(context, currentLang);
-          return;
-        }
-        _onDifficultySelected(context, difficulty);
-      },
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: ElevatedButton(
+        onPressed: () {
+          if (isLocked) {
+            _showProLockedSnackBar(context, currentLang);
+            return;
+          }
+          _onDifficultySelected(context, difficulty);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      text,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: height * 0.28,
-                        fontWeight: FontWeight.bold,
-                        color: isLocked ? Colors.grey[300] : Colors.white,
-                      ),
-                    ),
-                    if (description.isNotEmpty)
-                      Text(
-                        description,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: height * 0.18,
-                          color: isLocked
-                              ? Colors.grey[400]!.withOpacity(0.9)
-                              : Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                  ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: (height * 0.28).clamp(16.0, 22.0),
+                fontWeight: FontWeight.w600,
+                color: isLocked ? Colors.grey[300] : Colors.white,
+              ),
+            ),
+            if (description.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: (height * 0.16).clamp(12.0, 14.0),
+                    color: isLocked
+                        ? Colors.grey[400]!.withOpacity(0.9)
+                        : Colors.white.withOpacity(0.9),
+                  ),
                 ),
               ),
-              Icon(
-                isLocked ? Icons.lock : Icons.arrow_forward_ios,
-                color: isLocked ? Colors.grey[300] : Colors.white,
-                size: 20,
-              ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -333,21 +318,59 @@ class _DifficultySelectionScreenState extends State<DifficultySelectionScreen> {
 
   void _showThemeSelectionDialog(BuildContext context, String difficulty) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(AppStrings.get('select_theme', currentLang)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ConstantesSopaLetras.tematicas.map((theme) {
-              String themeName = AppStrings.get('theme_$theme', currentLang);
-              return ListTile(
-                title: Text(themeName),
-                onTap: () => Navigator.of(context).pop(theme),
-              );
-            }).toList(),
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_theme', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ...ConstantesSopaLetras.tematicas.map((theme) {
+                  String themeName = AppStrings.get('theme_$theme', currentLang);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(theme),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColoresApp.moradoPrincipal,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          themeName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },
@@ -368,21 +391,59 @@ class _DifficultySelectionScreenState extends State<DifficultySelectionScreen> {
 
   void _showHangmanThemeDialog(BuildContext context, String difficulty) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(AppStrings.get('select_theme', currentLang)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ConstantesAhorcado.tematicas.map((theme) {
-              String themeName = AppStrings.get('theme_$theme', currentLang);
-              return ListTile(
-                title: Text(themeName),
-                onTap: () => Navigator.of(context).pop(theme),
-              );
-            }).toList(),
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_theme', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ...ConstantesAhorcado.tematicas.map((theme) {
+                  String themeName = AppStrings.get('theme_$theme', currentLang);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(theme),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ColoresApp.moradoPrincipal,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          themeName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },

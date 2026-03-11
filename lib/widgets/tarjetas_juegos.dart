@@ -41,22 +41,23 @@ class TarjetasJuegos extends StatelessWidget {
             // Si hay imagen, mostrarla. Si no, muestra el título
             child: imagePath != null
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(20), // Bordes redondeados
+                    borderRadius: BorderRadius.circular(30),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.asset(
-                          imagePath!, // Muestra la imagen desde assets
-                          fit: BoxFit.cover, // Cubrir todo el espacio
-                          width: double.infinity,
-                          height: double.infinity,
+                        Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Image.asset(
+                            imagePath!,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                         // Filtro oscuro para modo oscuro
                         if (Theme.of(context).brightness == Brightness.dark)
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(30),
                             ),
                           ),
                       ],

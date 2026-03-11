@@ -199,6 +199,8 @@ const Map<String, String> stringsEn = {
   'control_right_desc': 'Swipe right or press the right button',
   'control_joystick': 'Virtual Joystick',
   'control_joystick_desc': 'Use the D-Pad in the bottom right corner',
+  'control_swipe': 'Swipe',
+  'control_swipe_desc': 'Swipe in any direction to move the snake',
 
   // Sudoku Guides
   'sudoku_objective': 'Complete the 9x9 board with numbers 1-9, without repeating in rows, columns, or 3x3 subgrids.',

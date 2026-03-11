@@ -28,8 +28,8 @@ class ColoresApp {
   static const Color azulInfo = Colors.blue;
 
   // Colores de Snake
-  static const Color colorCabezaSerpiente = Color(0xFF1B4D1E); // Verde más oscuro
-  static const Color colorCuerpoSerpiente = Color(0xFF2E7D32); // Verde oscuro
+  static const Color colorCabezaSerpiente = Color(0xFF2F7D32); // Verde oscuro
+  static const Color colorCuerpoSerpiente = Color(0xFF4CB050); // Verde claro
   static const Color colorObstaculo = Colors.brown;
 
   // Colores de Sudoku

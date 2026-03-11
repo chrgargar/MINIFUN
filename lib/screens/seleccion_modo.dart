@@ -590,23 +590,59 @@ class _SeleccionModoState extends State<SeleccionModo> {
 
   void _showThemeSelectionDialog(BuildContext context, String difficulty, {bool isTimeAttackMode = false, bool isPerfectMode = false}) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(AppStrings.get('select_theme', currentLang)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ConstantesSopaLetras.tematicas.map((theme) {
-              String themeName = AppStrings.get('theme_$theme', currentLang);
-              return ListTile(
-                title: Text(themeName),
-                onTap: () {
-                  Navigator.of(context).pop(theme);
-                },
-              );
-            }).toList(),
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_theme', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ...ConstantesSopaLetras.tematicas.map((theme) {
+                  String themeName = AppStrings.get('theme_$theme', currentLang);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(theme),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B3FF2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          themeName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },
@@ -629,23 +665,59 @@ class _SeleccionModoState extends State<SeleccionModo> {
 
   void _showHangmanThemeDialog(BuildContext context, String difficulty, {bool isSpeedMode = false, bool isSurvivalMode = false}) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog<String>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(AppStrings.get('select_theme', currentLang)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ConstantesAhorcado.tematicas.map((theme) {
-              String themeName = AppStrings.get('theme_$theme', currentLang);
-              return ListTile(
-                title: Text(themeName),
-                onTap: () {
-                  Navigator.of(context).pop(theme);
-                },
-              );
-            }).toList(),
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_theme', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ...ConstantesAhorcado.tematicas.map((theme) {
+                  String themeName = AppStrings.get('theme_$theme', currentLang);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(theme),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B3FF2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          themeName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },

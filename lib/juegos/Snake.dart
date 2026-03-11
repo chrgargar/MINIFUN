@@ -48,9 +48,10 @@ class _SnakeGameState extends State<SnakeGame> {
   static const int columns = ConstantesSnake.columnas;
 
   // Variables principales del juego
-  List<Point<int>> snake = [const Point(10, 10)];
+  List<Point<int>> snake = [const Point(10, 10), const Point(9, 10), const Point(8, 10)];
   Point<int> food = const Point(5, 5);
   Direction direction = Direction.right;
+  Direction visualDirection = Direction.right; // Dirección visual de la cabeza (actualizada al moverse)
   int score = 0;
 
   // Timers
@@ -129,8 +130,9 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void startGame() {
-    snake = [const Point(10, 10)];
+    snake = [const Point(10, 10), const Point(9, 10), const Point(8, 10)];
     direction = Direction.right;
+    visualDirection = Direction.right;
     score = 0;
     timer?.cancel();
     gameTimer?.cancel();
@@ -262,6 +264,9 @@ class _SnakeGameState extends State<SnakeGame> {
     foodExpirationTimer?.cancel();
     AudioService.stopLoop();
 
+    // Si el widget ya no está montado, no mostrar diálogo
+    if (!mounted) return;
+
     // Log fin de partida
     appLogger.gameEvent('Snake', 'game_end', data: {'score': score, 'length': snake.length});
 
@@ -333,6 +338,10 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void _handleFoodEaten(Point<int> newHead) {
+    // Sonido de comer
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/eat.ogg', audioSettings.musicVolume);
+
     // En modo contrarreloj, agregar tiempo según el tipo de fruta
     if (widget.isTimeAttackMode) {
       score++;
@@ -381,6 +390,9 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void moveSnake() {
+    // Actualizar dirección visual solo cuando realmente se mueve
+    visualDirection = direction;
+
     final head = snake.first;
     Point<int> newHead;
 
@@ -407,6 +419,13 @@ class _SnakeGameState extends State<SnakeGame> {
 
       // Detener música de fondo
       AudioService.stopLoop();
+
+      // Si el widget ya no está montado, no mostrar diálogo
+      if (!mounted) return;
+
+      // Sonido de colisión
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/hit.ogg', audioSettings.musicVolume);
 
       // Notificar misiones
       final missionProvider = Provider.of<MissionProvider>(context, listen: false);
@@ -459,6 +478,11 @@ class _SnakeGameState extends State<SnakeGame> {
         (direction == Direction.left && newDirection == Direction.right) ||
         (direction == Direction.right && newDirection == Direction.left)) {
       return;
+    }
+    if (direction != newDirection) {
+      // Sonido de cambio de dirección
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/move.ogg', audioSettings.musicVolume);
     }
     direction = newDirection;
   }
@@ -514,19 +538,60 @@ class _SnakeGameState extends State<SnakeGame> {
     return 'assets/imagenes/apple.png';
   }
 
+  // Obtener la imagen correcta para cada segmento de la serpiente
+  String _getSnakeSegmentImage(int index) {
+    final current = snake[index];
+
+    // Cabeza (primer segmento) - usa la dirección visual (actualizada al moverse)
+    if (index == 0) {
+      switch (visualDirection) {
+        case Direction.right: return 'assets/imagenes/snake/head_right.png';
+        case Direction.left: return 'assets/imagenes/snake/head_left.png';
+        case Direction.down: return 'assets/imagenes/snake/head_down.png';
+        case Direction.up: return 'assets/imagenes/snake/head_up.png';
+      }
+    }
+
+    // Si solo hay un segmento, no hay cola ni cuerpo
+    if (snake.length < 2) return 'assets/imagenes/snake/head_right.png';
+
+    // Cola (último segmento) - apunta en dirección opuesta al segmento anterior
+    if (index == snake.length - 1) {
+      final prev = snake[index - 1];
+      // La cola apunta HACIA donde está el cuerpo (prev)
+      if (prev.x > current.x) return 'assets/imagenes/snake/tail_left.png';
+      if (prev.x < current.x) return 'assets/imagenes/snake/tail_right.png';
+      if (prev.y > current.y) return 'assets/imagenes/snake/tail_up.png';
+      return 'assets/imagenes/snake/tail_down.png';
+    }
+
+    // Cuerpo (segmentos intermedios)
+    final prev = snake[index - 1];
+    final next = snake[index + 1];
+
+    // Horizontal
+    if (prev.y == next.y) return 'assets/imagenes/snake/body_horizontal.png';
+    // Vertical
+    if (prev.x == next.x) return 'assets/imagenes/snake/body_vertical.png';
+
+    // Esquinas
+    final fromLeft = prev.x < current.x || next.x < current.x;
+    final fromRight = prev.x > current.x || next.x > current.x;
+    final fromTop = prev.y < current.y || next.y < current.y;
+    final fromBottom = prev.y > current.y || next.y > current.y;
+
+    if (fromTop && fromRight) return 'assets/imagenes/snake/body_topright.png';
+    if (fromTop && fromLeft) return 'assets/imagenes/snake/body_topleft.png';
+    if (fromBottom && fromRight) return 'assets/imagenes/snake/body_bottomright.png';
+    if (fromBottom && fromLeft) return 'assets/imagenes/snake/body_bottomleft.png';
+
+    return 'assets/imagenes/snake/body_horizontal.png';
+  }
+
   Widget _buildGameBoard(BuildContext context) {
-    return GestureDetector(
-      onVerticalDragUpdate: (details) {
-        if (details.delta.dy < 0) changeDirection(Direction.up);
-        if (details.delta.dy > 0) changeDirection(Direction.down);
-      },
-      onHorizontalDragUpdate: (details) {
-        if (details.delta.dx < 0) changeDirection(Direction.left);
-        if (details.delta.dx > 0) changeDirection(Direction.right);
-      },
-      child: LayoutBuilder(
+    return LayoutBuilder(
         builder: (context, constraints) {
-          // Calcular el tamaño óptimo para el tablero
+          // Calcular el tamaño óptimo para el tablero (usar todo el espacio)
           final screenWidth = constraints.maxWidth;
           final screenHeight = constraints.maxHeight;
           final cellSize = min(screenWidth / columns, screenHeight / rows);
@@ -542,15 +607,25 @@ class _SnakeGameState extends State<SnakeGame> {
                   height: boardHeight,
                   child: Stack(
                     children: [
-                      // Tablero y serpiente
+                      // Solo el tablero (fondo)
                       CustomPaint(
                         size: Size(boardWidth, boardHeight),
-                        painter: SnakePainter(
-                          snake,
-                          food,
-                          cellSize,
-                        ),
+                        painter: BoardPainter(cellSize),
                       ),
+                      // Serpiente con imágenes (movimiento discreto clásico)
+                      ...List.generate(snake.length, (index) {
+                        final segment = snake[index];
+                        return Positioned(
+                          left: segment.x * cellSize,
+                          top: segment.y * cellSize,
+                          child: Image.asset(
+                            _getSnakeSegmentImage(index),
+                            width: cellSize,
+                            height: cellSize,
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      }),
                       // Obstáculos (lava)
                       if (widget.isSurvivalMode)
                         ...obstacles.map((obstacle) => Positioned(
@@ -581,8 +656,7 @@ class _SnakeGameState extends State<SnakeGame> {
             ],
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildControls(BuildContext context) {
@@ -706,23 +780,6 @@ class _SnakeGameState extends State<SnakeGame> {
             ],
           ),
         ),
-        // Joystick virtual centrado en la parte inferior
-        Positioned(
-          bottom: 15,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: VirtualJoystick(
-              size: 150,
-              onUpPressed: () => changeDirection(Direction.up),
-              onDownPressed: () => changeDirection(Direction.down),
-              onLeftPressed: () => changeDirection(Direction.left),
-              onRightPressed: () => changeDirection(Direction.right),
-              buttonColor: ColoresApp.moradoPrincipal,
-              backgroundColor: ColoresApp.negro,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -731,42 +788,53 @@ class _SnakeGameState extends State<SnakeGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColoresApp.negro,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Área de juego con controles por gestos (swipe) - Ocupa toda la pantalla
-            _buildGameBoard(context),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque, // Detectar gestos en toda la pantalla incluyendo áreas vacías
+        // Controles por gestos en toda la pantalla
+        onVerticalDragUpdate: (details) {
+          if (details.delta.dy < -5) changeDirection(Direction.up);
+          if (details.delta.dy > 5) changeDirection(Direction.down);
+        },
+        onHorizontalDragUpdate: (details) {
+          if (details.delta.dx < -5) changeDirection(Direction.left);
+          if (details.delta.dx > 5) changeDirection(Direction.right);
+        },
+        child: SafeArea(
+          bottom: false, // Sin padding inferior para tablero más grande
+          child: Stack(
+            children: [
+              // Área de juego - Ocupa toda la pantalla
+              _buildGameBoard(context),
 
-            // Score, botones de control y joystick
-            _buildControls(context),
+              // Score y botones de control
+              _buildControls(context),
 
-            // Overlay de pausa
-            if (isPaused)
-              PauseOverlay(
-                onResume: togglePause,
-                onRestart: () {
-                  isPaused = false;
-                  startGame();
-                },
-                onExit: () => Navigator.pop(context),
-              ),
-          ],
+              // Overlay de pausa
+              if (isPaused)
+                PauseOverlay(
+                  onResume: togglePause,
+                  onRestart: () {
+                    isPaused = false;
+                    startGame();
+                  },
+                  onExit: () => Navigator.pop(context),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class SnakePainter extends CustomPainter {
-  final List<Point<int>> snake;
-  final Point<int> food;
+// Painter solo para el fondo del tablero
+class BoardPainter extends CustomPainter {
   final double cellSize;
 
-  SnakePainter(this.snake, this.food, this.cellSize);
+  BoardPainter(this.cellSize);
 
   @override
   void paint(Canvas canvas, Size size) {
-
     // 🎨 Fondo estilo tablero de ajedrez verde
     final paintLight = Paint()..color = ColoresApp.colorCuerpoSerpiente;
     final paintDark = Paint()..color = ColoresApp.colorCabezaSerpiente;
@@ -786,30 +854,8 @@ class SnakePainter extends CustomPainter {
       Rect.fromLTWH(0, 0, size.width, size.height),
       wallPaint..style = PaintingStyle.stroke..strokeWidth = 4,
     );
-
-    // 🐍 Serpiente mejorada
-    final snakePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [const Color.fromARGB(255, 208, 83, 233), Colors.purple],
-      ).createShader(Rect.fromLTWH(0, 0, cellSize, cellSize));
-    for (final point in snake) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            point.x * cellSize,
-            point.y * cellSize,
-            cellSize,
-            cellSize,
-          ),
-          const Radius.circular(6),
-        ),
-        snakePaint,
-      );
-    }
-
-    // 🍎 La comida y los obstáculos ahora se renderizan como imágenes en el Stack, no aquí
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

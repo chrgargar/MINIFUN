@@ -200,6 +200,8 @@ const Map<String, String> stringsEs = {
   'control_right_desc': 'Desliza hacia la derecha o presiona el botón derecha',
   'control_joystick': 'Joystick Virtual',
   'control_joystick_desc': 'Usa el D-Pad en la esquina inferior derecha',
+  'control_swipe': 'Deslizar',
+  'control_swipe_desc': 'Desliza en cualquier dirección para mover la serpiente',
 
   // Guías Sudoku
   'sudoku_objective': 'Completar la cuadrícula con números del 1 al 9, asegurándote de que no se repitan en:'

@@ -7,29 +7,9 @@ class GuiasJuegos {
   static List<ControlItem> getSnakeControles(String lang) {
     return [
       ControlItem(
-        icon: '⬆️',
-        name: AppStrings.get('control_up', lang),
-        description: AppStrings.get('control_up_desc', lang),
-      ),
-      ControlItem(
-        icon: '⬇️',
-        name: AppStrings.get('control_down', lang),
-        description: AppStrings.get('control_down_desc', lang),
-      ),
-      ControlItem(
-        icon: '⬅️',
-        name: AppStrings.get('control_left', lang),
-        description: AppStrings.get('control_left_desc', lang),
-      ),
-      ControlItem(
-        icon: '➡️',
-        name: AppStrings.get('control_right', lang),
-        description: AppStrings.get('control_right_desc', lang),
-      ),
-      ControlItem(
-        icon: '🎮',
-        name: AppStrings.get('control_joystick', lang),
-        description: AppStrings.get('control_joystick_desc', lang),
+        icon: '👆',
+        name: AppStrings.get('control_swipe', lang),
+        description: AppStrings.get('control_swipe_desc', lang),
       ),
     ];
   }
