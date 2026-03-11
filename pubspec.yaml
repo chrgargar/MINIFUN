@@ -105,7 +105,6 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/imagenes/icon.png"  # Cambia esto por el nombre de tu archivo de icono
-  # Si quieres iconos adaptativos para Android (recomendado):
-  # adaptive_icon_background: "#FFFFFF"
-  # adaptive_icon_foreground: "assets/imagenes/icon_foreground.png"
+  image_path: "assets/imagenes/icon.png"
+  adaptive_icon_background: "#6C3FC6"
+  adaptive_icon_foreground: "assets/imagenes/icon.png"
