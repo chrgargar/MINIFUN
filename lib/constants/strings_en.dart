@@ -317,4 +317,15 @@ const Map<String, String> stringsEn = {
   'diff_hangman_easy': '8 attempts - Common words.',
   'diff_hangman_medium': '6 attempts - Medium level.',
   'diff_hangman_hard': '4 attempts - Hard words.',
+
+  // PRO Benefits
+  'pro_benefits_title': 'MINIFUN PRO Benefits',
+  'pro_benefits_intro': 'Unlock exclusive modes:',
+  'pro_benefit_snake': 'Survival PRO in Snake',
+  'pro_benefit_watersort': 'Hard PRO in Water Sort',
+  'pro_benefit_wordsearch': 'Perfect PRO in Word Search',
+  'pro_benefit_hangman': 'Survival PRO in Hangman',
+  'pro_benefit_minesweeper_expert': 'Expert in Minesweeper',
+  'pro_benefit_minesweeper_noflags': 'No Flags in Minesweeper',
+  'pro_benefit_sudoku': 'Perfect PRO in Sudoku',
 };

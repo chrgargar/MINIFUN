@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/language_provider.dart';
@@ -13,7 +14,7 @@ import '../constants/sopa_de_letras_constants.dart';
 import '../constants/ahorcado_constants.dart';
 import '../providers/auth_provider.dart';
 
-class DifficultySelectionScreen extends StatelessWidget {
+class DifficultySelectionScreen extends StatefulWidget {
   final String gameTitle;    // Título localizado (solo para mostrar)
   final String gameKey;      // Clave interna no localizada para enrutamiento
   final String gameImagePath;
@@ -24,6 +25,54 @@ class DifficultySelectionScreen extends StatelessWidget {
     required this.gameKey,
     required this.gameImagePath,
   });
+
+  @override
+  State<DifficultySelectionScreen> createState() => _DifficultySelectionScreenState();
+}
+
+class _DifficultySelectionScreenState extends State<DifficultySelectionScreen> {
+  // Para evitar spam de SnackBar - mantener visible y reiniciar timer
+  Timer? _snackBarTimer;
+  bool _isSnackBarVisible = false;
+  static const _snackBarDuration = Duration(seconds: 3);
+
+  @override
+  void dispose() {
+    _snackBarTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showProLockedSnackBar(BuildContext context, String currentLang) {
+    // Cancelar el timer anterior si existe
+    _snackBarTimer?.cancel();
+
+    // Si no hay SnackBar visible, mostrar uno nuevo
+    if (!_isSnackBarVisible) {
+      _isSnackBarVisible = true;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('pro_mode_locked', currentLang)),
+          backgroundColor: const Color(0xFF7B3FF2),
+          duration: const Duration(days: 1), // Duración muy larga, controlada por timer
+        ),
+      ).closed.then((_) {
+        _isSnackBarVisible = false;
+        _snackBarTimer?.cancel();
+      });
+    }
+
+    // Iniciar/reiniciar el timer para cerrar el SnackBar
+    _snackBarTimer = Timer(_snackBarDuration, () {
+      if (_isSnackBarVisible) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+    });
+  }
+
+  String get gameTitle => widget.gameTitle;
+  String get gameKey => widget.gameKey;
+  String get gameImagePath => widget.gameImagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -118,26 +167,33 @@ class DifficultySelectionScreen extends StatelessWidget {
                           color: const Color(0xFF7B3FF2),
                         ),
                         
-                        // Botón Extra (PRO / Experto) si aplica
-                        if (gameKey == 'Buscaminas') ...[
-                          SizedBox(height: spacing),
+                        // Botón Extra (PRO / Experto) si aplica - Oculto para invitados
+                        if (gameKey == 'Buscaminas')
                           Consumer<AuthProvider>(
                             builder: (context, authProvider, child) {
+                              // Ocultar para invitados
+                              if (authProvider.isGuest) {
+                                return const SizedBox.shrink();
+                              }
                               final hasAccess = authProvider.isAdmin || authProvider.isPremium;
-                              return _buildDifficultyButton(
-                                context: context,
-                                height: buttonHeight * 0.9,
-                                difficulty: 'extremo',
-                                text: 'Extremo PRO',
-                                description: '35x35 - 300 minas',
-                                color: hasAccess
-                                    ? const Color(0xFF7B3FF2)
-                                    : const Color.fromARGB(255, 140, 130, 180), // Morado grisáceo
-                                isLocked: !hasAccess,
+                              return Column(
+                                children: [
+                                  SizedBox(height: spacing),
+                                  _buildDifficultyButton(
+                                    context: context,
+                                    height: buttonHeight * 0.9,
+                                    difficulty: 'extremo',
+                                    text: 'Extremo PRO',
+                                    description: '35x35 - 300 minas',
+                                    color: hasAccess
+                                        ? const Color(0xFF7B3FF2)
+                                        : const Color.fromARGB(255, 140, 130, 180), // Morado grisáceo
+                                    isLocked: !hasAccess,
+                                  ),
+                                ],
                               );
                             },
                           ),
-                        ],
                       ],
                     ),
                   ),
@@ -184,12 +240,7 @@ class DifficultySelectionScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (isLocked) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(AppStrings.get('pro_mode_locked', currentLang)),
-              backgroundColor: const Color(0xFF7B3FF2),
-            ),
-          );
+          _showProLockedSnackBar(context, currentLang);
           return;
         }
         _onDifficultySelected(context, difficulty);

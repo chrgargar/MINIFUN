@@ -57,156 +57,169 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
   }
 
   void _showMissionsDialog(BuildContext context, MissionProvider missionProvider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
+      builder: (BuildContext dialogContext) {
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
 
-              // Título con racha
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    AppStrings.get('daily_missions', currentLang),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black,
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 500),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Título
+                Text(
+                  AppStrings.get('daily_missions', currentLang),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Racha de días
+                if (missionProvider.streak > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7B3FF2).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.local_fire_department, color: Color(0xFF7B3FF2), size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${missionProvider.streak} ${AppStrings.get('days', currentLang)}',
+                          style: const TextStyle(
+                            color: Color(0xFF7B3FF2),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (missionProvider.streak > 0) ...[
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.2),
+                const SizedBox(height: 20),
+
+                // Lista de misiones
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: missionProvider.dailyMissions.map((mission) {
+                        final progress = mission.progress / mission.goal;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              // Icono en contenedor estilo app
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: mission.isCompleted
+                                      ? const Color(0xFF7B3FF2)
+                                      : const Color(0xFF7B3FF2).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  mission.isCompleted ? Icons.check : _getGameIcon(mission.gameType),
+                                  color: mission.isCompleted ? Colors.white : const Color(0xFF7B3FF2),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Título y barra de progreso
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppStrings.get(mission.titleKey, currentLang),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? Colors.white : Colors.black,
+                                        decoration: mission.isCompleted ? TextDecoration.lineThrough : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Barra de progreso
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: progress,
+                                        backgroundColor: const Color(0xFF7B3FF2).withValues(alpha: 0.2),
+                                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7B3FF2)),
+                                        minHeight: 6,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Contador
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7B3FF2).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${mission.progress}/${mission.goal}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF7B3FF2),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botón cerrar
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7B3FF2),
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.local_fire_department, color: Colors.orange, size: 16),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${missionProvider.streak} ${AppStrings.get('days', currentLang)}',
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Text(
+                      AppStrings.get('close', currentLang),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Lista de misiones
-              ...missionProvider.dailyMissions.map((mission) {
-                final progress = mission.progress / mission.goal;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: mission.isCompleted
-                        ? Colors.green.withOpacity(0.1)
-                        : (isDark ? Colors.grey[800] : Colors.grey[100]),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: mission.isCompleted ? Colors.green : Colors.transparent,
-                      width: 2,
-                    ),
                   ),
-                  child: Row(
-                    children: [
-                      // Icono de estado
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: mission.isCompleted
-                              ? Colors.green
-                              : const Color(0xFF7B3FF2).withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          mission.isCompleted ? Icons.check : _getGameIcon(mission.gameType),
-                          color: mission.isCompleted ? Colors.white : const Color(0xFF7B3FF2),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Título y progreso
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppStrings.get(mission.titleKey, currentLang),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: isDark ? Colors.white : Colors.black,
-                                decoration: mission.isCompleted ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            // Barra de progreso pequeña
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                backgroundColor: isDark ? Colors.grey[700] : Colors.grey[300],
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  mission.isCompleted ? Colors.green : const Color(0xFF7B3FF2),
-                                ),
-                                minHeight: 6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Contador
-                      Text(
-                        '${mission.progress}/${mission.goal}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: mission.isCompleted ? Colors.green : const Color(0xFF7B3FF2),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-
-              const SizedBox(height: 10),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -232,6 +245,106 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
       default:
         return Icons.star;
     }
+  }
+
+  void _showProBenefitsDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.star, color: Color(0xFFFFD700), size: 28),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  AppStrings.get('pro_benefits_title', currentLang),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.get('pro_benefits_intro', currentLang),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildBenefitItem('🐍', AppStrings.get('pro_benefit_snake', currentLang), isDark),
+              _buildBenefitItem('🧪', AppStrings.get('pro_benefit_watersort', currentLang), isDark),
+              _buildBenefitItem('🔤', AppStrings.get('pro_benefit_wordsearch', currentLang), isDark),
+              _buildBenefitItem('💀', AppStrings.get('pro_benefit_hangman', currentLang), isDark),
+              _buildBenefitItem('💣', AppStrings.get('pro_benefit_minesweeper_expert', currentLang), isDark),
+              _buildBenefitItem('🏳️', AppStrings.get('pro_benefit_minesweeper_noflags', currentLang), isDark),
+              _buildBenefitItem('🔢', AppStrings.get('pro_benefit_sudoku', currentLang), isDark),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                AppStrings.get('close', currentLang),
+                style: const TextStyle(color: Color(0xFF7B3FF2)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Aquí se implementaría la lógica de compra
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B3FF2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Text(
+                AppStrings.get('pro_price', currentLang),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBenefitItem(String emoji, String text, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -365,58 +478,61 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                   padding: EdgeInsets.all(gridPadding),
                   child: Column(
                     children: [
-                      // Banner MINIFUN PRO (oculto para admins y premium)
+                      // Banner MINIFUN PRO (oculto para admins, premium e invitados)
                       Consumer<AuthProvider>(
                         builder: (context, authProvider, child) {
-                          if (authProvider.isAdmin || authProvider.isPremium) {
+                          if (authProvider.isAdmin || authProvider.isPremium || authProvider.isGuest) {
                             return const SizedBox.shrink();
                           }
                           return SizedBox(
                             height: bannerHeight,
-                            child: Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: constraints.maxWidth * 0.04,
-                                vertical: bannerHeight * 0.15,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color.fromARGB(255, 180, 169, 69) // Amarillo oscurecido
-                                    : const Color.fromARGB(255, 255, 239, 98),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      AppStrings.get('get_pro', currentLang),
-                                      style: TextStyle(
-                                        fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark ? Colors.white : Colors.black,
+                            child: GestureDetector(
+                              onTap: () => _showProBenefitsDialog(context),
+                              child: Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: constraints.maxWidth * 0.04,
+                                  vertical: bannerHeight * 0.15,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color.fromARGB(255, 180, 169, 69) // Amarillo oscurecido
+                                      : const Color.fromARGB(255, 255, 239, 98),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        AppStrings.get('get_pro', currentLang),
+                                        style: TextStyle(
+                                          fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? Colors.white : Colors.black,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: bannerHeight * 0.2,
-                                      vertical: bannerHeight * 0.1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF7B3FF2),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      AppStrings.get('pro_price', currentLang),
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: bannerHeight * 0.2,
+                                        vertical: bannerHeight * 0.1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF7B3FF2),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        AppStrings.get('pro_price', currentLang),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: (bannerHeight * 0.25).clamp(12.0, 14.0),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -425,7 +541,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
 
                       Consumer<AuthProvider>(
                         builder: (context, authProvider, child) {
-                          if (authProvider.isAdmin || authProvider.isPremium) {
+                          if (authProvider.isAdmin || authProvider.isPremium || authProvider.isGuest) {
                             // Mitad del espacio arriba para centrar
                             return SizedBox(height: (bannerHeight + cellSpacing) / 2);
                           }
@@ -459,7 +575,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                       // Espacio extra abajo para centrar cuando no hay banner
                       Consumer<AuthProvider>(
                         builder: (context, authProvider, child) {
-                          if (authProvider.isAdmin || authProvider.isPremium) {
+                          if (authProvider.isAdmin || authProvider.isPremium || authProvider.isGuest) {
                             return SizedBox(height: (bannerHeight + cellSpacing) / 2);
                           }
                           return const SizedBox.shrink();
@@ -471,12 +587,13 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                         height: missionsHeight,
                         child: Consumer<MissionProvider>(
                           builder: (context, missionProvider, child) {
-                            return Column(
-                              children: [
-                                // Título MISIONES
-                                GestureDetector(
-                                  onTap: () => _showMissionsDialog(context, missionProvider),
-                                  child: Container(
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _showMissionsDialog(context, missionProvider),
+                              child: Column(
+                                children: [
+                                  // Título MISIONES
+                                  Container(
                                     width: double.infinity,
                                     height: missionsHeight * 0.45,
                                     padding: EdgeInsets.all(missionsHeight * 0.08),
@@ -499,14 +616,11 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                SizedBox(height: missionsHeight * 0.1),
+                                  SizedBox(height: missionsHeight * 0.1),
 
-                                // Barra de progreso
-                                GestureDetector(
-                                  onTap: () => _showMissionsDialog(context, missionProvider),
-                                  child: Container(
+                                  // Barra de progreso
+                                  Container(
                                     width: double.infinity,
                                     height: missionsHeight * 0.4,
                                     decoration: BoxDecoration(
@@ -548,8 +662,8 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                                       ],
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             );
                           },
                         ),

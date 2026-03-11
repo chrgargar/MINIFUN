@@ -306,4 +306,15 @@ const Map<String, String> stringsCa = {
   'diff_hangman_easy': '8 intents - Paraules comunes.',
   'diff_hangman_medium': '6 intents - Nivell mig.',
   'diff_hangman_hard': '4 intents - Paraules difícils.',
+
+  // PRO Benefits
+  'pro_benefits_title': 'Beneficis de MINIFUN PRO',
+  'pro_benefits_intro': 'Desbloqueja els modes exclusius:',
+  'pro_benefit_snake': 'Supervivència PRO a Snake',
+  'pro_benefit_watersort': 'Difícil PRO a Water Sort',
+  'pro_benefit_wordsearch': 'Perfecte PRO a Busca de Paraules',
+  'pro_benefit_hangman': 'Supervivència PRO a Penjat',
+  'pro_benefit_minesweeper_expert': 'Expert a Buscamines',
+  'pro_benefit_minesweeper_noflags': 'Sense Banderes a Buscamines',
+  'pro_benefit_sudoku': 'Perfecte PRO a Sudoku',
 };

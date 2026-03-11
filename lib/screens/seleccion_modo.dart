@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/boton_ajustes.dart';
@@ -17,7 +18,7 @@ import '../constants/ahorcado_constants.dart';
 import '../providers/auth_provider.dart';
 
 // Pantalla de selección de modalidad de juego
-class SeleccionModo extends StatelessWidget {
+class SeleccionModo extends StatefulWidget {
   final String gameTitle;    // Título localizado (solo para mostrar)
   final String gameKey;      // Clave interna no localizada para enrutamiento
   final String gameImagePath;
@@ -28,6 +29,54 @@ class SeleccionModo extends StatelessWidget {
     required this.gameKey,
     required this.gameImagePath,
   });
+
+  @override
+  State<SeleccionModo> createState() => _SeleccionModoState();
+}
+
+class _SeleccionModoState extends State<SeleccionModo> {
+  // Para evitar spam de SnackBar - mantener visible y reiniciar timer
+  Timer? _snackBarTimer;
+  bool _isSnackBarVisible = false;
+  static const _snackBarDuration = Duration(seconds: 3);
+
+  @override
+  void dispose() {
+    _snackBarTimer?.cancel();
+    super.dispose();
+  }
+
+  void _showProLockedSnackBar(BuildContext context, String currentLang) {
+    // Cancelar el timer anterior si existe
+    _snackBarTimer?.cancel();
+
+    // Si no hay SnackBar visible, mostrar uno nuevo
+    if (!_isSnackBarVisible) {
+      _isSnackBarVisible = true;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.get('pro_mode_locked', currentLang)),
+          backgroundColor: const Color(0xFF7B3FF2),
+          duration: const Duration(days: 1), // Duración muy larga, controlada por timer
+        ),
+      ).closed.then((_) {
+        _isSnackBarVisible = false;
+        _snackBarTimer?.cancel();
+      });
+    }
+
+    // Iniciar/reiniciar el timer para cerrar el SnackBar
+    _snackBarTimer = Timer(_snackBarDuration, () {
+      if (_isSnackBarVisible) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+    });
+  }
+
+  String get gameTitle => widget.gameTitle;
+  String get gameKey => widget.gameKey;
+  String get gameImagePath => widget.gameImagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -151,72 +200,74 @@ class SeleccionModo extends StatelessWidget {
                           },
                         ),
 
-                        SizedBox(height: spacing),
-
-                        // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.)
+                        // 2. Botón PRO (Supervivencia PRO / Perfecto PRO / Experto / etc.) - Oculto para invitados
                         Consumer<AuthProvider>(
                           builder: (context, authProvider, child) {
+                            // Ocultar para invitados
+                            if (authProvider.isGuest) {
+                              return const SizedBox.shrink();
+                            }
                             final hasAccess = authProvider.isAdmin || authProvider.isPremium;
-                            return _buildModeButton(
-                              height: buttonHeight,
-                              icon: gameKey == 'Snake' ? '💀' : (gameKey == 'Buscaminas' ? '💣' : (gameKey == 'WaterSort' ? '🧪' : (gameKey == 'Ahorcado' ? '💀' : '💎'))),
-                              text: gameKey == 'Snake'
-                                  ? AppStrings.get('survival_pro', currentLang)
-                                  : (gameKey == 'Buscaminas'
-                                      ? 'Experto'
-                                      : (gameKey == 'WaterSort'
-                                          ? AppStrings.get('hard_pro', currentLang)
-                                          : (gameKey == 'Ahorcado'
-                                              ? AppStrings.get('hangman_survival', currentLang)
-                                              : AppStrings.get('perfect_pro', currentLang)))),
-                              color: hasAccess
-                                  ? const Color.fromARGB(255, 255, 239, 98)
-                                  : const Color.fromARGB(255, 180, 175, 130), // Amarillo grisáceo
-                              textColor: hasAccess ? Colors.black : Colors.grey[700]!,
-                              onTap: () {
-                                if (!hasAccess) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(AppStrings.get('pro_mode_locked', currentLang)),
-                                      backgroundColor: const Color(0xFF7B3FF2),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (gameKey == 'Snake') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SnakeGame(isSurvivalMode: true),
-                                    ),
-                                  );
-                                } else if (gameKey == 'Sudoku') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SudokuGame(isPerfectMode: true),
-                                    ),
-                                  );
-                                } else if (gameKey == 'WaterSort') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const WaterSortGame(difficulty: 'dificil'),
-                                    ),
-                                  );
-                                } else if (gameKey == 'Buscaminas') {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BuscaminasGame.dificil,
-                                    ),
-                                  );
-                                } else if (gameKey == 'Sopa de Letras') {
-                                  _showThemeSelectionDialog(context, 'dificil', isPerfectMode: true);
-                                } else if (gameKey == 'Ahorcado') {
-                                  _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
-                                }
-                              },
+                            return Column(
+                              children: [
+                                SizedBox(height: spacing),
+                                _buildModeButton(
+                                  height: buttonHeight,
+                                  icon: gameKey == 'Snake' ? '💀' : (gameKey == 'Buscaminas' ? '💣' : (gameKey == 'WaterSort' ? '🧪' : (gameKey == 'Ahorcado' ? '💀' : '💎'))),
+                                  text: gameKey == 'Snake'
+                                      ? AppStrings.get('survival_pro', currentLang)
+                                      : (gameKey == 'Buscaminas'
+                                          ? 'Experto'
+                                          : (gameKey == 'WaterSort'
+                                              ? AppStrings.get('hard_pro', currentLang)
+                                              : (gameKey == 'Ahorcado'
+                                                  ? AppStrings.get('hangman_survival', currentLang)
+                                                  : AppStrings.get('perfect_pro', currentLang)))),
+                                  color: hasAccess
+                                      ? const Color.fromARGB(255, 255, 239, 98)
+                                      : const Color.fromARGB(255, 180, 175, 130), // Amarillo grisáceo
+                                  textColor: hasAccess ? Colors.black : Colors.grey[700]!,
+                                  onTap: () {
+                                    if (!hasAccess) {
+                                      _showProLockedSnackBar(context, currentLang);
+                                      return;
+                                    }
+                                    if (gameKey == 'Snake') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const SnakeGame(isSurvivalMode: true),
+                                        ),
+                                      );
+                                    } else if (gameKey == 'Sudoku') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const SudokuGame(isPerfectMode: true),
+                                        ),
+                                      );
+                                    } else if (gameKey == 'WaterSort') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const WaterSortGame(difficulty: 'dificil'),
+                                        ),
+                                      );
+                                    } else if (gameKey == 'Buscaminas') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => BuscaminasGame.dificil,
+                                        ),
+                                      );
+                                    } else if (gameKey == 'Sopa de Letras') {
+                                      _showThemeSelectionDialog(context, 'dificil', isPerfectMode: true);
+                                    } else if (gameKey == 'Ahorcado') {
+                                      _showHangmanThemeDialog(context, 'medio', isSurvivalMode: true);
+                                    }
+                                  },
+                                ),
+                              ],
                             );
                           },
                         ),
@@ -275,36 +326,39 @@ class SeleccionModo extends StatelessWidget {
                           SizedBox(height: spacing),
                           Consumer<AuthProvider>(
                             builder: (context, authProvider, child) {
+                              // Ocultar para invitados
+                              if (authProvider.isGuest) {
+                                return const SizedBox.shrink();
+                              }
                               final hasAccess = authProvider.isAdmin || authProvider.isPremium;
-                              return _buildModeButton(
-                                height: buttonHeight,
-                                icon: '🏳️',
-                                text: 'Sin Banderas',
-                                color: hasAccess
-                                    ? const Color.fromARGB(255, 255, 239, 98)
-                                    : const Color.fromARGB(255, 180, 175, 130),
-                                textColor: hasAccess ? Colors.black : Colors.grey[700]!,
-                                onTap: () {
-                                  if (!hasAccess) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(AppStrings.get('pro_mode_locked', currentLang)),
-                                        backgroundColor: const Color(0xFF7B3FF2),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const BuscaminasGame(isSinBanderas: true),
-                                    ),
-                                  );
-                                },
+                              return Column(
+                                children: [
+                                  _buildModeButton(
+                                    height: buttonHeight,
+                                    icon: '🏳️',
+                                    text: 'Sin Banderas',
+                                    color: hasAccess
+                                        ? const Color.fromARGB(255, 255, 239, 98)
+                                        : const Color.fromARGB(255, 180, 175, 130),
+                                    textColor: hasAccess ? Colors.black : Colors.grey[700]!,
+                                    onTap: () {
+                                      if (!hasAccess) {
+                                        _showProLockedSnackBar(context, currentLang);
+                                        return;
+                                      }
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const BuscaminasGame(isSinBanderas: true),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  SizedBox(height: spacing),
+                                ],
                               );
                             },
                           ),
-                          SizedBox(height: spacing),
                         ],
 
                         if (gameKey == 'Sudoku') ...[

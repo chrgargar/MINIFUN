@@ -321,4 +321,15 @@ const Map<String, String> stringsEs = {
   'diff_hangman_easy': '8 intentos - Palabras comunes.',
   'diff_hangman_medium': '6 intentos - Nivel medio.',
   'diff_hangman_hard': '4 intentos - Palabras difíciles.',
+
+  // PRO Benefits
+  'pro_benefits_title': 'Beneficios de MINIFUN PRO',
+  'pro_benefits_intro': 'Desbloquea los modos exclusivos:',
+  'pro_benefit_snake': 'Supervivencia PRO en Snake',
+  'pro_benefit_watersort': 'Difícil PRO en Water Sort',
+  'pro_benefit_wordsearch': 'Perfecto PRO en Sopa de Letras',
+  'pro_benefit_hangman': 'Supervivencia PRO en Ahorcado',
+  'pro_benefit_minesweeper_expert': 'Experto en Buscaminas',
+  'pro_benefit_minesweeper_noflags': 'Sin Banderas en Buscaminas',
+  'pro_benefit_sudoku': 'Perfecto PRO en Sudoku',
 };
