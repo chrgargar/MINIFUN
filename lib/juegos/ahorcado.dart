@@ -34,7 +34,7 @@ class AhorcadoGame extends StatefulWidget {
   State<AhorcadoGame> createState() => _AhorcadoGameState();
 }
 
-class _AhorcadoGameState extends State<AhorcadoGame> {
+class _AhorcadoGameState extends State<AhorcadoGame> with TickerProviderStateMixin {
   // Palabra actual
   late String currentWord;
   late Set<String> guessedLetters;
@@ -71,6 +71,9 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     'N', 'Ñ', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
   ];
 
+  // Controller para animación de dibujo del ahorcado
+  late AnimationController _drawController;
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +88,20 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
     appLogger.gameEvent('Ahorcado', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode});
 
     _initializeGame();
+
+    // Inicializar controller de animación de dibujo
+    _drawController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+
+    // Precargar efectos de sonido
+    AudioService.preloadSounds([
+      'Sonidos/letter_correct.ogg',
+      'Sonidos/letter_wrong.ogg',
+      'Sonidos/hint.wav',
+    ]);
+
     _startBackgroundMusic();
   }
 
@@ -200,7 +217,11 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
 
       if (currentWord.contains(letter)) {
         // Letra correcta
-                // Contar cuántas veces aparece la letra
+        // Reproducir sonido de letra correcta
+        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        AudioService.playSound('Sonidos/letter_correct.ogg', audioSettings.sfxVolume);
+
+        // Contar cuántas veces aparece la letra
         int occurrences = currentWord.split('').where((l) => l == letter).length;
         score += ConstantesAhorcado.puntosPorLetraCorrecta * occurrences;
 
@@ -235,8 +256,15 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
         }
       } else {
         // Letra incorrecta
-                errorsCount++;
+        // Reproducir sonido de letra incorrecta
+        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        AudioService.playSound('Sonidos/letter_wrong.ogg', audioSettings.sfxVolume);
+
+        errorsCount++;
         score = max(0, score - ConstantesAhorcado.penalizacionPorError);
+
+        // Animar el dibujo del ahorcado
+        _drawController.forward(from: 0.0);
 
         // Verificar si perdió
         if (errorsCount >= ConstantesAhorcado.maxIntentos) {
@@ -318,6 +346,10 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
       return;
     }
 
+    // Reproducir sonido de pista
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
+
     setState(() {
       revealedHint = currentHints[usedHints];
       usedHints++;
@@ -365,6 +397,7 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   @override
   void dispose() {
     letterTimer?.cancel();
+    _drawController.dispose();
     AudioService.stopLoop();
     super.dispose();
   }
@@ -556,12 +589,18 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
   Widget _buildHangmanDrawing(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: CustomPaint(
-        painter: HangmanPainter(
-          errorsCount: errorsCount,
-          color: isDark ? Colors.white : Colors.black,
-        ),
-        size: Size.infinite,
+      child: AnimatedBuilder(
+        animation: _drawController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: HangmanPainter(
+              errorsCount: errorsCount,
+              color: isDark ? Colors.white : Colors.black,
+              progress: _drawController.value,
+            ),
+            size: Size.infinite,
+          );
+        },
       ),
     );
   }
@@ -586,12 +625,27 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
                   ),
                 ),
               ),
-              child: Text(
-                isGuessed ? letter : ' ',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black,
+              child: TweenAnimationBuilder<double>(
+                key: ValueKey('${letter}_${isGuessed}'),
+                tween: Tween<double>(begin: 0.0, end: isGuessed ? 1.0 : 0.0),
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: isGuessed ? value : 1.0,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Text(
+                  isGuessed ? letter : ' ',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
               ),
             );
@@ -659,10 +713,13 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
         : '${AppStrings.get('the_word_was', currentLang)}: $currentWord\n${AppStrings.get('score', currentLang)}: $score$modeStats';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
       GameOverDialog.show(
         context: context,
         isVictory: isVictory,
         message: message,
+        audioSettings: audioSettings,
         onRestart: () {
           Navigator.pop(context);
           _restartGame();
@@ -685,8 +742,13 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
 class HangmanPainter extends CustomPainter {
   final int errorsCount;
   final Color color;
+  final double progress; // 0.0 a 1.0 para animación
 
-  HangmanPainter({required this.errorsCount, required this.color});
+  HangmanPainter({
+    required this.errorsCount,
+    required this.color,
+    this.progress = 1.0, // Default sin animación
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -735,55 +797,61 @@ class HangmanPainter extends CustomPainter {
 
     // 1. Cabeza
     if (errorsCount >= 1) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 1 ? progress : 1.0);
       canvas.drawCircle(
         Offset(bodyX, headY + headRadius),
         headRadius,
-        paint,
+        partPaint,
       );
     }
 
     // 2. Cuerpo
     if (errorsCount >= 2) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 2 ? progress : 1.0);
       canvas.drawLine(
         Offset(bodyX, headY + headRadius * 2),
         Offset(bodyX, headY + headRadius * 2 + 60),
-        paint,
+        partPaint,
       );
     }
 
     // 3. Brazo izquierdo
     if (errorsCount >= 3) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 3 ? progress : 1.0);
       canvas.drawLine(
         Offset(bodyX, headY + headRadius * 2 + 15),
         Offset(bodyX - 30, headY + headRadius * 2 + 40),
-        paint,
+        partPaint,
       );
     }
 
     // 4. Brazo derecho
     if (errorsCount >= 4) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 4 ? progress : 1.0);
       canvas.drawLine(
         Offset(bodyX, headY + headRadius * 2 + 15),
         Offset(bodyX + 30, headY + headRadius * 2 + 40),
-        paint,
+        partPaint,
       );
     }
 
     // 5. Pierna izquierda
     if (errorsCount >= 5) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 5 ? progress : 1.0);
       canvas.drawLine(
         Offset(bodyX, headY + headRadius * 2 + 60),
         Offset(bodyX - 25, headY + headRadius * 2 + 100),
-        paint,
+        partPaint,
       );
     }
 
     // 6. Pierna derecha
     if (errorsCount >= 6) {
+      final partPaint = paint..color = color.withOpacity(errorsCount == 6 ? progress : 1.0);
       canvas.drawLine(
         Offset(bodyX, headY + headRadius * 2 + 60),
         Offset(bodyX + 25, headY + headRadius * 2 + 100),
-        paint,
+        partPaint,
       );
     }
   }

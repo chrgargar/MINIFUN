@@ -40,32 +40,41 @@ class TarjetasJuegos extends StatelessWidget {
             highlightColor: Colors.transparent, // Sin efecto al mantener presionado
             // Si hay imagen, mostrarla. Si no, muestra el título
             child: imagePath != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Image.asset(
-                            imagePath!,
-                            fit: BoxFit.contain,
+                ? Center(
+                    child: AspectRatio(
+                      aspectRatio: 1, // Mantener cuadrado para que sea circular
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFBAE059),
+                        ),
+                        child: ClipOval(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Image.asset(
+                                  imagePath!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                              // Filtro oscuro para modo oscuro
+                              if (Theme.of(context).brightness == Brightness.dark)
+                                Container(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                ),
+                            ],
                           ),
                         ),
-                        // Filtro oscuro para modo oscuro
-                        if (Theme.of(context).brightness == Brightness.dark)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
                   )
                 : Container(
-                    // Si no hay imagen, mostrsar un fondo gris con el título
-                    color: Colors.grey[300],
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFBAE059),
+                    ),
                     child: Center(
                       child: Text(
                         title,

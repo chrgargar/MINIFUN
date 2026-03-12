@@ -342,7 +342,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
     if (cell != null) {
       // Reproducir sonido de toque
       final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-      AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.musicVolume);
+      AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.sfxVolume);
 
       setState(() {
         isDragging = true;
@@ -369,7 +369,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
         // Solo reproducir sonido si cambió la cantidad de celdas seleccionadas
         if (newCells.length != selectedCells.length) {
           final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-          AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.musicVolume);
+          AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.sfxVolume);
         }
 
         setState(() {
@@ -430,7 +430,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
     // Reproducir sonido de palabra correcta
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/word_ok.wav', audioSettings.musicVolume);
+    AudioService.playSound('Sonidos/word_ok.wav', audioSettings.sfxVolume);
 
     // Mostrar mensaje de palabra bonus
     setState(() {
@@ -473,7 +473,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
         // Reproducir sonido de palabra correcta
         final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-        AudioService.playSound('Sonidos/word_ok.wav', audioSettings.musicVolume);
+        AudioService.playSound('Sonidos/word_ok.wav', audioSettings.sfxVolume);
 
         // Notificar misión de palabra encontrada
         final missionProvider = Provider.of<MissionProvider>(context, listen: false);
@@ -574,6 +574,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
       return;
     }
 
+    // Reproducir sonido de pista
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
+
     // Buscar una palabra no encontrada
     String? wordToReveal;
     for (String word in wordsToFind) {
@@ -650,10 +654,13 @@ class _WordSearchGameState extends State<WordSearchGame> {
       message = "${AppStrings.get('time_up', currentLang)}\n${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}";
     }
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     GameOverDialog.show(
       context: context,
       isVictory: victory,
       message: message,
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         setState(() {

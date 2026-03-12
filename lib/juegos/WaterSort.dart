@@ -53,7 +53,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   List<List<List<Color>>> history = [];
 
   // Sistema de pistas
-  late int hintsAvailable;
+  int hintsAvailable = 3;
   int usedHints = 0;
   int? suggestedFromTube;
   int? suggestedToTube;
@@ -78,6 +78,15 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     appLogger.gameEvent('WaterSort', 'game_start', data: {'difficulty': widget.difficulty, 'mode': mode});
 
     _loadSavedLevel();
+
+    // Precargar efectos de sonido
+    AudioService.preloadSounds([
+      'Sonidos/pour_water.ogg',
+      'Sonidos/tube_complete.ogg',
+      'Sonidos/tube_shake.ogg',
+      'Sonidos/hint.wav',
+    ]);
+
     _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -314,6 +323,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       return;
     }
 
+    // Reproducir sonido de pista
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
+
     final (bestFrom, bestTo) = _findHintMove();
 
     if (bestFrom != null && bestTo != null) {
@@ -385,10 +398,14 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         if (_canPour(selectedTube!, index)) {
           _pourWater(selectedTube!, index);
         } else {
+          // No se puede verter - reproducir sonido de bloqueo
+          final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+          AudioService.playSound('Sonidos/tube_shake.ogg', audioSettings.sfxVolume);
+
           // Si no se puede verter, seleccionar el nuevo tubo si tiene contenido
           if (tubes[index].isNotEmpty) {
             selectedTube = index;
-                      } else {
+          } else {
             selectedTube = null;
           }
         }
@@ -405,6 +422,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
   void _pourWater(int from, int to) async {
     _saveState();
+
+    // Reproducir sonido de vertido
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/pour_water.ogg', audioSettings.sfxVolume);
 
     setState(() {
       isPouring = true;
@@ -432,13 +453,52 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     });
 
     _pourAnimationController!.reset();
-    
+
+    // Verificar si el tubo destino quedó completo
+    if (_isTubeComplete(to)) {
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/tube_complete.ogg', audioSettings.sfxVolume);
+    }
+
     // Verificar victoria
     if (_checkWin()) {
       setState(() {
         gameWon = true;
       });
             _showWinDialog();
+    }
+  }
+
+  bool _isTubeComplete(int tubeIndex) {
+    final tube = tubes[tubeIndex];
+    if (tube.isEmpty) return false;
+    if (tube.length != ConstantesWaterSort.tubeCapacity) return false;
+    if (tube.toSet().length != 1) return false;
+    return true;
+  }
+
+  int _calculateStars(int moves, int optimalMoves) {
+    if (moves <= optimalMoves) return 3;
+    if (moves <= (optimalMoves * 1.5).ceil()) return 2;
+    return 1;
+  }
+
+  int _getOptimalMoves() {
+    // Estimación: número de colores únicos * 2.5
+    final uniqueColors = tubes
+        .expand((tube) => tube)
+        .where((color) => color != Colors.transparent)
+        .toSet()
+        .length;
+    return (uniqueColors * 2.5).ceil();
+  }
+
+  Future<void> _saveStars(int stars) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'watersort_stars_${widget.difficulty}_$level';
+    final currentStars = prefs.getInt(key) ?? 0;
+    if (stars > currentStars) {
+      await prefs.setInt(key, stars);
     }
   }
 
@@ -452,8 +512,13 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   void _showWinDialog() {
+    // Calcular estrellas basadas en eficiencia
+    final optimalMoves = _getOptimalMoves();
+    final stars = _calculateStars(moves, optimalMoves);
+    _saveStars(stars);
+
     // Log fin de partida (victoria)
-    appLogger.gameEvent('WaterSort', 'game_end', data: {'won': true, 'level': level, 'moves': moves});
+    appLogger.gameEvent('WaterSort', 'game_end', data: {'won': true, 'level': level, 'moves': moves, 'stars': stars});
 
     // Notificar misiones
     final missionProvider = Provider.of<MissionProvider>(context, listen: false);
@@ -461,12 +526,21 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     missionProvider.notifyActivity(gameType: 'watersort', activityType: MissionType.playGames);
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
     _isDialogOpen = true;
+
+    // Construir mensaje con estrellas
+    final starsDisplay = '⭐' * stars + '☆' * (3 - stars);
+    final message = '$starsDisplay\n'
+        '${AppStrings.get('level_completed', currentLang)}\n'
+        '${AppStrings.get('moves', currentLang)}: $moves (${AppStrings.get('optimal', currentLang)}: $optimalMoves)'
+        '${widget.isTimeAttackMode ? '\n${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}' : ''}';
 
     GameOverDialog.show(
       context: context,
       isVictory: true,
-      message: '${AppStrings.get('level_completed', currentLang)}\n${AppStrings.get('moves', currentLang)}: $moves${widget.isTimeAttackMode ? '\n${AppStrings.get('time_remaining', currentLang)}: ${_formatTime(timeLeft)}' : ''}',
+      message: message,
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         _isDialogOpen = false;
@@ -497,11 +571,14 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     _isDialogOpen = true;
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     GameOverDialog.show(
       context: context,
       isVictory: false,
       customTitle: '⏱️ ${AppStrings.get('time_up', currentLang)}',
       message: '${AppStrings.get('level_failed', currentLang)}\n${AppStrings.get('moves_made', currentLang)}: $moves',
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         _isDialogOpen = false;
@@ -713,14 +790,19 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     bool isSuggestedFrom = suggestedFromTube == index;
     bool isSuggestedTo = suggestedToTube == index;
     bool isSuggested = isSuggestedFrom || isSuggestedTo;
+    bool isComplete = _isTubeComplete(index);
     List<Color> tube = tubes[index];
     double segmentHeight = (height - 20) / ConstantesWaterSort.tubeCapacity;
+
+    bool isPouring = pouringFromTube == index || pouringToTube == index;
 
     return GestureDetector(
       onTap: () => _onTubeTap(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        transform: Matrix4.translationValues(0, isSelected ? -15 : 0, 0),
+        transform: Matrix4.identity()
+          ..translate(0.0, isSelected ? -15.0 : 0.0)
+          ..scale(isPouring ? 1.05 : 1.0),
         child: Container(
           width: width,
           height: height,
@@ -735,30 +817,40 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               bottomRight: Radius.circular(25),
             ),
             border: Border.all(
-              color: isSuggested
-                  ? Colors.amber
-                  : (isSelected
-                      ? ColoresApp.moradoPrincipal
-                      : (isDark ? ColoresApp.gris600 : ColoresApp.gris300)),
-              width: isSuggested ? 4 : (isSelected ? 3 : 2),
+              color: isComplete
+                  ? Colors.greenAccent
+                  : (isSuggested
+                      ? Colors.amber
+                      : (isSelected
+                          ? ColoresApp.moradoPrincipal
+                          : (isDark ? ColoresApp.gris600 : ColoresApp.gris300))),
+              width: isComplete ? 4 : (isSuggested ? 4 : (isSelected ? 3 : 2)),
             ),
-            boxShadow: isSuggested
+            boxShadow: isComplete
                 ? [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.6),
-                      blurRadius: 15,
-                      spreadRadius: 3,
+                      color: Colors.greenAccent.withOpacity(0.8),
+                      blurRadius: 20,
+                      spreadRadius: 4,
                     ),
                   ]
-                : (isSelected
+                : (isSuggested
                     ? [
                         BoxShadow(
-                          color: ColoresApp.moradoPrincipal.withOpacity(0.4),
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                          color: Colors.amber.withOpacity(0.6),
+                          blurRadius: 15,
+                          spreadRadius: 3,
                         ),
                       ]
-                    : null),
+                    : (isSelected
+                        ? [
+                            BoxShadow(
+                              color: ColoresApp.moradoPrincipal.withOpacity(0.4),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(4),

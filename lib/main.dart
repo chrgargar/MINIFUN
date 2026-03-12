@@ -11,6 +11,7 @@ import 'config/language_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/mission_provider.dart';
 import 'services/app_logger.dart';
+import 'services/audio_service.dart';
 import 'constants/api_constants.dart';
 
 // Función principal que se ejecuta al iniciar la app
@@ -38,6 +39,13 @@ void main() {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
       }
+
+      // Precargar sonidos frecuentes para reproducción instantánea
+      AudioService.preloadSounds([
+        'Sonidos/hint.wav',
+        'Sonidos/soft_touch.wav',
+        'Sonidos/word_ok.wav',
+      ]);
 
       // Configurar captura de errores de Flutter
       FlutterError.onError = (FlutterErrorDetails details) {

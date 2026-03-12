@@ -309,12 +309,14 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
     }
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
 
     GameOverDialog.show(
       context: context,
       isVictory: false,
       customTitle: '⏱️ ${AppStrings.get('time_up', currentLang)}',
       message: '${AppStrings.get('final_score', currentLang)}: $score',
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         startGame();
@@ -376,7 +378,7 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
   void _handleFoodEaten(Point<int> newHead) {
     // Sonido de comer
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/eat.ogg', audioSettings.musicVolume);
+    AudioService.playSound('Sonidos/eat.ogg', audioSettings.sfxVolume);
 
     // En modo contrarreloj, agregar tiempo según el tipo de fruta
     if (widget.isTimeAttackMode) {
@@ -459,7 +461,7 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
 
       // Sonido de colisión
       final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-      AudioService.playSound('Sonidos/hit.ogg', audioSettings.musicVolume);
+      AudioService.playSound('Sonidos/hit.ogg', audioSettings.sfxVolume);
 
       // Notificar misiones
       final missionProvider = Provider.of<MissionProvider>(context, listen: false);
@@ -474,6 +476,7 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
         context: context,
         isVictory: false,
         message: '${AppStrings.get('score', currentLang)}: $score',
+        audioSettings: audioSettings,
         onRestart: () {
           Navigator.pop(context);
           startGame();
@@ -534,7 +537,7 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
     if (direction != newDirection) {
       // Sonido de cambio de dirección
       final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-      AudioService.playSound('Sonidos/move.ogg', audioSettings.musicVolume);
+      AudioService.playSound('Sonidos/move.ogg', audioSettings.sfxVolume);
     }
     direction = newDirection;
   }

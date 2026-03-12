@@ -27,12 +27,18 @@ class GameHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
-    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
-    final hPad = (sw * 0.028).clamp(8.0, 14.0);
-    final gap = (sw * 0.016).clamp(4.0, 8.0);
+    // Reducir tamaño de botones si hay botón de pista (más elementos)
+    final hasHint = hintButton != null;
+    final btnSize = hasHint
+        ? (sw * 0.075).clamp(24.0, 34.0)
+        : (sw * 0.09).clamp(28.0, 40.0);
+    final hPad = (sw * 0.02).clamp(6.0, 12.0);
+    final gap = hasHint
+        ? (sw * 0.01).clamp(2.0, 5.0)
+        : (sw * 0.016).clamp(4.0, 8.0);
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.5),
       child: Row(
         children: [
           // Stats a la izquierda (envueltos en Flexible para que se ajusten)

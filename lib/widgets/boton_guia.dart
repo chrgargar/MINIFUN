@@ -28,38 +28,42 @@ class BotonGuia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: ColoresApp.moradoPrincipal.withValues(alpha: 0.9),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: ColoresApp.moradoPrincipal.withValues(alpha: 0.5),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: const Icon(Icons.help_outline),
-        color: ColoresApp.blanco,
-        iconSize: size * 0.53,
-        onPressed: () async {
-          // Pausar el juego al abrir la guía
-          onOpen?.call();
+    return GestureDetector(
+      onTap: () async {
+        // Pausar el juego al abrir la guía
+        onOpen?.call();
 
-          await GuiaJuegoDialog.show(
-            context,
-            gameTitle: gameTitle,
-            gameImagePath: gameImagePath,
-            objetivo: objetivo,
-            instrucciones: instrucciones,
-            controles: controles,
-          );
+        await GuiaJuegoDialog.show(
+          context,
+          gameTitle: gameTitle,
+          gameImagePath: gameImagePath,
+          objetivo: objetivo,
+          instrucciones: instrucciones,
+          controles: controles,
+        );
 
-          // Reanudar el juego al cerrar la guía
-          onClose?.call();
-        },
+        // Reanudar el juego al cerrar la guía
+        onClose?.call();
+      },
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: ColoresApp.moradoPrincipal.withValues(alpha: 0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: ColoresApp.moradoPrincipal.withValues(alpha: 0.5),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.help_outline,
+          color: ColoresApp.blanco,
+          size: size * 0.55,
+        ),
       ),
     );
   }

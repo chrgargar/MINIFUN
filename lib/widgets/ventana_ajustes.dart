@@ -83,6 +83,15 @@ class VentanaAjustes {
 
                       const Divider(height: 32),
 
+                      // Opción: Control de volumen de efectos de sonido
+                      _buildSfxVolumeSlider(
+                        context: dialogContext,
+                        audioSettings: audioSettings,
+                        title: AppStrings.get('effects_volume', currentLang),
+                      ),
+
+                      const Divider(height: 32),
+
                       // Opción: Silenciar todo
                       _buildMuteOption(
                         context: dialogContext,
@@ -510,6 +519,89 @@ class VentanaAjustes {
                   divisions: 20,
                   onChanged: (value) {
                     audio.setMusicVolume(value);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget para control de volumen de efectos de sonido con slider
+  static Widget _buildSfxVolumeSlider({
+    required BuildContext context,
+    required AudioSettings audioSettings,
+    required String title,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Consumer<AudioSettings>(
+      builder: (context, audio, child) {
+        final currentVolume = audio.rawSfxVolume;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Ícono
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7B3FF2).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.graphic_eq,
+                      color: Color(0xFF7B3FF2),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Texto
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${(currentVolume * 100).round()}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              // Slider
+              SliderTheme(
+                data: SliderThemeData(
+                  activeTrackColor: const Color(0xFF7B3FF2),
+                  inactiveTrackColor: const Color(0xFF7B3FF2).withValues(alpha: 0.2),
+                  thumbColor: const Color(0xFF7B3FF2),
+                  overlayColor: const Color(0xFF7B3FF2).withValues(alpha: 0.2),
+                ),
+                child: Slider(
+                  value: currentVolume,
+                  min: 0.0,
+                  max: 1.0,
+                  divisions: 20,
+                  onChanged: (value) {
+                    audio.setSfxVolume(value);
                   },
                 ),
               ),

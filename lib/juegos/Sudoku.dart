@@ -33,7 +33,7 @@ class SudokuGame extends StatefulWidget {
   State<SudokuGame> createState() => _SudokuGameState();
 }
 
-class _SudokuGameState extends State<SudokuGame> {
+class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
   // Tablero principal de Sudoku (0 = celda vacía)
   List<List<int>> board = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.filled(ConstantesSudoku.tamanoSudoku, ConstantesSudoku.valorCeldaVacia));
   List<List<int>> solution = List.generate(ConstantesSudoku.tamanoSudoku, (_) => List.filled(ConstantesSudoku.tamanoSudoku, ConstantesSudoku.valorCeldaVacia));
@@ -66,8 +66,21 @@ class _SudokuGameState extends State<SudokuGame> {
   // Pistas restantes según dificultad
   int hintsRemaining = 3;
 
+  // Contador de números colocados (para detectar cuando se completan los 9 de un número)
+  Map<int, int> numberCounts = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0};
+
   // Estado de pausa
   bool isPaused = false;
+
+  // Animaciones
+  late AnimationController _shakeController;
+  int? _lastModifiedRow;
+  int? _lastModifiedCol;
+  bool _wasCorrect = false;
+
+  // Sistema Undo
+  List<_UndoAction> _undoHistory = [];
+  static const int _maxUndoSteps = 30;
 
   int _hintsForDifficulty() {
     switch (widget.difficulty) {
@@ -92,14 +105,32 @@ class _SudokuGameState extends State<SudokuGame> {
     appLogger.gameEvent('Sudoku', 'game_start', data: {'difficulty': widget.difficulty, 'mode': mode});
 
     hintsRemaining = _hintsForDifficulty();
+
+    // Inicializar controlador de animación shake
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
     _generateSudoku();
+    _countInitialNumbers();
     _startTimer();
+
+    // Precargar efectos de sonido
+    AudioService.preloadSounds([
+      'Sonidos/number_place.ogg',
+      'Sonidos/number_error.ogg',
+      'Sonidos/number_complete.ogg',
+      'Sonidos/hint.wav',
+    ]);
+
     _startBackgroundMusic();
   }
 
   @override
   void dispose() {
     gameTimer?.cancel();
+    _shakeController.dispose();
     AudioService.stopLoop();
     super.dispose();
   }
@@ -169,6 +200,21 @@ class _SudokuGameState extends State<SudokuGame> {
     }
   }
 
+  // Contar números iniciales (fijos) en el tablero
+  void _countInitialNumbers() {
+    // Reiniciar contadores
+    numberCounts = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0};
+
+    // Contar números fijos (los que vienen con el tablero)
+    for (int i = 0; i < ConstantesSudoku.tamanoSudoku; i++) {
+      for (int j = 0; j < ConstantesSudoku.tamanoSudoku; j++) {
+        if (isFixed[i][j] && board[i][j] != 0) {
+          numberCounts[board[i][j]] = numberCounts[board[i][j]]! + 1;
+        }
+      }
+    }
+  }
+
   bool _fillBoard(List<List<int>> board) {
     for (int row = 0; row < ConstantesSudoku.tamanoSudoku; row++) {
       for (int col = 0; col < ConstantesSudoku.tamanoSudoku; col++) {
@@ -217,6 +263,9 @@ class _SudokuGameState extends State<SudokuGame> {
     if (selectedRow == null || selectedCol == null) return;
     if (isFixed[selectedRow!][selectedCol!]) return;
 
+    // Guardar estado antes de modificar
+    _saveUndoState(selectedRow!, selectedCol!);
+
     setState(() {
       if (isPencilMode) {
         // MODO LÁPIZ: Validar y colocar número definitivo
@@ -235,7 +284,27 @@ class _SudokuGameState extends State<SudokuGame> {
 
         // Verificar si es correcto
         if (number == solution[selectedRow!][selectedCol!]) {
-                    cellsFilled++;
+          cellsFilled++;
+
+          // Trackear para animación scale-in
+          _lastModifiedRow = selectedRow;
+          _lastModifiedCol = selectedCol;
+          _wasCorrect = true;
+
+          // Reproducir sonido de número colocado correctamente
+          final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+          AudioService.playSound('Sonidos/number_place.ogg', audioSettings.sfxVolume);
+
+          // Incrementar contador de este número
+          numberCounts[number] = numberCounts[number]! + 1;
+
+          // Auto-eliminar notas en fila/columna/caja
+          _removeNotesInRowColBox(selectedRow!, selectedCol!, number);
+
+          // Si se completaron los 9 de este número, reproducir sonido especial
+          if (numberCounts[number] == 9) {
+            AudioService.playSound('Sonidos/number_complete.ogg', audioSettings.sfxVolume);
+          }
 
           // Verificar si ganó
           if (cellsFilled == totalEmptyCells) {
@@ -244,11 +313,29 @@ class _SudokuGameState extends State<SudokuGame> {
           }
         } else {
           // Error
-                    isError[selectedRow!][selectedCol!] = true;
+          isError[selectedRow!][selectedCol!] = true;
           errorsCount++;
 
-          // En modo perfecto, terminar el juego
+          // Trackear para animación shake
+          _lastModifiedRow = selectedRow;
+          _lastModifiedCol = selectedCol;
+          _wasCorrect = false;
+
+          // Disparar animación shake
+          _shakeController.forward(from: 0.0);
+
+          // Reproducir sonido de error
+          final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+          AudioService.playSound('Sonidos/number_error.ogg', audioSettings.sfxVolume);
+
+          // En modo perfecto, terminar el juego al primer error
           if (widget.isPerfectMode && errorsCount > 0) {
+            gameTimer?.cancel();
+            _gameOver(false);
+          }
+
+          // Aplicar límite de errores en modo normal
+          if (!widget.isPerfectMode && errorsCount >= ConstantesSudoku.maxErroresModoNormal) {
             gameTimer?.cancel();
             _gameOver(false);
           }
@@ -277,6 +364,8 @@ class _SudokuGameState extends State<SudokuGame> {
     if (selectedRow == null || selectedCol == null) return;
     if (isFixed[selectedRow!][selectedCol!]) return;
 
+    _saveUndoState(selectedRow!, selectedCol!); // Guardar estado antes de borrar
+
     setState(() {
       if (board[selectedRow!][selectedCol!] != 0) {
         cellsFilled--;
@@ -286,6 +375,77 @@ class _SudokuGameState extends State<SudokuGame> {
       // También limpiar las notas de borrador
       pencilNotes[selectedRow!][selectedCol!].clear();
     });
+  }
+
+  void _saveUndoState(int row, int col) {
+    _undoHistory.add(_UndoAction(
+      row: row,
+      col: col,
+      previousValue: board[row][col],
+      previousNotes: List<int>.from(pencilNotes[row][col]),
+      previousError: isError[row][col],
+    ));
+
+    if (_undoHistory.length > _maxUndoSteps) {
+      _undoHistory.removeAt(0);
+    }
+  }
+
+  void _undo() {
+    if (_undoHistory.isEmpty) return;
+
+    final action = _undoHistory.removeLast();
+
+    setState(() {
+      // Restaurar valor anterior
+      final int newValue = action.previousValue;
+      final int oldValue = board[action.row][action.col];
+
+      board[action.row][action.col] = newValue;
+      pencilNotes[action.row][action.col] = action.previousNotes;
+      isError[action.row][action.col] = action.previousError;
+
+      // Actualizar contador de celdas llenas
+      if (oldValue != 0 && oldValue == solution[action.row][action.col]) {
+        cellsFilled--;
+      }
+      if (newValue != 0 && newValue == solution[action.row][action.col]) {
+        cellsFilled++;
+      }
+
+      // Actualizar contador de números
+      if (oldValue != 0 && oldValue == solution[action.row][action.col]) {
+        numberCounts[oldValue] = (numberCounts[oldValue]! - 1).clamp(0, 9);
+      }
+      if (newValue != 0 && newValue == solution[action.row][action.col]) {
+        numberCounts[newValue] = (numberCounts[newValue]! + 1).clamp(0, 9);
+      }
+    });
+
+    // Reproducir sonido de undo
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/undo.ogg', audioSettings.sfxVolume);
+  }
+
+  void _removeNotesInRowColBox(int row, int col, int num) {
+    // Eliminar notas en la misma fila
+    for (int c = 0; c < ConstantesSudoku.tamanoSudoku; c++) {
+      pencilNotes[row][c].remove(num);
+    }
+
+    // Eliminar notas en la misma columna
+    for (int r = 0; r < ConstantesSudoku.tamanoSudoku; r++) {
+      pencilNotes[r][col].remove(num);
+    }
+
+    // Eliminar notas en la misma caja 3x3
+    int boxRow = (row ~/ ConstantesSudoku.tamanoCaja) * ConstantesSudoku.tamanoCaja;
+    int boxCol = (col ~/ ConstantesSudoku.tamanoCaja) * ConstantesSudoku.tamanoCaja;
+    for (int r = boxRow; r < boxRow + ConstantesSudoku.tamanoCaja; r++) {
+      for (int c = boxCol; c < boxCol + ConstantesSudoku.tamanoCaja; c++) {
+        pencilNotes[r][c].remove(num);
+      }
+    }
   }
 
   void _showHint() {
@@ -301,6 +461,10 @@ class _SudokuGameState extends State<SudokuGame> {
       );
       return;
     }
+
+    // Reproducir sonido de pista
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
 
     // Buscar una celda vacía y mostrar el número correcto
     for (int i = 0; i < ConstantesSudoku.tamanoSudoku; i++) {
@@ -349,10 +513,13 @@ class _SudokuGameState extends State<SudokuGame> {
                 ? AppStrings.get('time_up', currentLang)
                 : AppStrings.get('try_again', currentLang);
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     GameOverDialog.show(
       context: context,
       isVictory: won,
       message: message,
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         setState(() {
@@ -465,6 +632,17 @@ class _SudokuGameState extends State<SudokuGame> {
           hPad: hPad,
           gap: gap,
         ),
+        // Mostrar contador de errores solo en modo normal
+        if (!widget.isPerfectMode)
+          GameStatBadge(
+            text: '$errorsCount/${ConstantesSudoku.maxErroresModoNormal}',
+            icon: Icons.close,
+            color: ColoresApp.rojoError,
+            isWarning: errorsCount >= 2,
+            fontSize: fontSize,
+            hPad: hPad,
+            gap: gap,
+          ),
       ],
       isPaused: isPaused,
       onPause: _togglePause,
@@ -542,11 +720,21 @@ class _SudokuGameState extends State<SudokuGame> {
         (selectedRow! ~/ ConstantesSudoku.tamanoCaja) == (row ~/ ConstantesSudoku.tamanoCaja) &&
         (selectedCol! ~/ ConstantesSudoku.tamanoCaja) == (col ~/ ConstantesSudoku.tamanoCaja);
 
+    // Detectar si tiene el mismo número que la celda seleccionada
+    final selectedNum = selectedRow != null && selectedCol != null
+        ? board[selectedRow!][selectedCol!]
+        : 0;
+    bool isSameNumber = selectedNum != 0 &&
+        board[row][col] == selectedNum &&
+        board[row][col] != 0;
+
     Color backgroundColor = ColoresApp.blanco;
     if (isError[row][col]) {
       backgroundColor = ColoresApp.colorCeldaError;
     } else if (isSelected) {
       backgroundColor = ColoresApp.colorCeldaSeleccionada;
+    } else if (isSameNumber) {
+      backgroundColor = ColoresApp.colorCeldaMismoNumero;
     } else if (isSameRow || isSameCol || isSameBox) {
       backgroundColor = ColoresApp.colorCeldaRelacionada;
     }
@@ -581,23 +769,72 @@ class _SudokuGameState extends State<SudokuGame> {
           ),
         ),
         child: Center(
-          child: board[row][col] == 0
-              ? (pencilNotes[row][col].isEmpty
-                  ? const SizedBox()
-                  : _buildPencilNotes(pencilNotes[row][col]))
-              : Text(
-                  '${board[row][col]}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: isFixed[row][col]
-                        ? Colors.black
-                        : const Color(0xFF7B3FF2),
-                  ),
-                ),
+          child: _buildCellContent(row, col),
         ),
       ),
     );
+  }
+
+  Widget _buildCellContent(int row, int col) {
+    // Si la celda está vacía
+    if (board[row][col] == 0) {
+      return pencilNotes[row][col].isEmpty
+          ? const SizedBox()
+          : _buildPencilNotes(pencilNotes[row][col]);
+    }
+
+    // Determinar si esta celda fue la última modificada
+    bool isLastModified = _lastModifiedRow == row && _lastModifiedCol == col;
+    bool shouldAnimate = isLastModified && !isFixed[row][col];
+
+    Widget numberWidget = Text(
+      '${board[row][col]}',
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: isFixed[row][col]
+            ? Colors.black
+            : const Color(0xFF7B3FF2),
+      ),
+    );
+
+    // Animación scale-in cuando es correcto
+    if (shouldAnimate && _wasCorrect) {
+      numberWidget = TweenAnimationBuilder<double>(
+        key: ValueKey('scale_${row}_${col}_${board[row][col]}'),
+        tween: Tween<double>(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: value,
+            child: child,
+          );
+        },
+        child: numberWidget,
+      );
+    }
+
+    // Animación shake cuando es error
+    if (shouldAnimate && !_wasCorrect) {
+      numberWidget = AnimatedBuilder(
+        animation: _shakeController,
+        builder: (context, child) {
+          double offset = 0.0;
+          if (_shakeController.isAnimating) {
+            // Shake horizontal con función seno
+            offset = 10 * sin(_shakeController.value * 3 * 3.14159) * (1 - _shakeController.value);
+          }
+          return Transform.translate(
+            offset: Offset(offset, 0),
+            child: child,
+          );
+        },
+        child: numberWidget,
+      );
+    }
+
+    return numberWidget;
   }
 
   Widget _buildModeButtons(BuildContext context) {
@@ -755,6 +992,18 @@ class _SudokuGameState extends State<SudokuGame> {
               ),
             ),
 
+            // Botón Undo
+            ElevatedButton.icon(
+              onPressed: _undoHistory.isEmpty ? null : _undo,
+              icon: const Icon(Icons.undo, size: 18),
+              label: Text(AppStrings.get('undo', currentLang)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _undoHistory.isEmpty ? Colors.grey : ColoresApp.moradoPrincipal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+            ),
+
             // Botón Pista (no disponible en modo perfecto)
             if (!widget.isPerfectMode)
               ElevatedButton.icon(
@@ -849,4 +1098,21 @@ class _SudokuGameState extends State<SudokuGame> {
       ),
     );
   }
+}
+
+/// Representa una acción que puede ser deshecha en el sistema Undo
+class _UndoAction {
+  final int row;
+  final int col;
+  final int previousValue;
+  final List<int> previousNotes;
+  final bool previousError;
+
+  _UndoAction({
+    required this.row,
+    required this.col,
+    required this.previousValue,
+    required this.previousNotes,
+    required this.previousError,
+  });
 }

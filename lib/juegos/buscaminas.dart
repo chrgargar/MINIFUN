@@ -105,6 +105,15 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     controller.createBoard();
 
     _initializeGame();
+
+    // Precargar efectos de sonido
+    AudioService.preloadSounds([
+      'Sonidos/cell_reveal.ogg',
+      'Sonidos/mine_explode.ogg',
+      'Sonidos/flag_place.ogg',
+      'Sonidos/hint.wav',
+    ]);
+
     _startBackgroundMusic();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -203,6 +212,14 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       controller.calculateNumbers();
     }
 
+    final cell = controller.board[row][col];
+
+    // CHORD MECHANIC: Si la celda ya está revelada y tiene número > 0
+    if (cell.isRevealed && cell.adjacentMines > 0) {
+      _handleChord(row, col);
+      return;
+    }
+
     // Use controller to update board logic; UI handles sounds/dialogs
     bool hitMine = controller.revealCell(row, col);
     setState(() {
@@ -210,29 +227,81 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       cellsRevealed = controller.countRevealed();
     });
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     if (hitMine) {
+      // Reproducir sonido de explosión
+      AudioService.playSound('Sonidos/mine_explode.ogg', audioSettings.sfxVolume);
+
       setState(() => gameOver = true);
       controller.revealAllMines();
-            _showGameOverDialog();
+      _showGameOverDialog();
       return;
+    } else {
+      // Reproducir sonido de revelar celda
+      AudioService.playSound('Sonidos/cell_reveal.ogg', audioSettings.sfxVolume);
     }
 
-        _checkWin();
+    _checkWin();
+  }
+
+  void _handleChord(int row, int col) {
+    final cell = controller.board[row][col];
+    final adjacentMines = cell.adjacentMines;
+
+    // Contar banderas adyacentes
+    int flagCount = 0;
+    for (int dr = -1; dr <= 1; dr++) {
+      for (int dc = -1; dc <= 1; dc++) {
+        if (dr == 0 && dc == 0) continue;
+        int nr = row + dr;
+        int nc = col + dc;
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+          if (controller.board[nr][nc].isFlagged) {
+            flagCount++;
+          }
+        }
+      }
+    }
+
+    // Si el número de banderas coincide con el número de minas adyacentes,
+    // revelar todas las celdas no-flagged adyacentes
+    if (flagCount == adjacentMines) {
+      for (int dr = -1; dr <= 1; dr++) {
+        for (int dc = -1; dc <= 1; dc++) {
+          if (dr == 0 && dc == 0) continue;
+          int nr = row + dr;
+          int nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+            final neighbor = controller.board[nr][nc];
+            if (!neighbor.isRevealed && !neighbor.isFlagged) {
+              _revealCell(nr, nc);
+            }
+          }
+        }
+      }
+    }
   }
 
   void _toggleFlag(int row, int col) {
     if (gameOver || won) return;
     if (controller.board[row][col].isRevealed) return;
 
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     setState(() {
       // Respect the mine count limit when placing flags
       if (controller.board[row][col].isFlagged) {
         controller.toggleFlag(row, col); // remove
         flagsPlaced = controller.countFlags();
-              } else {
+        // Reproducir sonido de bandera
+        AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume);
+      } else {
         if (controller.countFlags() < mineCount) {
           controller.toggleFlag(row, col); // add
           flagsPlaced = controller.countFlags();
+          // Reproducir sonido de bandera
+          AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume);
                   } else {
           final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +336,10 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       );
       return;
     }
+
+    // Reproducir sonido de pista
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
 
     // Find all candidate cells (safe, unrevealed, not flagged)
     List<Point<int>> candidates = [];
@@ -317,11 +390,14 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.discoverMines, value: cellsRevealed);
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+
     GameOverDialog.show(
       context: context,
       isVictory: false,
       customTitle: '💣 ${AppStrings.get('game_over', currentLang)}',
       message: '${AppStrings.get('time_label', currentLang)}: ${timeElapsed}s\n${AppStrings.get('touched_mine', currentLang)}',
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         setState(() => _initializeGame());
@@ -346,6 +422,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
     missionProvider.notifyActivity(gameType: 'buscaminas', activityType: MissionType.discoverMines, value: cellsRevealed);
 
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
     final winMessage = isContrareloj
         ? AppStrings.get('time_attack_completed', currentLang)
         : AppStrings.get('found_all_mines', currentLang);
@@ -355,6 +432,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       isVictory: true,
       customTitle: '🎉 ${AppStrings.get('victory', currentLang)}',
       message: '${AppStrings.get('time_label', currentLang)}: ${timeElapsed}s\n${AppStrings.get('difficulty_size', currentLang)}: ${rows}x$cols\n$winMessage',
+      audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
         setState(() {
@@ -434,7 +512,10 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
   Widget _buildHeader() {
     final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
     final sw = MediaQuery.of(context).size.width;
-    final btnSize = (sw * 0.09).clamp(28.0, 40.0);
+    final btnSize = (sw * 0.075).clamp(24.0, 34.0);
+    final fontSize = (sw * 0.032).clamp(10.0, 14.0);
+    final hPad = (sw * 0.022).clamp(6.0, 10.0);
+    final gap = (sw * 0.012).clamp(2.0, 6.0);
 
     return GameHeader(
       stats: [
@@ -442,12 +523,23 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
           text: isContrareloj ? '${timeLeft}s' : '${timeElapsed}s',
           icon: isContrareloj ? Icons.timer : Icons.access_time,
           isWarning: isContrareloj,
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
         ),
-        GameStatBadge(text: '$rows x $cols'),
+        GameStatBadge(
+          text: '$rows x $cols',
+          fontSize: fontSize,
+          hPad: hPad,
+          gap: gap,
+        ),
         if (!isSinBanderas)
           GameStatBadge(
             text: '${controller.countFlags()}/$mineCount',
             icon: Icons.flag,
+            fontSize: fontSize,
+            hPad: hPad,
+            gap: gap,
           ),
       ],
       isPaused: isPaused,
@@ -528,22 +620,37 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
                               tween: Tween(begin: 1.0, end: pressed ? 0.92 : 1.0),
                               duration: const Duration(milliseconds: 120),
                               builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 160),
-                                decoration: BoxDecoration(
-                                  color: cell.isRevealed ? (cell.isMine ? ColoresApp.rojoError : ColoresApp.gris100) : ColoresApp.gris800,
-                                  border: Border.all(color: ColoresApp.moradoPrincipal, width: 1),
-                                ),
-                                child: Center(
-                                  child: cell.isFlagged
-                                      ? Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: cellSize * 0.6)
-                                      : cell.isRevealed
-                                          ? (cell.isMine
-                                              ? Icon(Icons.close, color: ColoresApp.blanco, size: cellSize * 0.6)
-                                              : (cell.adjacentMines > 0
-                                                  ? Text('${cell.adjacentMines}', style: TextStyle(fontSize: cellSize * 0.5, fontWeight: FontWeight.bold, color: _getNumberColor(cell.adjacentMines)))
-                                                  : null))
-                                          : null,
+                              child: TweenAnimationBuilder<double>(
+                                key: ValueKey('${cell.isRevealed}_$r\_$c'),
+                                tween: Tween<double>(begin: cell.isRevealed ? 0.0 : 1.0, end: 1.0),
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeOutBack,
+                                builder: (context, animValue, child) {
+                                  return Opacity(
+                                    opacity: cell.isRevealed ? animValue : 1.0,
+                                    child: Transform.scale(
+                                      scale: cell.isRevealed ? 0.7 + (0.3 * animValue) : 1.0,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 160),
+                                  decoration: BoxDecoration(
+                                    color: cell.isRevealed ? (cell.isMine ? ColoresApp.rojoError : ColoresApp.gris100) : ColoresApp.gris800,
+                                    border: Border.all(color: ColoresApp.moradoPrincipal, width: 1),
+                                  ),
+                                  child: Center(
+                                    child: cell.isFlagged
+                                        ? Icon(Icons.flag, color: ColoresApp.moradoPrincipal, size: cellSize * 0.6)
+                                        : cell.isRevealed
+                                            ? (cell.isMine
+                                                ? Icon(Icons.close, color: ColoresApp.blanco, size: cellSize * 0.6)
+                                                : (cell.adjacentMines > 0
+                                                    ? Text('${cell.adjacentMines}', style: TextStyle(fontSize: cellSize * 0.5, fontWeight: FontWeight.bold, color: _getNumberColor(cell.adjacentMines)))
+                                                    : null))
+                                            : null,
+                                  ),
                                 ),
                               ),
                             ),
