@@ -16,6 +16,7 @@ import '../constants/app_strings.dart';
 import '../constants/sopa_de_letras_constants.dart';
 import '../constants/ahorcado_constants.dart';
 import '../providers/auth_provider.dart';
+import '../services/game_progress_service.dart';
 
 // Pantalla de selección de modalidad de juego
 class SeleccionModo extends StatefulWidget {
@@ -185,6 +186,9 @@ class _SeleccionModoState extends State<SeleccionModo> {
                                 context,
                                 MaterialPageRoute(builder: (context) => const SnakeGame()),
                               );
+                            } else if (gameKey == 'Sopa de Letras') {
+                              // Sopa de Letras usa sistema de niveles para modo normal
+                              _showWordSearchLevelSelector(context);
                             } else {
                               Navigator.push(
                                 context,
@@ -736,5 +740,188 @@ class _SeleccionModoState extends State<SeleccionModo> {
         );
       }
     });
+  }
+
+  /// Mostrar selector de nivel y tema para Sopa de Letras modo normal
+  void _showWordSearchLevelSelector(BuildContext context) async {
+    final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Cargar progreso guardado
+    int highestLevel = await GameProgressService.getHighestLevelLocal(ConstantesSopaLetras.gameType);
+
+    if (!context.mounted) return;
+
+    // Primero seleccionar temática
+    final selectedTheme = await showDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_theme', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ...ConstantesSopaLetras.tematicas.map((theme) {
+                  String themeName = AppStrings.get('theme_$theme', currentLang);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(theme),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B3FF2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          themeName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedTheme == null || !context.mounted) return;
+
+    // Luego seleccionar nivel
+    final selectedLevel = await showDialog<int>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.get('select_level', currentLang),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  // highestLevel es el siguiente nivel, así que el completado es highestLevel - 1
+                  highestLevel > 1
+                      ? '${AppStrings.get('highest_level', currentLang)}: ${highestLevel - 1}'
+                      : '', // No mostrar si no ha completado ninguno
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Mostrar niveles disponibles
+                // highestLevel = siguiente nivel a jugar (1 = nunca jugó, 2 = completó nivel 1, etc.)
+                SizedBox(
+                  height: 250,
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.2,
+                    ),
+                    itemCount: highestLevel, // Mostrar niveles 1 hasta highestLevel
+                    itemBuilder: (context, index) {
+                      final level = index + 1;
+                      final isCompleted = level < highestLevel; // Niveles ya completados
+                      final isNext = level == highestLevel; // Siguiente nivel a jugar
+                      final config = ConstantesSopaLetras.getLevelConfig(level);
+
+                      return GestureDetector(
+                        onTap: () => Navigator.of(dialogContext).pop(level),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isNext
+                                ? const Color(0xFF7B3FF2)
+                                : isCompleted
+                                    ? const Color(0xFF7B3FF2).withOpacity(0.7)
+                                    : Colors.grey[400],
+                            borderRadius: BorderRadius.circular(12),
+                            border: isNext
+                                ? Border.all(color: Colors.amber, width: 3)
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '$level',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '${config.gridSize}x${config.gridSize}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 11,
+                                ),
+                              ),
+                              if (isCompleted)
+                                const Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selectedLevel == null || !context.mounted) return;
+
+    // Navegar al juego con el nivel seleccionado
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WordSearchGame(
+          theme: selectedTheme,
+          level: selectedLevel,
+        ),
+      ),
+    );
   }
 }

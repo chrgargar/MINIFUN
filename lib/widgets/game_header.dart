@@ -35,10 +35,18 @@ class GameHeader extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: hPad * 0.6),
       child: Row(
         children: [
-          // Stats a la izquierda
-          ...stats.expand((widget) => [widget, SizedBox(width: gap)]),
+          // Stats a la izquierda (envueltos en Flexible para que se ajusten)
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: stats.expand((widget) => [widget, SizedBox(width: gap)]).toList(),
+              ),
+            ),
+          ),
 
-          const Spacer(),
+          SizedBox(width: gap),
 
           // Controles a la derecha
           GamePauseButton(isPaused: isPaused, onPressed: onPause, size: btnSize),

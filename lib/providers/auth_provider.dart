@@ -33,6 +33,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isGoogleUser => _currentUser?.cloudId != null;
 
+  /// Obtener el token JWT actual desde SharedPreferences
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(ApiConstants.storageKeyAuthToken);
+  }
+
   /// Inicializar y verificar si hay una sesión guardada
   ///
   /// Se ejecuta al iniciar la app para restaurar la sesión del usuario

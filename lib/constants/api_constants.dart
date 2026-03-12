@@ -47,6 +47,10 @@ class ApiConstants {
   /// Endpoint de logs
   static const String logs = '/logs';
 
+  /// Endpoints de progreso de juegos
+  static const String gameProgress = '/games/progress';
+  static const String gameProgressByType = '/games/progress/'; // + gameType
+
   // ==================== TIMEOUTS ====================
 
   /// Timeout para requests normales (en segundos)

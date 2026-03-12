@@ -1,7 +1,79 @@
 /// Constantes para el juego Sopa de Letras
 class ConstantesSopaLetras {
   // Constantes del tablero
-  // Nota: El tamaño del grid se calcula dinámicamente según dificultad en el juego
+  // Nota: El tamaño del grid se calcula dinámicamente según nivel/dificultad en el juego
+
+  // ==================== SISTEMA DE NIVELES ====================
+
+  /// Configuración de nivel para el modo normal (sin límite de tiempo)
+  /// Devuelve: gridSize, wordCount, hints, minWordLength, maxWordLength
+  static LevelConfig getLevelConfig(int level) {
+    if (level <= 2) {
+      // Nivel 1-2: Grid 6x6, 4-5 palabras, 3 pistas
+      return LevelConfig(
+        gridSize: 6,
+        wordCount: 4 + (level - 1), // 4-5 palabras
+        hints: 3,
+        minWordLength: 3,
+        maxWordLength: 5,
+        difficultyCategory: 'facil',
+      );
+    } else if (level <= 4) {
+      // Nivel 3-4: Grid 7x7, 6-7 palabras, 2 pistas
+      return LevelConfig(
+        gridSize: 7,
+        wordCount: 5 + (level - 2), // 6-7 palabras
+        hints: 2,
+        minWordLength: 3,
+        maxWordLength: 6,
+        difficultyCategory: 'facil',
+      );
+    } else if (level <= 6) {
+      // Nivel 5-6: Grid 8x8, 8-9 palabras, 2 pistas
+      return LevelConfig(
+        gridSize: 8,
+        wordCount: 7 + (level - 4), // 8-9 palabras
+        hints: 2,
+        minWordLength: 4,
+        maxWordLength: 7,
+        difficultyCategory: 'medio',
+      );
+    } else if (level <= 8) {
+      // Nivel 7-8: Grid 9x9, 10-11 palabras, 1 pista
+      return LevelConfig(
+        gridSize: 9,
+        wordCount: 9 + (level - 6), // 10-11 palabras
+        hints: 1,
+        minWordLength: 4,
+        maxWordLength: 8,
+        difficultyCategory: 'medio',
+      );
+    } else if (level <= 10) {
+      // Nivel 9-10: Grid 10x10, 12-14 palabras, 1 pista
+      return LevelConfig(
+        gridSize: 10,
+        wordCount: 11 + (level - 8), // 12-14 palabras
+        hints: 1,
+        minWordLength: 5,
+        maxWordLength: 9,
+        difficultyCategory: 'dificil',
+      );
+    } else {
+      // Nivel 11+: Grid 12x12, 14-16 palabras, 1 pista (infinito)
+      int extraWords = ((level - 11) ~/ 2).clamp(0, 2); // +0 a +2 palabras extra
+      return LevelConfig(
+        gridSize: 12,
+        wordCount: 14 + extraWords, // 14-16 palabras máx
+        hints: 1,
+        minWordLength: 5,
+        maxWordLength: 10,
+        difficultyCategory: 'dificil',
+      );
+    }
+  }
+
+  /// Tipo de juego para GameProgressService
+  static const String gameType = 'sopa_de_letras';
 
   // Palabras por dificultad
   static const List<String> palabrasFaciles = [
@@ -151,4 +223,23 @@ class ConstantesSopaLetras {
     [-1, -1], // diagonal arriba-izquierda
     [-1, 1],  // diagonal arriba-derecha
   ];
+}
+
+/// Configuración de un nivel específico
+class LevelConfig {
+  final int gridSize;
+  final int wordCount;
+  final int hints;
+  final int minWordLength;
+  final int maxWordLength;
+  final String difficultyCategory; // 'facil', 'medio', 'dificil' para seleccionar palabras
+
+  const LevelConfig({
+    required this.gridSize,
+    required this.wordCount,
+    required this.hints,
+    required this.minWordLength,
+    required this.maxWordLength,
+    required this.difficultyCategory,
+  });
 }

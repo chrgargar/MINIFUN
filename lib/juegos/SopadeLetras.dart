@@ -13,16 +13,19 @@ import '../constants/app_strings.dart';
 import '../services/audio_service.dart';
 import '../constants/sopa_de_letras_constants.dart';
 import '../providers/mission_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/game_over_dialog.dart';
 import '../widgets/hint_button.dart';
 import '../widgets/game_stat_badge.dart';
 import '../widgets/game_header.dart';
+import '../services/game_progress_service.dart';
 
 class WordSearchGame extends StatefulWidget {
-  final String difficulty; // 'facil', 'medio', 'dificil'
+  final String difficulty; // 'facil', 'medio', 'dificil' (usado para modos especiales)
   final String theme; // 'general', 'peliculas', 'musica', 'historia'
   final bool isTimeAttackMode; // Modo contrarreloj
   final bool isPerfectMode; // Modo perfecto (sin errores)
+  final int? level; // Nivel actual (modo normal con niveles)
 
   const WordSearchGame({
     super.key,
@@ -30,6 +33,7 @@ class WordSearchGame extends StatefulWidget {
     this.theme = 'general',
     this.isTimeAttackMode = false,
     this.isPerfectMode = false,
+    this.level, // Si es null, usa dificultad clásica
   });
 
   @override
@@ -79,6 +83,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
   bool showBonusMessage = false;
   late String lastBonusWord;
 
+  // Sistema de niveles
+  late int currentLevel;
+  LevelConfig? levelConfig;
+
   @override
   void initState() {
     super.initState();
@@ -86,11 +94,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
     // Rastrear pantalla actual
     appLogger.setCurrentScreen('SopaDeLetrasGame');
 
+    // Inicializar nivel
+    currentLevel = widget.level ?? 1;
+
     // Log inicio de partida
     String mode = 'normal';
     if (widget.isTimeAttackMode) mode = 'time_attack';
     if (widget.isPerfectMode) mode = 'perfect';
-    appLogger.gameEvent('SopaDeLetras', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode});
+    if (widget.level != null) mode = 'levels';
+    appLogger.gameEvent('SopaDeLetras', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode, 'level': currentLevel});
 
     _initializeGame();
     _startBackgroundMusic();
@@ -105,33 +117,56 @@ class _WordSearchGameState extends State<WordSearchGame> {
   }
 
   void _initializeGame() {
-    // Determinar tamaño del grid según dificultad
-    switch (widget.difficulty) {
-      case 'facil':
-        gridSize = 6;
-        break;
-      case 'medio':
-        gridSize = 8;
-        break;
-      case 'dificil':
-        gridSize = 10;
-        break;
-      default:
-        gridSize = 6;
-    }
-
     // Obtener idioma actual
     final currentLanguage = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
-    
+
+    // Variables locales para configuración
+    int maxWords;
+    String difficultyCategory;
+
+    // Si es modo con niveles (widget.level != null), usar configuración de nivel
+    if (widget.level != null) {
+      levelConfig = ConstantesSopaLetras.getLevelConfig(currentLevel);
+      gridSize = levelConfig!.gridSize;
+      maxWords = levelConfig!.wordCount;
+      hintsAvailable = levelConfig!.hints;
+      difficultyCategory = levelConfig!.difficultyCategory;
+    } else {
+      // Modo clásico con dificultad
+      switch (widget.difficulty) {
+        case 'facil':
+          gridSize = 6;
+          break;
+        case 'medio':
+          gridSize = 8;
+          break;
+        case 'dificil':
+          gridSize = 10;
+          break;
+        default:
+          gridSize = 6;
+      }
+      maxWords = ConstantesSopaLetras.maxPalabras[widget.difficulty] ?? 8;
+      hintsAvailable = widget.difficulty == 'facil' ? 3 : widget.difficulty == 'medio' ? 2 : 1;
+      difficultyCategory = widget.difficulty;
+    }
+
     // Obtener lista de palabras de la temática, idioma y dificultad
-    List<String> allWords = List.from(ConstantesSopaLetras.getPalabras(widget.theme, currentLanguage, widget.difficulty));
+    List<String> allWords = List.from(ConstantesSopaLetras.getPalabras(widget.theme, currentLanguage, difficultyCategory));
 
     // Remover espacios de las palabras y filtrar palabras vacías
     allWords = allWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
 
+    // Si es modo con niveles, filtrar por longitud de palabra
+    if (widget.level != null && levelConfig != null) {
+      allWords = allWords.where((word) =>
+        word.length >= levelConfig!.minWordLength &&
+        word.length <= levelConfig!.maxWordLength
+      ).toList();
+    }
+
     // Mezclar todas las palabras disponibles y seleccionar candidatos
     allWords.shuffle(Random());
-    int maxWords = ConstantesSopaLetras.maxPalabras[widget.difficulty] ?? 8;
 
     // Tomar candidatos (hasta maxWords) desde la lista mezclada
     List<String> candidateWords = allWords.take(maxWords).toList();
@@ -156,7 +191,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
     // Si quedaron muy pocas o ninguna palabra válida, intentar cargar palabras por defecto
     if (wordsToFind.length < 3) {
-      List<String> defaultWords = List.from(ConstantesSopaLetras.getPalabras('general', currentLanguage, widget.difficulty));
+      List<String> defaultWords = List.from(ConstantesSopaLetras.getPalabras('general', currentLanguage, difficultyCategory));
       defaultWords = defaultWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty).toList();
       defaultWords.shuffle(Random());
       wordsToFind = defaultWords.where((word) => word.length <= gridSize).take(max(5, maxWords)).toList();
@@ -169,17 +204,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
     foundBonusWords = {};
     usedHints = 0;
     highlightedCell = null;
-    // Pistas por dificultad: fácil 3, medio 2, difícil 1
-    hintsAvailable = widget.difficulty == 'facil' ? 3 : widget.difficulty == 'medio' ? 2 : 1;
 
     // Agregar palabras bonus (1-2 palabras según dificultad)
     List<String> allBonusWords = List.from(ConstantesSopaLetras.getPalabras(widget.theme, currentLanguage, 'medio'));
     allBonusWords = allBonusWords.map((word) => word.replaceAll(' ', '')).where((word) => word.isNotEmpty && !wordsToFind.contains(word)).toList();
     allBonusWords.shuffle(Random());
-    
-    int numBonusWords = widget.difficulty == 'facil' ? 1 : (widget.difficulty == 'medio' ? 1 : 2);
+
+    int numBonusWords = difficultyCategory == 'facil' ? 1 : (difficultyCategory == 'medio' ? 1 : 2);
     bonusWords = allBonusWords.take(numBonusWords).toList().where((word) => word.length <= gridSize).toList();
-    
+
     wordPositions = {};
     foundCells = {};
     _generateGrid();
@@ -307,6 +340,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
     final cell = _getCellFromPosition(details.globalPosition);
     if (cell != null) {
+      // Reproducir sonido de toque
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+      AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.musicVolume);
+
       setState(() {
         isDragging = true;
         startRow = cell[0];
@@ -327,8 +364,16 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
       // Verificar si es una selección válida (línea recta)
       if (_isValidSelection(row, col)) {
+        final newCells = _getCellsInLine(startRow!, startCol!, row, col);
+
+        // Solo reproducir sonido si cambió la cantidad de celdas seleccionadas
+        if (newCells.length != selectedCells.length) {
+          final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+          AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.musicVolume);
+        }
+
         setState(() {
-          selectedCells = _getCellsInLine(startRow!, startCol!, row, col);
+          selectedCells = newCells;
         });
       }
     }
@@ -383,6 +428,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
     }
     lastBonusWord = word;
 
+    // Reproducir sonido de palabra correcta
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/word_ok.wav', audioSettings.musicVolume);
+
     // Mostrar mensaje de palabra bonus
     setState(() {
       showBonusMessage = true;
@@ -422,6 +471,10 @@ class _WordSearchGameState extends State<WordSearchGame> {
         }
         found = true;
 
+        // Reproducir sonido de palabra correcta
+        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        AudioService.playSound('Sonidos/word_ok.wav', audioSettings.musicVolume);
+
         // Notificar misión de palabra encontrada
         final missionProvider = Provider.of<MissionProvider>(context, listen: false);
         missionProvider.notifyActivity(gameType: 'sopadeletras', activityType: MissionType.findWords);
@@ -454,7 +507,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
     startCol = null;
   }
 
-  void _victory() {
+  void _victory() async {
     // Notificar misiones
     final missionProvider = Provider.of<MissionProvider>(context, listen: false);
     missionProvider.notifyActivity(gameType: 'sopadeletras', activityType: MissionType.playGames);
@@ -464,6 +517,18 @@ class _WordSearchGameState extends State<WordSearchGame> {
     isGameOver = true;
     gameTimer?.cancel();
     AudioService.stopLoop();
+
+    // Si es modo con niveles, guardar progreso
+    if (widget.level != null) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = await authProvider.getToken();
+      await GameProgressService.saveProgress(
+        gameType: ConstantesSopaLetras.gameType,
+        completedLevel: currentLevel,
+        isGuest: authProvider.isGuest,
+        token: token,
+      );
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showGameResult(true);
@@ -575,9 +640,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
   void _showGameResult(bool victory) {
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
 
-    String message = victory
-        ? "${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}\n${AppStrings.get('score', currentLang)}: $score"
-        : "${AppStrings.get('time_up', currentLang)}\n${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}";
+    String message;
+    if (widget.level != null && victory) {
+      // Modo con niveles
+      message = "${AppStrings.get('level', currentLang)} $currentLevel ${AppStrings.get('completed', currentLang)}!\n${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}";
+    } else if (victory) {
+      message = "${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}";
+    } else {
+      message = "${AppStrings.get('time_up', currentLang)}\n${AppStrings.get('words_found', currentLang)}: ${foundWords.length}/${wordsToFind.length}";
+    }
 
     GameOverDialog.show(
       context: context,
@@ -602,18 +673,33 @@ class _WordSearchGameState extends State<WordSearchGame> {
       },
       onNextLevel: victory ? () {
         Navigator.pop(context);
-        String nextDifficulty = widget.difficulty == 'facil' ? 'medio' : widget.difficulty == 'medio' ? 'dificil' : 'facil';
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => WordSearchGame(
-              difficulty: nextDifficulty,
-              theme: widget.theme,
-              isTimeAttackMode: widget.isTimeAttackMode,
-              isPerfectMode: widget.isPerfectMode,
+
+        if (widget.level != null) {
+          // Modo con niveles: ir al siguiente nivel
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WordSearchGame(
+                theme: widget.theme,
+                level: currentLevel + 1,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // Modo clásico: siguiente dificultad
+          String nextDifficulty = widget.difficulty == 'facil' ? 'medio' : widget.difficulty == 'medio' ? 'dificil' : 'facil';
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WordSearchGame(
+                difficulty: nextDifficulty,
+                theme: widget.theme,
+                isTimeAttackMode: widget.isTimeAttackMode,
+                isPerfectMode: widget.isPerfectMode,
+              ),
+            ),
+          );
+        }
       } : null,
     );
   }
@@ -628,12 +714,15 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
     return GameHeader(
       stats: [
-        GameStatBadge(
-          text: 'Score: $score',
-          fontSize: fontSize,
-          hPad: hPad,
-          gap: gap,
-        ),
+        if (widget.level != null)
+          GameStatBadge(
+            text: '${AppStrings.get('level', currentLang)} $currentLevel',
+            icon: Icons.emoji_events,
+            color: ColoresApp.moradoPrincipal,
+            fontSize: fontSize,
+            hPad: hPad,
+            gap: gap,
+          ),
         if (widget.isTimeAttackMode)
           GameStatBadge(
             text: '${timeLeft ~/ 60}:${(timeLeft % 60).toString().padLeft(2, '0')}',
