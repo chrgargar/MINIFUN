@@ -14,39 +14,39 @@ import 'services/app_logger.dart';
 import 'constants/api_constants.dart';
 
 // Función principal que se ejecuta al iniciar la app
-void main() async {
-  // Asegurar que los widgets de Flutter estén inicializados
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Bloquear orientación a vertical (portrait)
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Ocultar barra de estado y barra de navegación (pantalla completa)
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-  // Inicializar el logger
-  await appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
-
-  // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  }
-
-  // Configurar captura de errores de Flutter
-  FlutterError.onError = (FlutterErrorDetails details) {
-    // Capturar error en el logger
-    appLogger.captureFlutterError(details);
-    // También mostrar en consola en modo debug
-    FlutterError.presentError(details);
-  };
-
+void main() {
   // Ejecutar la app dentro de una zona que captura errores no manejados
   runZonedGuarded(
-    () {
+    () async {
+      // Asegurar que los widgets de Flutter estén inicializados
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Bloquear orientación a vertical (portrait)
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+
+      // Ocultar barra de estado y barra de navegación (pantalla completa)
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+      // Inicializar el logger
+      await appLogger.initialize(isDevelopment: ApiConstants.isDevelopment);
+
+      // Inicializar sqflite solo para desktop (Windows, macOS, Linux)
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+      }
+
+      // Configurar captura de errores de Flutter
+      FlutterError.onError = (FlutterErrorDetails details) {
+        // Capturar error en el logger
+        appLogger.captureFlutterError(details);
+        // También mostrar en consola en modo debug
+        FlutterError.presentError(details);
+      };
+
       runApp(
         // MultiProvider permite compartir múltiples estados en toda la app
         MultiProvider(

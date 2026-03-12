@@ -661,7 +661,11 @@ class _WordSearchGameState extends State<WordSearchGame> {
           }
         });
       },
-      onClose: () => Navigator.pop(context),
+      onClose: () {
+        gameTimer?.cancel();
+        AudioService.stopLoop();
+        Navigator.pop(context);
+      },
       hintButton: HintButton(
         hintsRemaining: hintsAvailable - usedHints,
         onTap: isGameOver ? null : _showHint,
@@ -819,7 +823,11 @@ class _WordSearchGameState extends State<WordSearchGame> {
                   }
                 });
               },
-              onExit: () => Navigator.pop(context),
+              onExit: () {
+                gameTimer?.cancel();
+                AudioService.stopLoop();
+                Navigator.pop(context);
+              },
             ),
 
             // Bonus word message overlay

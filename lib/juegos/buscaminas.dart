@@ -327,6 +327,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
         setState(() => _initializeGame());
       },
       onExit: () {
+        gameTimer?.cancel();
+        AudioService.stopLoop();
         Navigator.pop(context);
         Navigator.pop(context);
       },
@@ -365,6 +367,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
         });
       },
       onExit: () {
+        gameTimer?.cancel();
+        AudioService.stopLoop();
         Navigator.pop(context);
         Navigator.pop(context);
       },
@@ -449,7 +453,11 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       isPaused: isPaused,
       onPause: _showPauseDialog,
       onRestart: _initializeGame,
-      onClose: () => Navigator.pop(context),
+      onClose: () {
+        gameTimer?.cancel();
+        AudioService.stopLoop();
+        Navigator.pop(context);
+      },
       hintButton: HintButton(
         hintsRemaining: hintsRemaining,
         onTap: gameOver || won || isPaused ? null : _useHint,

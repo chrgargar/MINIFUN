@@ -10,7 +10,7 @@ class ConstantesSnake {
   static const double probabilidadFresa = 0.15; // 15% de probabilidad de fresa
 
   // Constantes de tiempo (en milisegundos)
-  static const int velocidadBase = 200; // Velocidad base del juego
+  static const int velocidadBase = 150; // Velocidad base del juego
   static const int velocidadRapida = 150; // Velocidad rápida
   static const int velocidadLenta = 300; // Velocidad lenta
 

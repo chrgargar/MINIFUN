@@ -409,7 +409,11 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
             if (isPaused) PauseOverlay(
               onResume: _togglePause,
               onRestart: _restartGame,
-              onExit: () => Navigator.pop(context),
+              onExit: () {
+                letterTimer?.cancel();
+                AudioService.stopLoop();
+                Navigator.pop(context);
+              },
             ),
 
             // Game Over overlay
@@ -430,7 +434,11 @@ class _AhorcadoGameState extends State<AhorcadoGame> {
       isPaused: isPaused,
       onPause: _togglePause,
       onRestart: _restartGame,
-      onClose: () => Navigator.pop(context),
+      onClose: () {
+        letterTimer?.cancel();
+        AudioService.stopLoop();
+        Navigator.pop(context);
+      },
       hintButton: HintButton(
         hintsRemaining: hintsAvailable - usedHints,
         onTap: isGameOver ? null : _showHint,

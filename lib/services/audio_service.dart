@@ -73,8 +73,20 @@ class AudioService {
   /// [src] - Ruta del archivo de audio (ej: 'sonidos/food.mp3')
   /// [volume] - Volumen de reproducción (0.0 - 1.0)
   static Future<void> playSound(String src, double volume) async {
-    final player = AudioPlayer();
-    await player.setVolume(volume);
-    await player.play(AssetSource(src));
+    // Si el volumen es 0, no reproducir
+    if (volume <= 0) return;
+
+    try {
+      final player = AudioPlayer();
+      await player.setVolume(volume);
+      await player.play(AssetSource(src));
+
+      // Liberar recursos cuando termine de reproducir
+      player.onPlayerComplete.listen((_) {
+        player.dispose();
+      });
+    } catch (e) {
+      // Ignorar errores de audio silenciosamente
+    }
   }
 }

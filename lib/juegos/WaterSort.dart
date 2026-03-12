@@ -474,6 +474,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       },
       onExit: () {
         _isDialogOpen = false;
+        AudioService.stopLoop();
         Navigator.pop(context);
         Navigator.pop(context);
       },
@@ -508,6 +509,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       },
       onExit: () {
         _isDialogOpen = false;
+        AudioService.stopLoop();
         Navigator.pop(context);
         Navigator.pop(context);
       },
@@ -561,7 +563,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               PauseOverlay(
                 onResume: _togglePause,
                 onRestart: _restart,
-                onExit: () => Navigator.pop(context),
+                onExit: () {
+                  AudioService.stopLoop();
+                  Navigator.pop(context);
+                },
               ),
           ],
         ),
@@ -607,7 +612,10 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       isPaused: isPaused,
       onPause: _togglePause,
       onRestart: _restart,
-      onClose: () => Navigator.pop(context),
+      onClose: () {
+        AudioService.stopLoop();
+        Navigator.pop(context);
+      },
       guideButton: BotonGuia(
         gameTitle: 'WaterSort',
         gameImagePath: 'assets/imagenes/watersort.png',

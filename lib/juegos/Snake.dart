@@ -42,17 +42,21 @@ enum FoodType {
   coin,       // Moneda: +0 tamaño, +5 puntos
 }
 
-class _SnakeGameState extends State<SnakeGame> {
+class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, TickerProviderStateMixin {
   // Constantes del tablero
   static const int rows = ConstantesSnake.filas;
   static const int columns = ConstantesSnake.columnas;
 
   // Variables principales del juego
   List<Point<int>> snake = [const Point(10, 10), const Point(9, 10), const Point(8, 10)];
+  List<Point<int>> previousSnake = [const Point(10, 10), const Point(9, 10), const Point(8, 10)];
   Point<int> food = const Point(5, 5);
   Direction direction = Direction.right;
   Direction visualDirection = Direction.right; // Dirección visual de la cabeza (actualizada al moverse)
   int score = 0;
+
+  // Animación de movimiento suave
+  late AnimationController _moveController;
 
   // Timers
   Timer? timer; // Timer principal del movimiento de la serpiente
@@ -78,6 +82,15 @@ class _SnakeGameState extends State<SnakeGame> {
   void initState() {
     super.initState();
 
+    // Observer para detectar cuando la app va al background
+    WidgetsBinding.instance.addObserver(this);
+
+    // Inicializar controlador de animación
+    _moveController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: (ConstantesSnake.velocidadBase / widget.speedMultiplier).round()),
+    );
+
     // Rastrear pantalla actual
     appLogger.setCurrentScreen('SnakeGame');
 
@@ -95,16 +108,30 @@ class _SnakeGameState extends State<SnakeGame> {
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Pausar el juego cuando la app va al background
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (!isPaused) {
+        togglePause();
+      }
+    }
+  }
+
   void _onAudioSettingsChanged() {
     _updateMusicVolume();
   }
 
   @override
   void dispose() {
+    // Remover observer de lifecycle
+    WidgetsBinding.instance.removeObserver(this);
+
     timer?.cancel();
     gameTimer?.cancel();
     foodExpirationTimer?.cancel();
     obstacleTimer?.cancel();
+    _moveController.dispose();
 
     // Detener música de fondo
     AudioService.stopLoop();
@@ -131,6 +158,7 @@ class _SnakeGameState extends State<SnakeGame> {
 
   void startGame() {
     snake = [const Point(10, 10), const Point(9, 10), const Point(8, 10)];
+    previousSnake = List.from(snake);
     direction = Direction.right;
     visualDirection = Direction.right;
     score = 0;
@@ -160,6 +188,9 @@ class _SnakeGameState extends State<SnakeGame> {
 
     // Calcular velocidad basada en el multiplicador
     final adjustedSpeed = (ConstantesSnake.velocidadBase / widget.speedMultiplier).round();
+
+    // Actualizar duración de la animación para que coincida con la velocidad del juego
+    _moveController.duration = Duration(milliseconds: adjustedSpeed);
 
     timer = Timer.periodic(Duration(milliseconds: adjustedSpeed), (timer) {
       setState(moveSnake);
@@ -289,6 +320,11 @@ class _SnakeGameState extends State<SnakeGame> {
         startGame();
       },
       onExit: () {
+        timer?.cancel();
+        gameTimer?.cancel();
+        foodExpirationTimer?.cancel();
+        obstacleTimer?.cancel();
+        AudioService.stopLoop();
         Navigator.pop(context);
         Navigator.pop(context);
       },
@@ -390,9 +426,6 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void moveSnake() {
-    // Actualizar dirección visual solo cuando realmente se mueve
-    visualDirection = direction;
-
     final head = snake.first;
     Point<int> newHead;
 
@@ -412,6 +445,7 @@ class _SnakeGameState extends State<SnakeGame> {
     }
 
     if (_checkCollision(newHead)) {
+      // NO actualizar visualDirection al chocar - la cabeza mantiene su dirección
       timer?.cancel();
       gameTimer?.cancel(); // Detener temporizador del modo contrarreloj
       foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
@@ -445,6 +479,11 @@ class _SnakeGameState extends State<SnakeGame> {
           startGame();
         },
         onExit: () {
+          timer?.cancel();
+          gameTimer?.cancel();
+          foodExpirationTimer?.cancel();
+          obstacleTimer?.cancel();
+          AudioService.stopLoop();
           Navigator.pop(context);
           Navigator.pop(context);
         },
@@ -452,17 +491,30 @@ class _SnakeGameState extends State<SnakeGame> {
       return;
     }
 
+    // Actualizar dirección visual solo si el movimiento fue exitoso (sin colisión)
+    visualDirection = direction;
+
+    // Guardar posiciones anteriores para animación suave
+    previousSnake = List.from(snake);
+
     if (newHead == food) {
       _handleFoodEaten(newHead);
     } else {
       snake = [newHead, ...snake];
       snake.removeLast();
     }
+
+    // Iniciar animación de movimiento
+    _moveController.reset();
+    _moveController.forward();
   }
 
   void _increaseSpeed() {
     // Aumentar velocidad en un 5% (reducir el tiempo del timer)
     currentSpeed = currentSpeed * 0.95;
+
+    // Actualizar duración de la animación para que coincida con la nueva velocidad
+    _moveController.duration = Duration(milliseconds: currentSpeed.round());
 
     // Reiniciar el timer con la nueva velocidad
     timer?.cancel();
@@ -612,7 +664,7 @@ class _SnakeGameState extends State<SnakeGame> {
                         size: Size(boardWidth, boardHeight),
                         painter: BoardPainter(cellSize),
                       ),
-                      // Serpiente con imágenes (movimiento discreto clásico)
+                      // Serpiente con imágenes (movimiento discreto - sin animación)
                       ...List.generate(snake.length, (index) {
                         final segment = snake[index];
                         return Positioned(
@@ -774,7 +826,15 @@ class _SnakeGameState extends State<SnakeGame> {
               ),
               SizedBox(width: gap),
               GameCloseButton(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  // Cancelar todos los timers antes de salir
+                  timer?.cancel();
+                  gameTimer?.cancel();
+                  foodExpirationTimer?.cancel();
+                  obstacleTimer?.cancel();
+                  AudioService.stopLoop();
+                  Navigator.pop(context);
+                },
                 size: btnSize,
               ),
             ],
@@ -817,7 +877,15 @@ class _SnakeGameState extends State<SnakeGame> {
                     isPaused = false;
                     startGame();
                   },
-                  onExit: () => Navigator.pop(context),
+                  onExit: () {
+                    // Asegurar que todo está cancelado antes de salir
+                    timer?.cancel();
+                    gameTimer?.cancel();
+                    foodExpirationTimer?.cancel();
+                    obstacleTimer?.cancel();
+                    AudioService.stopLoop();
+                    Navigator.pop(context);
+                  },
                 ),
             ],
           ),

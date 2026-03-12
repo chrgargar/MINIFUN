@@ -469,7 +469,11 @@ class _SudokuGameState extends State<SudokuGame> {
       isPaused: isPaused,
       onPause: _togglePause,
       onRestart: _restartGame,
-      onClose: () => Navigator.pop(context),
+      onClose: () {
+        gameTimer?.cancel();
+        AudioService.stopLoop();
+        Navigator.pop(context);
+      },
       guideButton: BotonGuia(
         gameTitle: 'Sudoku',
         gameImagePath: 'assets/imagenes/sudoku.png',
@@ -835,7 +839,11 @@ class _SudokuGameState extends State<SudokuGame> {
             PauseOverlay(
               onResume: _togglePause,
               onRestart: _restartGame,
-              onExit: () => Navigator.pop(context),
+              onExit: () {
+                gameTimer?.cancel();
+                AudioService.stopLoop();
+                Navigator.pop(context);
+              },
             ),
         ],
       ),
