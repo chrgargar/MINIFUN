@@ -420,7 +420,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     return tubes[from].last == tubes[to].last;
   }
 
-  void _pourWater(int from, int to) async {
+  void _pourWater(int from, int to) {
     _saveState();
 
     // Reproducir sonido de vertido
@@ -433,40 +433,43 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       pouringToTube = to;
     });
 
-    await _pourAnimationController!.forward();
+    // Iniciar animación sin bloquear
+    _pourAnimationController!.forward(from: 0.0).then((_) {
+      if (!mounted) return;
 
-    setState(() {
-      Color colorToMove = tubes[from].last;
+      setState(() {
+        Color colorToMove = tubes[from].last;
 
-      // Mover todos los segmentos del mismo color que estén arriba
-      while (tubes[from].isNotEmpty &&
-             tubes[from].last == colorToMove &&
-             tubes[to].length < ConstantesWaterSort.tubeCapacity) {
-        tubes[to].add(tubes[from].removeLast());
+        // Mover todos los segmentos del mismo color que estén arriba
+        while (tubes[from].isNotEmpty &&
+               tubes[from].last == colorToMove &&
+               tubes[to].length < ConstantesWaterSort.tubeCapacity) {
+          tubes[to].add(tubes[from].removeLast());
+        }
+
+        moves++;
+        selectedTube = null;
+        isPouring = false;
+        pouringFromTube = null;
+        pouringToTube = null;
+      });
+
+      _pourAnimationController!.reset();
+
+      // Verificar si el tubo destino quedó completo
+      if (_isTubeComplete(to)) {
+        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        AudioService.playSound('Sonidos/tube_complete.ogg', audioSettings.sfxVolume);
       }
 
-      moves++;
-      selectedTube = null;
-      isPouring = false;
-      pouringFromTube = null;
-      pouringToTube = null;
+      // Verificar victoria
+      if (_checkWin()) {
+        setState(() {
+          gameWon = true;
+        });
+        _showWinDialog();
+      }
     });
-
-    _pourAnimationController!.reset();
-
-    // Verificar si el tubo destino quedó completo
-    if (_isTubeComplete(to)) {
-      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-      AudioService.playSound('Sonidos/tube_complete.ogg', audioSettings.sfxVolume);
-    }
-
-    // Verificar victoria
-    if (_checkWin()) {
-      setState(() {
-        gameWon = true;
-      });
-            _showWinDialog();
-    }
   }
 
   bool _isTubeComplete(int tubeIndex) {

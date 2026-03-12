@@ -78,6 +78,7 @@ class _WordSearchGameState extends State<WordSearchGame> {
   late int hintsAvailable;
   int usedHints = 0;
   List<int>? highlightedCell; // Celda resaltada por pista
+  Set<String> _hintedWords = {}; // Palabras que ya se mostraron como pistas
 
   // Control de mensaje bonus
   bool showBonusMessage = false;
@@ -104,6 +105,13 @@ class _WordSearchGameState extends State<WordSearchGame> {
     if (widget.level != null) mode = 'levels';
     appLogger.gameEvent('SopaDeLetras', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode, 'level': currentLevel});
 
+    // Precargar efectos de sonido
+    AudioService.preloadSounds([
+      'Sonidos/soft_touch.wav',
+      'Sonidos/word_ok.wav',
+      'Sonidos/hint.wav',
+    ]);
+
     _initializeGame();
     _startBackgroundMusic();
     if (widget.isTimeAttackMode) {
@@ -123,6 +131,9 @@ class _WordSearchGameState extends State<WordSearchGame> {
     // Variables locales para configuración
     int maxWords;
     String difficultyCategory;
+
+    // Reiniciar lista de palabras mostradas como pistas
+    _hintedWords = {};
 
     // Si es modo con niveles (widget.level != null), usar configuración de nivel
     if (widget.level != null) {
@@ -574,16 +585,22 @@ class _WordSearchGameState extends State<WordSearchGame> {
       return;
     }
 
-    // Reproducir sonido de pista
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
-
-    // Buscar una palabra no encontrada
+    // Buscar una palabra no encontrada que NO haya sido mostrada como pista antes
     String? wordToReveal;
     for (String word in wordsToFind) {
-      if (!foundWords.contains(word)) {
+      if (!foundWords.contains(word) && !_hintedWords.contains(word)) {
         wordToReveal = word;
         break;
+      }
+    }
+
+    // Si todas las palabras ya fueron mostradas como pista, buscar cualquier no encontrada
+    if (wordToReveal == null) {
+      for (String word in wordsToFind) {
+        if (!foundWords.contains(word)) {
+          wordToReveal = word;
+          break;
+        }
       }
     }
 
@@ -592,6 +609,13 @@ class _WordSearchGameState extends State<WordSearchGame> {
     // Obtener posición inicial de la palabra
     List<List<int>>? positions = wordPositions[wordToReveal];
     if (positions == null || positions.isEmpty) return;
+
+    // Agregar palabra a la lista de pistas usadas
+    _hintedWords.add(wordToReveal);
+
+    // Reproducir sonido de pista DESPUÉS de validar que hay pista disponible
+    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    AudioService.playSound('Sonidos/hint.wav', audioSettings.sfxVolume);
 
     setState(() {
       usedHints++;
@@ -789,31 +813,33 @@ class _WordSearchGameState extends State<WordSearchGame> {
   Widget _buildWordList(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      height: 80,
-      padding: const EdgeInsets.all(8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: wordsToFind.length,
-        itemBuilder: (context, index) {
-          String word = wordsToFind[index];
-          bool isFound = foundWords.contains(word);
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isFound ? Colors.green : (isDark ? Colors.grey[800] : Colors.grey[200]),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              word,
-              style: TextStyle(
-                fontSize: 14,
-                color: isFound ? Colors.white : (isDark ? Colors.white : Colors.black),
-                decoration: isFound ? TextDecoration.lineThrough : null,
+      constraints: const BoxConstraints(minHeight: 60, maxHeight: 120),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          alignment: WrapAlignment.center,
+          children: wordsToFind.map((word) {
+            bool isFound = foundWords.contains(word);
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isFound ? Colors.green : (isDark ? Colors.grey[800] : Colors.grey[200]),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-          );
-        },
+              child: Text(
+                word,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isFound ? Colors.white : (isDark ? Colors.white : Colors.black),
+                  decoration: isFound ? TextDecoration.lineThrough : null,
+                  fontWeight: isFound ? FontWeight.normal : FontWeight.w500,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

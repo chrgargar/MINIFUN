@@ -36,18 +36,19 @@ class AudioService {
     }
 
     // Buscar un reproductor disponible (no está reproduciendo)
+    AudioPlayer? availablePlayer;
     for (final player in pool) {
       final state = player.state;
       if (state != PlayerState.playing) {
-        await player.setVolume(volume);
-        await player.seek(Duration.zero);
-        await player.resume();
-        return;
+        availablePlayer = player;
+        break;
       }
     }
 
-    // Si todos están ocupados, usar el primero (reiniciarlo)
-    final player = pool.first;
+    // Si no hay disponible, usar el primero
+    final player = availablePlayer ?? pool.first;
+
+    // Configurar y reproducir
     await player.setVolume(volume);
     await player.seek(Duration.zero);
     await player.resume();

@@ -858,6 +858,8 @@ class HangmanPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant HangmanPainter oldDelegate) {
-    return oldDelegate.errorsCount != errorsCount || oldDelegate.color != color;
+    return oldDelegate.errorsCount != errorsCount ||
+           oldDelegate.color != color ||
+           oldDelegate.progress != progress;
   }
 }
