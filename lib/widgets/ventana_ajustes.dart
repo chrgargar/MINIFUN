@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../config/selectorTema.dart';
 import '../config/audio_settings.dart';
 import '../config/language_provider.dart';
@@ -208,7 +209,15 @@ class VentanaAjustes {
                   ),
                 ),
               ),
-            ),
+            )
+            .animate()
+            .scale(
+              begin: const Offset(0.8, 0.8),
+              end: const Offset(1, 1),
+              duration: 300.ms,
+              curve: Curves.easeOutBack,
+            )
+            .fadeIn(duration: 200.ms),
           );
         },
       );

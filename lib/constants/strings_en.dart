@@ -291,6 +291,10 @@ const Map<String, String> stringsEn = {
   'theme_animales': 'Animals',
   'theme_paises': 'Countries',
   'theme_comida': 'Food',
+  'theme_ciencia': 'Science',
+  'theme_deportes': 'Sports',
+  'theme_profesiones': 'Professions',
+  'theme_geografia': 'Geography',
   'hangman_speed': 'Speed',
   'hangman_survival': 'Survival\nPRO',
 

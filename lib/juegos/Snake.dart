@@ -100,6 +100,17 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
     if (widget.isSurvivalMode) mode = 'survival';
     appLogger.gameEvent('Snake', 'game_start', data: {'mode': mode, 'speed': widget.speedMultiplier});
 
+    // Precargar efectos de sonido para reproducción instantánea
+    AudioService.preloadSounds([
+      'Sonidos/eat.ogg',
+      'Sonidos/hit.ogg',
+      'Sonidos/move.ogg',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/hint.wav',        // Sonido de pista
+      // 'Sonidos/power_up.ogg',    // Sonido de power-up
+      // 'Sonidos/level_up.ogg',    // Sonido de subir nivel
+    ]);
+
     startGame();
 
     // Escuchar cambios en la configuración de audio
@@ -311,12 +322,14 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
     final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
 
+    // El sonido se reproduce INSTANTÁNEAMENTE en el initState del diálogo
     GameOverDialog.show(
       context: context,
       isVictory: false,
       customTitle: '⏱️ ${AppStrings.get('time_up', currentLang)}',
       message: '${AppStrings.get('final_score', currentLang)}: $score',
       audioSettings: audioSettings,
+      soundToPlay: 'Sonidos/hit.ogg', // Sonido de game over
       onRestart: () {
         Navigator.pop(context);
         startGame();
@@ -447,21 +460,17 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
     }
 
     if (_checkCollision(newHead)) {
-      // NO actualizar visualDirection al chocar - la cabeza mantiene su dirección
+      // Detener timers
       timer?.cancel();
-      gameTimer?.cancel(); // Detener temporizador del modo contrarreloj
-      foodExpirationTimer?.cancel(); // Detener temporizador de expiración de frutas
-      obstacleTimer?.cancel(); // Detener temporizador de obstáculos
+      gameTimer?.cancel();
+      foodExpirationTimer?.cancel();
+      obstacleTimer?.cancel();
 
       // Detener música de fondo
       AudioService.stopLoop();
 
       // Si el widget ya no está montado, no mostrar diálogo
       if (!mounted) return;
-
-      // Sonido de colisión
-      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-      AudioService.playSound('Sonidos/hit.ogg', audioSettings.sfxVolume);
 
       // Notificar misiones
       final missionProvider = Provider.of<MissionProvider>(context, listen: false);
@@ -471,12 +480,15 @@ class _SnakeGameState extends State<SnakeGame> with WidgetsBindingObserver, Tick
       }
 
       final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
+      final audioSettings = Provider.of<AudioSettings>(context, listen: false);
 
+      // El sonido se reproduce INSTANTÁNEAMENTE en el initState del diálogo
       GameOverDialog.show(
         context: context,
         isVictory: false,
         message: '${AppStrings.get('score', currentLang)}: $score',
         audioSettings: audioSettings,
+        soundToPlay: 'Sonidos/hit.ogg', // Sonido de colisión
         onRestart: () {
           Navigator.pop(context);
           startGame();

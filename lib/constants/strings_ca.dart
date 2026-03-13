@@ -280,6 +280,10 @@ const Map<String, String> stringsCa = {
   'theme_animales': 'Animals',
   'theme_paises': 'Països',
   'theme_comida': 'Menjar',
+  'theme_ciencia': 'Ciència',
+  'theme_deportes': 'Esports',
+  'theme_profesiones': 'Professions',
+  'theme_geografia': 'Geografia',
   'hangman_speed': 'Velocitat',
   'hangman_survival': 'Supervivència\nPRO',
 

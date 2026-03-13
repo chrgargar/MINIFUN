@@ -105,11 +105,14 @@ class _WordSearchGameState extends State<WordSearchGame> {
     if (widget.level != null) mode = 'levels';
     appLogger.gameEvent('SopaDeLetras', 'game_start', data: {'difficulty': widget.difficulty, 'theme': widget.theme, 'mode': mode, 'level': currentLevel});
 
-    // Precargar efectos de sonido
+    // Precargar efectos de sonido para reproducción instantánea
     AudioService.preloadSounds([
       'Sonidos/soft_touch.wav',
       'Sonidos/word_ok.wav',
       'Sonidos/hint.wav',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/victory.ogg',     // Sonido de victoria
+      // 'Sonidos/word_error.ogg',  // Sonido de palabra incorrecta
     ]);
 
     _initializeGame();

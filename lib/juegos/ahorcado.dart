@@ -95,11 +95,14 @@ class _AhorcadoGameState extends State<AhorcadoGame> with TickerProviderStateMix
       vsync: this,
     );
 
-    // Precargar efectos de sonido
+    // Precargar efectos de sonido para reproducción instantánea
     AudioService.preloadSounds([
       'Sonidos/letter_correct.ogg',
       'Sonidos/letter_wrong.ogg',
       'Sonidos/hint.wav',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/victory.ogg',     // Sonido de victoria
+      // 'Sonidos/defeat.ogg',      // Sonido de derrota (ahorcado completo)
     ]);
 
     _startBackgroundMusic();
@@ -218,8 +221,8 @@ class _AhorcadoGameState extends State<AhorcadoGame> with TickerProviderStateMix
       if (currentWord.contains(letter)) {
         // Letra correcta
         // Reproducir sonido de letra correcta
-        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-        AudioService.playSound('Sonidos/letter_correct.ogg', audioSettings.sfxVolume);
+        // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        // AudioService.playSound('Sonidos/letter_correct.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
 
         // Contar cuántas veces aparece la letra
         int occurrences = currentWord.split('').where((l) => l == letter).length;
@@ -257,8 +260,8 @@ class _AhorcadoGameState extends State<AhorcadoGame> with TickerProviderStateMix
       } else {
         // Letra incorrecta
         // Reproducir sonido de letra incorrecta
-        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-        AudioService.playSound('Sonidos/letter_wrong.ogg', audioSettings.sfxVolume);
+        // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        // AudioService.playSound('Sonidos/letter_wrong.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
 
         errorsCount++;
         score = max(0, score - ConstantesAhorcado.penalizacionPorError);

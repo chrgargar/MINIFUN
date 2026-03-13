@@ -106,12 +106,15 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
     _initializeGame();
 
-    // Precargar efectos de sonido
+    // Precargar efectos de sonido para reproducción instantánea
     AudioService.preloadSounds([
       'Sonidos/cell_reveal.ogg',
       'Sonidos/mine_explode.ogg',
       'Sonidos/flag_place.ogg',
       'Sonidos/hint.wav',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/victory.ogg',     // Sonido de victoria
+      // 'Sonidos/flag_remove.ogg', // Sonido de quitar bandera
     ]);
 
     _startBackgroundMusic();
@@ -214,11 +217,8 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
     final cell = controller.board[row][col];
 
-    // CHORD MECHANIC: Si la celda ya está revelada y tiene número > 0
-    if (cell.isRevealed && cell.adjacentMines > 0) {
-      _handleChord(row, col);
-      return;
-    }
+    // Si la celda ya está revelada, no hacer nada
+    if (cell.isRevealed) return;
 
     // Use controller to update board logic; UI handles sounds/dialogs
     bool hitMine = controller.revealCell(row, col);
@@ -231,7 +231,7 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
 
     if (hitMine) {
       // Reproducir sonido de explosión
-      AudioService.playSound('Sonidos/mine_explode.ogg', audioSettings.sfxVolume);
+      // AudioService.playSound('Sonidos/mine_explode.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
 
       setState(() => gameOver = true);
       controller.revealAllMines();
@@ -239,48 +239,10 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
       return;
     } else {
       // Reproducir sonido de revelar celda
-      AudioService.playSound('Sonidos/cell_reveal.ogg', audioSettings.sfxVolume);
+      // AudioService.playSound('Sonidos/cell_reveal.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
     }
 
     _checkWin();
-  }
-
-  void _handleChord(int row, int col) {
-    final cell = controller.board[row][col];
-    final adjacentMines = cell.adjacentMines;
-
-    // Contar banderas adyacentes
-    int flagCount = 0;
-    for (int dr = -1; dr <= 1; dr++) {
-      for (int dc = -1; dc <= 1; dc++) {
-        if (dr == 0 && dc == 0) continue;
-        int nr = row + dr;
-        int nc = col + dc;
-        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-          if (controller.board[nr][nc].isFlagged) {
-            flagCount++;
-          }
-        }
-      }
-    }
-
-    // Si el número de banderas coincide con el número de minas adyacentes,
-    // revelar todas las celdas no-flagged adyacentes
-    if (flagCount == adjacentMines) {
-      for (int dr = -1; dr <= 1; dr++) {
-        for (int dc = -1; dc <= 1; dc++) {
-          if (dr == 0 && dc == 0) continue;
-          int nr = row + dr;
-          int nc = col + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-            final neighbor = controller.board[nr][nc];
-            if (!neighbor.isRevealed && !neighbor.isFlagged) {
-              _revealCell(nr, nc);
-            }
-          }
-        }
-      }
-    }
   }
 
   void _toggleFlag(int row, int col) {
@@ -295,13 +257,13 @@ class _BuscaminasGameState extends State<BuscaminasGame> {
         controller.toggleFlag(row, col); // remove
         flagsPlaced = controller.countFlags();
         // Reproducir sonido de bandera
-        AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume);
+        // AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
       } else {
         if (controller.countFlags() < mineCount) {
           controller.toggleFlag(row, col); // add
           flagsPlaced = controller.countFlags();
           // Reproducir sonido de bandera
-          AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume);
+          // AudioService.playSound('Sonidos/flag_place.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo
                   } else {
           final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
           ScaffoldMessenger.of(context).showSnackBar(

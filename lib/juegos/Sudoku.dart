@@ -116,12 +116,15 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
     _countInitialNumbers();
     _startTimer();
 
-    // Precargar efectos de sonido
+    // Precargar efectos de sonido para reproducción instantánea
     AudioService.preloadSounds([
       'Sonidos/number_place.ogg',
       'Sonidos/number_error.ogg',
       'Sonidos/number_complete.ogg',
       'Sonidos/hint.wav',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/victory.ogg',     // Sonido de victoria
+      // 'Sonidos/undo.ogg',        // Sonido de deshacer
     ]);
 
     _startBackgroundMusic();
@@ -522,16 +525,7 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
       audioSettings: audioSettings,
       onRestart: () {
         Navigator.pop(context);
-        setState(() {
-          _generateSudoku();
-          cellsFilled = 0;
-          errorsCount = 0;
-          elapsedSeconds = 0;
-          timeLeft = ConstantesSudoku.duracionContrarreloj;
-          selectedRow = null;
-          selectedCol = null;
-        });
-        _startTimer();
+        _restartGame();
       },
       onExit: () {
         Navigator.pop(context);

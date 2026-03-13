@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/app_logger.dart';
 import '../widgets/tarjetas_juegos.dart';
 import '../widgets/boton_ajustes.dart';
@@ -74,7 +75,7 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Título
+                // Título con animación
                 Text(
                   AppStrings.get('daily_missions', currentLang),
                   style: TextStyle(
@@ -82,7 +83,10 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : Colors.black,
                   ),
-                ),
+                )
+                .animate()
+                .fadeIn(duration: 300.ms)
+                .slideY(begin: -0.2, end: 0),
                 const SizedBox(height: 8),
 
                 // Racha de días
@@ -221,7 +225,15 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
               ],
             ),
           ),
-        );
+        )
+        .animate()
+        .scale(
+          begin: const Offset(0.8, 0.8),
+          end: const Offset(1, 1),
+          duration: 300.ms,
+          curve: Curves.easeOutBack,
+        )
+        .fadeIn(duration: 200.ms);
       },
     );
   }
@@ -562,12 +574,18 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                           crossAxisSpacing: cellSpacing,
                           childAspectRatio: (constraints.maxWidth / 2 - gridPadding) / cellHeight,
                           children: [
-                            TarjetasJuegos(title: AppStrings.get('game_snake', currentLang), gameKey: 'Snake', imagePath: 'assets/imagenes/sssnake.png'),
-                            TarjetasJuegos(title: AppStrings.get('game_watersort', currentLang), gameKey: 'WaterSort', imagePath: 'assets/imagenes/watersort.png'),
-                            TarjetasJuegos(title: AppStrings.get('game_word_search', currentLang), gameKey: 'Sopa de Letras', imagePath: 'assets/imagenes/sopadeletras.png'),
-                            TarjetasJuegos(title: AppStrings.get('game_hangman', currentLang), gameKey: 'Ahorcado', imagePath: 'assets/imagenes/ahorcado.png'),
-                            TarjetasJuegos(title: AppStrings.get('game_minesweeper', currentLang), gameKey: 'Buscaminas', imagePath: 'assets/imagenes/buscaminas.png'),
-                            TarjetasJuegos(title: AppStrings.get('game_sudoku', currentLang), gameKey: 'Sudoku', imagePath: 'assets/imagenes/sudoku.png'),
+                            TarjetasJuegos(title: AppStrings.get('game_snake', currentLang), gameKey: 'Snake', imagePath: 'assets/imagenes/sssnake.png')
+                                .animate().fadeIn(delay: 100.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+                            TarjetasJuegos(title: AppStrings.get('game_watersort', currentLang), gameKey: 'WaterSort', imagePath: 'assets/imagenes/watersort.png')
+                                .animate().fadeIn(delay: 150.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+                            TarjetasJuegos(title: AppStrings.get('game_word_search', currentLang), gameKey: 'Sopa de Letras', imagePath: 'assets/imagenes/sopadeletras.png')
+                                .animate().fadeIn(delay: 200.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+                            TarjetasJuegos(title: AppStrings.get('game_hangman', currentLang), gameKey: 'Ahorcado', imagePath: 'assets/imagenes/ahorcado.png')
+                                .animate().fadeIn(delay: 250.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+                            TarjetasJuegos(title: AppStrings.get('game_minesweeper', currentLang), gameKey: 'Buscaminas', imagePath: 'assets/imagenes/buscaminas.png')
+                                .animate().fadeIn(delay: 300.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
+                            TarjetasJuegos(title: AppStrings.get('game_sudoku', currentLang), gameKey: 'Sudoku', imagePath: 'assets/imagenes/sudoku.png')
+                                .animate().fadeIn(delay: 350.ms, duration: 400.ms).scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
                           ],
                         ),
                       ),

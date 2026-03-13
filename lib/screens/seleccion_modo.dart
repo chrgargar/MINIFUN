@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/boton_ajustes.dart';
 import '../widgets/guia_juego_dialog.dart';
 import '../constants/guias_juegos.dart';
@@ -129,7 +130,7 @@ class _SeleccionModoState extends State<SeleccionModo> {
                     ),
                   ),
 
-                  // Título
+                  // Título con animación
                   SizedBox(
                     height: titleHeight,
                     child: Center(
@@ -142,17 +143,21 @@ class _SeleccionModoState extends State<SeleccionModo> {
                           color: isDark ? Colors.white : Colors.black,
                           height: 1.2,
                         ),
-                      ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideY(begin: -0.3, end: 0, curve: Curves.easeOut),
                     ),
                   ),
 
-                  // Imagen del juego
+                  // Imagen del juego con animación
                   SizedBox(
                     height: imageHeight,
                     child: Center(
                       child: Container(
                         width: imageSize,
                         height: imageSize,
+                        padding: EdgeInsets.all(imageSize * 0.08), // Padding para evitar corte
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white,
@@ -160,10 +165,13 @@ class _SeleccionModoState extends State<SeleccionModo> {
                         child: ClipOval(
                           child: Image.asset(
                             gameImagePath,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain, // Contain para que no se corte
                           ),
                         ),
-                      ),
+                      )
+                      .animate()
+                      .fadeIn(delay: 100.ms, duration: 500.ms)
+                      .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), curve: Curves.easeOutBack),
                     ),
                   ),
 
@@ -180,6 +188,7 @@ class _SeleccionModoState extends State<SeleccionModo> {
                           icon: '🎮',
                           text: AppStrings.get('play', currentLang),
                           color: const Color(0xFF7B3FF2),
+                          animationIndex: 0,
                           onTap: () {
                             if (gameKey == 'Snake') {
                               Navigator.push(
@@ -553,6 +562,7 @@ class _SeleccionModoState extends State<SeleccionModo> {
     required Color color,
     Color textColor = Colors.white,
     required VoidCallback onTap,
+    int animationIndex = 0,
   }) {
     return SizedBox(
       width: double.infinity,
@@ -589,6 +599,18 @@ class _SeleccionModoState extends State<SeleccionModo> {
           ],
         ),
       ),
+    )
+    .animate()
+    .fadeIn(
+      delay: Duration(milliseconds: 100 + (animationIndex * 80)),
+      duration: 400.ms,
+    )
+    .slideX(
+      begin: 0.15,
+      end: 0,
+      delay: Duration(milliseconds: 100 + (animationIndex * 80)),
+      duration: 400.ms,
+      curve: Curves.easeOutCubic,
     );
   }
 

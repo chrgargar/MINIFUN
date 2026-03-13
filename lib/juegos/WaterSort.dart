@@ -35,7 +35,7 @@ class WaterSortGame extends StatefulWidget {
 }
 
 class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateMixin {
-  late List<List<Color>> tubes;
+  List<List<Color>> tubes = [];
   int? selectedTube;
   int moves = 0;
   bool gameWon = false;
@@ -79,12 +79,15 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
 
     _loadSavedLevel();
 
-    // Precargar efectos de sonido
+    // Precargar efectos de sonido para reproducción instantánea
     AudioService.preloadSounds([
       'Sonidos/pour_water.ogg',
       'Sonidos/tube_complete.ogg',
       'Sonidos/tube_shake.ogg',
       'Sonidos/hint.wav',
+      // TODO: Añadir sonidos adicionales cuando se implementen:
+      // 'Sonidos/victory.ogg',     // Sonido de victoria
+      // 'Sonidos/undo.ogg',        // Sonido de deshacer
     ]);
 
     _startBackgroundMusic();
@@ -399,8 +402,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           _pourWater(selectedTube!, index);
         } else {
           // No se puede verter - reproducir sonido de bloqueo
-          final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-          AudioService.playSound('Sonidos/tube_shake.ogg', audioSettings.sfxVolume);
+          // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+          // AudioService.playSound('Sonidos/tube_shake.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo de audio
 
           // Si no se puede verter, seleccionar el nuevo tubo si tiene contenido
           if (tubes[index].isNotEmpty) {
@@ -424,8 +427,8 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     _saveState();
 
     // Reproducir sonido de vertido
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/pour_water.ogg', audioSettings.sfxVolume);
+    // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+    // AudioService.playSound('Sonidos/pour_water.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo de audio
 
     setState(() {
       isPouring = true;
@@ -452,14 +455,18 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         isPouring = false;
         pouringFromTube = null;
         pouringToTube = null;
+
+        // Limpiar pistas después de cualquier movimiento
+        suggestedFromTube = null;
+        suggestedToTube = null;
       });
 
       _pourAnimationController!.reset();
 
       // Verificar si el tubo destino quedó completo
       if (_isTubeComplete(to)) {
-        final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-        AudioService.playSound('Sonidos/tube_complete.ogg', audioSettings.sfxVolume);
+        // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
+        // AudioService.playSound('Sonidos/tube_complete.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo de audio
       }
 
       // Verificar victoria
@@ -631,9 +638,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
                 Expanded(
                   child: _buildGameArea(isDark),
                 ),
-
-                // Controles
-                _buildControls(isDark),
               ],
             ),
 
@@ -670,14 +674,6 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
           hPad: hPad,
           gap: gap,
         ),
-        GameStatBadge(
-          text: '$moves',
-          icon: Icons.touch_app,
-          color: isDark ? ColoresApp.blanco : ColoresApp.negro,
-          fontSize: fontSize,
-          hPad: hPad,
-          gap: gap,
-        ),
         if (widget.isTimeAttackMode)
           GameStatBadge(
             text: _formatTime(timeLeft),
@@ -696,6 +692,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         AudioService.stopLoop();
         Navigator.pop(context);
       },
+      hintButton: _buildHintButton(isDark, currentLang),
       guideButton: BotonGuia(
         gameTitle: 'WaterSort',
         gameImagePath: 'assets/imagenes/watersort.png',
@@ -718,6 +715,11 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   }
 
   Widget _buildGameArea(bool isDark) {
+    // Mostrar indicador de carga mientras se inicializan los tubos
+    if (tubes.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calcular dimensiones de tubos
@@ -873,94 +875,48 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     );
   }
 
-  Widget _buildControls(bool isDark) {
-    final currentLang = Provider.of<LanguageProvider>(context).currentLanguage;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Botón Deshacer
-          _buildControlButton(
-            icon: Icons.undo,
-            label: AppStrings.get('undo', currentLang),
-            onTap: history.isNotEmpty ? _undo : null,
-            isDark: isDark,
-          ),
-
-          // Botón Pista
-          GestureDetector(
-            onTap: gameWon || gameOver || isPaused ? null : _showHint,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: usedHints >= hintsAvailable
-                    ? (isDark ? ColoresApp.gris800 : ColoresApp.gris300)
-                    : Colors.amber,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lightbulb, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${AppStrings.get('hint', currentLang)} (${hintsAvailable - usedHints})',
-                    style: TextStyle(
-                      color: usedHints >= hintsAvailable ? ColoresApp.gris400 : Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Botón Reiniciar
-          _buildControlButton(
-            icon: Icons.refresh,
-            label: AppStrings.get('restart', currentLang),
-            onTap: _restart,
-            isDark: isDark,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onTap,
-    required bool isDark,
-  }) {
-    bool isEnabled = onTap != null;
+  Widget _buildHintButton(bool isDark, String currentLang) {
+    final hasHints = usedHints < hintsAvailable;
+    final isEnabled = hasHints && !gameWon && !gameOver && !isPaused;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isEnabled ? _showHint : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isEnabled
-              ? ColoresApp.moradoPrincipal
-              : (isDark ? ColoresApp.gris800 : ColoresApp.gris300),
-          borderRadius: BorderRadius.circular(25),
+          color: hasHints ? Colors.amber : (isDark ? ColoresApp.gris800 : ColoresApp.gris300),
+          shape: BoxShape.circle,
         ),
-        child: Row(
+        child: Stack(
+          alignment: Alignment.center,
           children: [
             Icon(
-              icon,
-              color: isEnabled ? ColoresApp.blanco : ColoresApp.gris400,
+              Icons.lightbulb,
+              color: hasHints ? Colors.white : ColoresApp.gris400,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isEnabled ? ColoresApp.blanco : ColoresApp.gris400,
-                fontWeight: FontWeight.w600,
+            if (hasHints)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                  child: Text(
+                    '${hintsAvailable - usedHints}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),

@@ -2,6 +2,16 @@ import 'package:audioplayers/audioplayers.dart';
 
 /// Servicio centralizado de Audio para toda la aplicación
 /// Maneja efectos de sonido y música de fondo en loop
+///
+/// IMPORTANTE: Este servicio usa un pool de reproductores para sonidos precargados.
+/// Cuando un juego llama a preloadSounds(), se crean 3 reproductores por sonido.
+/// Al reproducir, se usa play() en lugar de seek()+resume() porque resume()
+/// no funciona correctamente después de que un sonido termina (estado completed).
+///
+/// Para añadir sonidos a un juego:
+/// 1. Añadir el archivo de sonido a assets/Sonidos/
+/// 2. Descomentar o añadir la línea en preloadSounds() del juego
+/// 3. Llamar AudioService.playSound('Sonidos/archivo.ogg', volume)
 class AudioService {
   // Reproductor para música de fondo en loop
   static AudioPlayer? _loopPlayer;
@@ -45,13 +55,18 @@ class AudioService {
       }
     }
 
-    // Si no hay disponible, usar el primero
+    // Si no hay disponible, detener el primero y reutilizarlo
     final player = availablePlayer ?? pool.first;
+    if (availablePlayer == null) {
+      // Todos están ocupados, detener el primero para reutilizarlo
+      await player.stop();
+    }
 
-    // Configurar y reproducir
+    // Configurar volumen y reproducir desde el inicio
+    // Usar play() en lugar de seek+resume porque resume no funciona
+    // correctamente después de que el sonido termina (estado completed)
     await player.setVolume(volume);
-    await player.seek(Duration.zero);
-    await player.resume();
+    await player.play(AssetSource(src));
   }
 
   /// Reproducir música de fondo en loop continuo
