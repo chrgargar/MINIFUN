@@ -16,6 +16,7 @@ import '../providers/mission_provider.dart';
 import '../widgets/game_over_dialog.dart';
 import '../widgets/game_stat_badge.dart';
 import '../widgets/game_header.dart';
+import '../widgets/water_pour_animation.dart';
 
 /// Juego Water Sort - Ordena los colores en tubos
 class WaterSortGame extends StatefulWidget {
@@ -48,6 +49,11 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   int? pouringFromTube;
   int? pouringToTube;
   bool isPouring = false;
+  Color? pouringColor;
+  double _tubeWidth = 60.0;
+
+  // GlobalKeys para obtener posiciones de los tubos
+  List<GlobalKey> _tubeKeys = [];
 
   // Historial para deshacer
   List<List<List<Color>>> history = [];
@@ -97,7 +103,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     });
 
     _pourAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 700),
       vsync: this,
     );
   }
@@ -152,6 +158,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     int finalExtraTubes = (extraTubes - reducedTubes).clamp(1, extraTubes);
 
     tubes = _generatePuzzle(totalColors, finalExtraTubes);
+
+    // Generar GlobalKeys para cada tubo
+    _tubeKeys = List.generate(tubes.length, (_) => GlobalKey());
 
     selectedTube = null;
     moves = 0;
@@ -426,6 +435,9 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   void _pourWater(int from, int to) {
     _saveState();
 
+    // Guardar el color que se va a mover para la animación
+    final colorToAnimate = tubes[from].last;
+
     // Reproducir sonido de vertido
     // final audioSettings = Provider.of<AudioSettings>(context, listen: false);
     // AudioService.playSound('Sonidos/pour_water.ogg', audioSettings.sfxVolume); // TODO: Descarga el archivo de audio
@@ -434,6 +446,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       isPouring = true;
       pouringFromTube = from;
       pouringToTube = to;
+      pouringColor = colorToAnimate;
     });
 
     // Iniciar animación sin bloquear
@@ -455,6 +468,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         isPouring = false;
         pouringFromTube = null;
         pouringToTube = null;
+        pouringColor = null;
 
         // Limpiar pistas después de cualquier movimiento
         suggestedFromTube = null;
@@ -641,6 +655,33 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
               ],
             ),
 
+            // Overlay de animación de vertido
+            if (isPouring && pouringFromTube != null && pouringToTube != null && pouringColor != null)
+              AnimatedBuilder(
+                animation: _pourAnimationController!,
+                builder: (context, child) {
+                  // Obtener posiciones de los tubos
+                  final fromBox = _tubeKeys[pouringFromTube!].currentContext?.findRenderObject() as RenderBox?;
+                  final toBox = _tubeKeys[pouringToTube!].currentContext?.findRenderObject() as RenderBox?;
+
+                  if (fromBox == null || toBox == null) return const SizedBox.shrink();
+
+                  final fromGlobal = fromBox.localToGlobal(Offset(fromBox.size.width / 2, 0));
+                  final toGlobal = toBox.localToGlobal(Offset(toBox.size.width / 2, 0));
+
+                  // Dirección basada en índices originales (no posiciones transformadas)
+                  final pourDirection = pouringToTube! > pouringFromTube! ? 1.0 : -1.0;
+
+                  return WaterPourAnimation(
+                    fromPosition: fromGlobal,
+                    toPosition: toGlobal,
+                    waterColor: pouringColor!,
+                    progress: _pourAnimationController!.value,
+                    tubeWidth: _tubeWidth,
+                    pourDirection: pourDirection,
+                  );
+                },
+              ),
 
             // Overlay de pausa
             if (isPaused)
@@ -724,41 +765,101 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
       builder: (context, constraints) {
         // Calcular dimensiones de tubos
         int tubeCount = tubes.length;
-        int tubesPerRow = tubeCount <= 6 ? tubeCount : (tubeCount / 2).ceil();
+        // Máximo 5 tubos por fila para mejor espaciado y animaciones
+        int tubesPerRow = tubeCount <= 5 ? tubeCount : (tubeCount / 2).ceil().clamp(3, 5);
         int rows = (tubeCount / tubesPerRow).ceil();
 
-        double maxTubeWidth = constraints.maxWidth / (tubesPerRow + 1);
-        double tubeWidth = maxTubeWidth.clamp(50.0, 70.0);
+        double maxTubeWidth = constraints.maxWidth / (tubesPerRow + 1.5);
+        double tubeWidth = maxTubeWidth.clamp(45.0, 65.0);
         double tubeHeight = tubeWidth * 2.5;
         double spacing = (constraints.maxWidth - (tubeWidth * tubesPerRow)) / (tubesPerRow + 1);
 
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(rows, (rowIndex) {
-              int startIndex = rowIndex * tubesPerRow;
-              int endIndex = (startIndex + tubesPerRow).clamp(0, tubeCount);
+        // Usar Stack para que el tubo que vierte se dibuje encima
+        return Stack(
+          children: [
+            // Capa base: todos los tubos en su posición normal
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(rows, (rowIndex) {
+                  int startIndex = rowIndex * tubesPerRow;
+                  int endIndex = (startIndex + tubesPerRow).clamp(0, tubeCount);
 
-              return Padding(
-                padding: EdgeInsets.symmetric(vertical: spacing / 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(endIndex - startIndex, (i) {
-                    int tubeIndex = startIndex + i;
-                    return Padding(
-                      padding: EdgeInsets.symmetric(horizontal: spacing / 2),
-                      child: _buildTube(
-                        tubeIndex,
-                        tubeWidth,
-                        tubeHeight,
-                        isDark,
-                      ),
-                    );
-                  }),
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: spacing / 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(endIndex - startIndex, (i) {
+                        int tubeIndex = startIndex + i;
+                        // Si este es el tubo que está vertiendo, poner un placeholder transparente
+                        if (tubeIndex == pouringFromTube) {
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                            child: SizedBox(width: tubeWidth, height: tubeHeight),
+                          );
+                        }
+                        return Padding(
+                          padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                          child: _buildTube(
+                            tubeIndex,
+                            tubeWidth,
+                            tubeHeight,
+                            isDark,
+                          ),
+                        );
+                      }),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            // Capa superior: el tubo que está vertiendo (se dibuja encima)
+            if (pouringFromTube != null)
+              Positioned.fill(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(rows, (rowIndex) {
+                      int startIndex = rowIndex * tubesPerRow;
+                      int endIndex = (startIndex + tubesPerRow).clamp(0, tubeCount);
+
+                      // Solo renderizar la fila que contiene el tubo activo
+                      if (pouringFromTube! < startIndex || pouringFromTube! >= endIndex) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: spacing / 2),
+                          child: SizedBox(height: tubeHeight),
+                        );
+                      }
+
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: spacing / 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(endIndex - startIndex, (i) {
+                            int tubeIndex = startIndex + i;
+                            if (tubeIndex == pouringFromTube) {
+                              return Padding(
+                                padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                                child: _buildTube(
+                                  tubeIndex,
+                                  tubeWidth,
+                                  tubeHeight,
+                                  isDark,
+                                ),
+                              );
+                            }
+                            return Padding(
+                              padding: EdgeInsets.symmetric(horizontal: spacing / 2),
+                              child: SizedBox(width: tubeWidth, height: tubeHeight),
+                            );
+                          }),
+                        ),
+                      );
+                    }),
+                  ),
                 ),
-              );
-            }),
-          ),
+              ),
+          ],
         );
       },
     );
@@ -767,7 +868,7 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
   Widget _buildTubeSegment(Color? segmentColor, double segmentHeight, double width, bool isTop, bool isBottom) {
     return Container(
       width: width - 12,
-      height: segmentHeight,
+      height: segmentHeight - 2, // Reducir para dar espacio al margen
       margin: const EdgeInsets.symmetric(vertical: 1),
       decoration: BoxDecoration(
         color: segmentColor ?? Colors.transparent,
@@ -799,15 +900,28 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
     List<Color> tube = tubes[index];
     double segmentHeight = (height - 20) / ConstantesWaterSort.tubeCapacity;
 
-    bool isPouring = pouringFromTube == index || pouringToTube == index;
+    bool isPouringFrom = pouringFromTube == index;
+    bool isPouringTo = pouringToTube == index;
+    bool isPouringTube = isPouringFrom || isPouringTo;
 
-    return GestureDetector(
+    // Guardar el ancho del tubo para la animación
+    _tubeWidth = width;
+
+    // Calcular la dirección de inclinación (hacia el tubo destino)
+    double tiltDirection = 0;
+    if (isPouringFrom && pouringToTube != null) {
+      // Determinar si el destino está a la izquierda o derecha
+      tiltDirection = pouringToTube! > index ? 1 : -1;
+    }
+
+    Widget tubeWidget = GestureDetector(
+      key: _tubeKeys.isNotEmpty && index < _tubeKeys.length ? _tubeKeys[index] : null,
       onTap: () => _onTubeTap(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         transform: Matrix4.identity()
           ..translate(0.0, isSelected ? -15.0 : 0.0)
-          ..scale(isPouring ? 1.05 : 1.0),
+          ..scale(isPouringTube ? 1.05 : 1.0),
         child: Container(
           width: width,
           height: height,
@@ -873,6 +987,41 @@ class _WaterSortGameState extends State<WaterSortGame> with TickerProviderStateM
         ),
       ),
     );
+
+    // Si este tubo es el que está vertiendo, animarlo con inclinación y elevación
+    if (isPouringFrom && _pourAnimationController != null) {
+      return AnimatedBuilder(
+        animation: _pourAnimationController!,
+        builder: (context, child) {
+          final progress = _pourAnimationController!.value;
+
+          // Curva de inclinación: sube rápido, se mantiene, baja rápido
+          double tiltProgress;
+          if (progress < 0.15) {
+            tiltProgress = progress / 0.15; // Subir
+          } else if (progress < 0.85) {
+            tiltProgress = 1.0; // Mantener
+          } else {
+            tiltProgress = (1.0 - progress) / 0.15; // Bajar
+          }
+
+          final tiltAngle = tiltDirection * tiltProgress * 0.6; // ~35 grados max
+          final liftHeight = tiltProgress * height * 1.2; // Elevar mucho más el tubo
+          final horizontalShift = tiltDirection * tiltProgress * width * 0.3; // Mover hacia el destino
+
+          return Transform(
+            alignment: Alignment.bottomCenter,
+            transform: Matrix4.identity()
+              ..translate(horizontalShift, -liftHeight) // Elevar y mover hacia destino
+              ..rotateZ(tiltAngle),
+            child: child,
+          );
+        },
+        child: tubeWidget,
+      );
+    }
+
+    return tubeWidget;
   }
 
   Widget _buildHintButton(bool isDark, String currentLang) {

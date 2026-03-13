@@ -127,20 +127,13 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
       // 'Sonidos/undo.ogg',        // Sonido de deshacer
     ]);
 
-    _startBackgroundMusic();
   }
 
   @override
   void dispose() {
     gameTimer?.cancel();
     _shakeController.dispose();
-    AudioService.stopLoop();
     super.dispose();
-  }
-
-  void _startBackgroundMusic() {
-    final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playLoop('Sonidos/music_sudoku.mp3', audioSettings.musicVolume);
   }
 
   void _startTimer() {
@@ -427,7 +420,7 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
 
     // Reproducir sonido de undo
     final audioSettings = Provider.of<AudioSettings>(context, listen: false);
-    AudioService.playSound('Sonidos/undo.ogg', audioSettings.sfxVolume);
+    AudioService.playSound('Sonidos/soft_touch.wav', audioSettings.sfxVolume);
   }
 
   void _removeNotesInRowColBox(int row, int col, int num) {
@@ -643,7 +636,6 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
       onRestart: _restartGame,
       onClose: () {
         gameTimer?.cancel();
-        AudioService.stopLoop();
         Navigator.pop(context);
       },
       guideButton: BotonGuia(
@@ -1084,7 +1076,6 @@ class _SudokuGameState extends State<SudokuGame> with TickerProviderStateMixin {
               onRestart: _restartGame,
               onExit: () {
                 gameTimer?.cancel();
-                AudioService.stopLoop();
                 Navigator.pop(context);
               },
             ),
