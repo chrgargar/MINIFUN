@@ -109,4 +109,15 @@ class ApiConstants {
 
   /// Key para guardar el avatar del usuario registrado en local
   static const String storageKeyUserAvatar = 'user_avatar';
+
+  // ==================== KEYS DINÁMICAS POR USUARIO ====================
+
+  /// Key para avatar específico de un usuario
+  static String getUserAvatarKey(int userId) => 'user_${userId}_avatar';
+
+  /// Key para idioma específico de un usuario
+  static String getUserLanguageKey(int userId) => 'user_${userId}_language';
+
+  /// Key para tema específico de un usuario
+  static String getUserThemeKey(int userId) => 'user_${userId}_theme';
 }

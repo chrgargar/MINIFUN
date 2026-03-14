@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../constants/api_constants.dart';
 import '../services/api_exceptions.dart';
 import '../services/app_logger.dart';
+import '../core/di/service_locator.dart';
 
 /// Provider para gestionar el estado de autenticación de la aplicación
 ///
@@ -32,6 +33,9 @@ class AuthProvider extends ChangeNotifier {
   bool get isPremium => _currentUser?.isPremium ?? false;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isGoogleUser => _currentUser?.cloudId != null;
+
+  /// Obtener el ID del usuario actual (null si no está logueado)
+  int? get currentUserId => _currentUser?.id;
 
   /// Obtener el token JWT actual desde SharedPreferences
   Future<String?> getToken() async {
@@ -98,9 +102,23 @@ class AuthProvider extends ChangeNotifier {
       if (googleUserId != null) {
         final googleName = prefs.getString(ApiConstants.storageKeyGoogleUserName) ?? '';
         final googleEmail = prefs.getString(ApiConstants.storageKeyGoogleUserEmail) ?? '';
-        final googleAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+        final oderId = googleUserId.hashCode;
+
+        // Cargar avatar específico de este usuario de Google
+        final userAvatarKey = ApiConstants.getUserAvatarKey(oderId);
+        String? googleAvatar = prefs.getString(userAvatarKey);
+
+        // Fallback: migrar avatar antiguo de Google si existe
+        if (googleAvatar == null) {
+          final oldGoogleAvatar = prefs.getString(ApiConstants.storageKeyGoogleUserAvatar);
+          if (oldGoogleAvatar != null) {
+            await prefs.setString(userAvatarKey, oldGoogleAvatar);
+            googleAvatar = oldGoogleAvatar;
+          }
+        }
+
         _currentUser = UserModel(
-          id: googleUserId.hashCode,
+          id: oderId,
           username: googleName.isNotEmpty ? googleName : 'Usuario Google',
           email: googleEmail,
           passwordHash: '',
@@ -162,13 +180,27 @@ class AuthProvider extends ChangeNotifier {
   /// Crear UserModel desde datos del servidor
   ///
   /// Centraliza la lógica de parseo para evitar duplicación.
-  /// El avatar se carga desde SharedPreferences, no del servidor.
+  /// El avatar se carga desde SharedPreferences con clave específica por usuario.
   Future<UserModel> _createUserFromServerData(Map<String, dynamic> userData) async {
     final prefs = await SharedPreferences.getInstance();
-    final localAvatar = prefs.getString(ApiConstants.storageKeyUserAvatar);
+    final userId = userData['id'] as int;
+
+    // Cargar avatar específico de este usuario
+    final userAvatarKey = ApiConstants.getUserAvatarKey(userId);
+    String? localAvatar = prefs.getString(userAvatarKey);
+
+    // Fallback: migrar avatar antiguo si existe (compatibilidad)
+    if (localAvatar == null) {
+      final oldAvatar = prefs.getString(ApiConstants.storageKeyUserAvatar);
+      if (oldAvatar != null) {
+        // Migrar al nuevo formato por usuario
+        await prefs.setString(userAvatarKey, oldAvatar);
+        localAvatar = oldAvatar;
+      }
+    }
 
     return UserModel(
-      id: userData['id'] as int,
+      id: userId,
       username: userData['username'] as String,
       email: userData['email'] as String?,
       passwordHash: '',
@@ -296,6 +328,10 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setString(ApiConstants.storageKeyAuthToken, token);
     await prefs.setString(ApiConstants.storageKeyRefreshToken, refreshToken);
     await prefs.setInt(ApiConstants.storageKeyUserId, _currentUser!.id!);
+
+    // Configurar SyncService para sincronización en background
+    sl.syncService.setCredentials(token, _currentUser!.id!);
+    sl.syncService.startPeriodicSync();
   }
 
   /// Iniciar sesión
@@ -408,6 +444,9 @@ class AuthProvider extends ChangeNotifier {
   /// del cliente al eliminar el token.
   Future<void> logout() async {
     appLogger.authEvent('Cerrando sesión', metadata: {'userId': _currentUser?.id});
+
+    // Detener sincronización en background
+    sl.syncService.clearCredentials();
 
     final prefs = await SharedPreferences.getInstance();
 
@@ -525,9 +564,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final storageKey = isGoogleUser
-          ? ApiConstants.storageKeyGoogleUserAvatar
-          : ApiConstants.storageKeyUserAvatar;
+      // Usar clave específica por usuario para que cada cuenta tenga su avatar
+      final storageKey = ApiConstants.getUserAvatarKey(_currentUser!.id!);
 
       await prefs.setString(storageKey, base64Image);
       _currentUser = _currentUser!.copyWith(avatarBase64: base64Image);
@@ -555,9 +593,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final storageKey = isGoogleUser
-          ? ApiConstants.storageKeyGoogleUserAvatar
-          : ApiConstants.storageKeyUserAvatar;
+      // Usar clave específica por usuario
+      final storageKey = ApiConstants.getUserAvatarKey(_currentUser!.id!);
 
       await prefs.remove(storageKey);
       _currentUser = _currentUser!.copyWith(clearAvatar: true);

@@ -10,6 +10,11 @@ import 'config/audio_settings.dart';
 import 'config/language_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/mission_provider.dart';
+import 'providers/game_progress_provider.dart';
+import 'providers/preferences_provider.dart';
+import 'core/di/service_locator.dart';
+import 'core/sync/sync_service.dart';
+import 'core/migration/data_migration_service.dart';
 import 'services/app_logger.dart';
 import 'services/audio_service.dart';
 import 'constants/api_constants.dart';
@@ -40,6 +45,12 @@ void main() {
         databaseFactory = databaseFactoryFfi;
       }
 
+      // Inicializar ServiceLocator (base de datos local y servicios)
+      await ServiceLocator.instance.initialize();
+
+      // Migrar datos antiguos de SharedPreferences a SQLite
+      await DataMigrationService.runMigrationIfNeeded();
+
       // Precargar sonidos frecuentes para reproducción instantánea
       AudioService.preloadSounds([
         'Sonidos/hint.wav',
@@ -64,6 +75,10 @@ void main() {
             ChangeNotifierProvider(create: (context) => LanguageProvider()),
             ChangeNotifierProvider(create: (context) => AuthProvider()),
             ChangeNotifierProvider(create: (context) => MissionProvider()),
+            // Nuevos providers para arquitectura offline-first
+            ChangeNotifierProvider(create: (context) => GameProgressProvider()),
+            ChangeNotifierProvider(create: (context) => PreferencesProvider()),
+            ChangeNotifierProvider.value(value: sl.syncService),
           ],
           child: const MyApp(),
         ),

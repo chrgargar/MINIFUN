@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../services/app_logger.dart';
 import '../config/app_colors.dart';
 import '../config/language_provider.dart';
+import '../config/selectorTema.dart';
 import '../constants/app_strings.dart';
 import '../services/validators.dart';
 import 'pantalla_registro.dart';
@@ -70,12 +71,23 @@ class _PantallaLoginState extends State<PantallaLogin> {
           _isCheckingSession = false;
         });
 
-        // Si ya está logueado, ir directo a la pantalla principal
+        // Si ya está logueado, cargar preferencias y ir a la pantalla principal
         if (authProvider.isLoggedIn) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-          );
+          // Cargar preferencias específicas del usuario (idioma, tema)
+          final userId = authProvider.currentUserId;
+          if (userId != null) {
+            final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+            final themeProvider = Provider.of<SelectorTema>(context, listen: false);
+            await languageProvider.loadUserLanguage(userId);
+            await themeProvider.loadUserTheme(userId);
+          }
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+            );
+          }
         }
       }
     } catch (e) {
@@ -127,10 +139,21 @@ class _PantallaLoginState extends State<PantallaLogin> {
     );
 
     if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-      );
+      // Cargar preferencias específicas del usuario (idioma, tema)
+      final userId = authProvider.currentUserId;
+      if (userId != null) {
+        final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+        final themeProvider = Provider.of<SelectorTema>(context, listen: false);
+        await languageProvider.loadUserLanguage(userId);
+        await themeProvider.loadUserTheme(userId);
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+        );
+      }
     } else if (mounted) {
       final currentLang = Provider.of<LanguageProvider>(context, listen: false).currentLanguage;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -459,10 +482,21 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             final success = await authProvider.loginWithGoogle();
 
                             if (success && mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
-                              );
+                              // Cargar preferencias específicas del usuario (idioma, tema)
+                              final userId = authProvider.currentUserId;
+                              if (userId != null) {
+                                final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+                                final themeProvider = Provider.of<SelectorTema>(context, listen: false);
+                                await languageProvider.loadUserLanguage(userId);
+                                await themeProvider.loadUserTheme(userId);
+                              }
+
+                              if (mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const PantallaPrincipal()),
+                                );
+                              }
                             } else if (mounted && authProvider.errorMessage != null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

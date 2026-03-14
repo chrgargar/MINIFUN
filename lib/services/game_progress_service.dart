@@ -3,13 +3,22 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/game_progress_model.dart';
 import '../constants/api_constants.dart';
+import '../core/di/service_locator.dart';
+import '../domain/repositories/game_progress_repository.dart';
 import 'app_logger.dart';
 
 /// Servicio para guardar y cargar progreso de juegos
-/// - Local (SharedPreferences) para invitados
-/// - Backend (API) para usuarios con cuenta
+///
+/// NOTA: Este servicio ahora es un wrapper que delega al repositorio.
+/// Se mantiene para compatibilidad con código existente.
+///
+/// Para nuevo código, usar directamente:
+/// - GameProgressProvider (con Provider)
+/// - sl.progressRepository (acceso directo)
 class GameProgressService {
   GameProgressService._();
+
+  static GameProgressRepository get _repo => sl.progressRepository;
 
   // ==================== KEYS DE STORAGE ====================
 

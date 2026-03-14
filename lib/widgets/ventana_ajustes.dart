@@ -119,9 +119,13 @@ class VentanaAjustes {
                         subtitle: AppStrings.get('continue_without_account', currentLang),
                         onTap: () async {
                           final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                          final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+                          final themeProvider = Provider.of<SelectorTema>(context, listen: false);
 
-                          // Cerrar sesión actual
+                          // Cerrar sesión actual y limpiar preferencias de usuario
                           await authProvider.logout();
+                          languageProvider.clearUser();
+                          themeProvider.clearUser();
 
                           // Crear sesión de invitado
                           final success = await authProvider.continueAsGuest(
@@ -160,9 +164,13 @@ class VentanaAjustes {
                         subtitle: AppStrings.get('login_other_account', currentLang),
                         onTap: () async {
                           final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                          final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+                          final themeProvider = Provider.of<SelectorTema>(context, listen: false);
 
-                          // Cerrar sesión
+                          // Cerrar sesión y limpiar preferencias de usuario
                           await authProvider.logout();
+                          languageProvider.clearUser();
+                          themeProvider.clearUser();
 
                           if (dialogContext.mounted) {
                             // Cerrar el diálogo
