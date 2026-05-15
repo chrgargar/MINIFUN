@@ -8,20 +8,20 @@ class ApiConstants {
 
   // ==================== CONFIGURACIÓN DE ENTORNO ====================
 
-  /// Modo de desarrollo (cambiar a false en producción)
+  /// Modo de desarrollo (cambiar a false en producción/presentación).
   static const bool isDevelopment = false;
 
   // ==================== URLs BASE ====================
 
-  /// URL base para desarrollo local (computadora)
-  /// Para usar con ngrok, cambia a: 'https://TU-URL-NGROK.ngrok.io/api'
-  static const String _baseUrlDevelopment = 'http://localhost:3000/api';
+  /// URL base para desarrollo en emulador Android.
+  /// 10.0.2.2 apunta al localhost de la máquina host desde el emulador.
+  static const String _baseUrlDevelopment = 'http://10.0.2.2:3000/api';
 
   /// URL base para emulador Android (10.0.2.2 es localhost del host)
   static const String _baseUrlAndroidEmulator = 'http://10.0.2.2:3000/api';
 
-  /// URL base para producción (configurar cuando se despliegue)
-  static const String _baseUrlProduction = 'https://backend-minifun.onrender.com/api';
+  /// URL base pública de presentación.
+  static const String _baseUrlProduction = 'https://minifun.cobblemonespanol.es/api';
 
   /// URL base activa según el entorno
   static String get baseUrl => isDevelopment ? _baseUrlDevelopment : _baseUrlProduction;
